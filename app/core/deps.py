@@ -4,7 +4,9 @@ Provides reusable FastAPI dependencies for database session management.
 The DbSession type alias allows routes to declare `db: DbSession` instead
 of the verbose `db: AsyncSession = Depends(get_db)`.
 """
-from typing import Annotated, AsyncGenerator
+
+from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """Yield a per-request AsyncSession with commit/rollback semantics.
 
     - On success: commits the transaction before closing the session.

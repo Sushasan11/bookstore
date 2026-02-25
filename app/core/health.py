@@ -5,6 +5,7 @@ Database connectivity is verified separately via the test suite (Plan 04).
 
 GET /health → {"status": "ok", "version": "1.0.0"}
 """
+
 from fastapi import APIRouter
 
 router = APIRouter(tags=["health"])

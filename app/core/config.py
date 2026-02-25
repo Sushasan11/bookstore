@@ -3,6 +3,7 @@
 Reads configuration from environment variables and .env file.
 Use get_settings() (cached) for all config access throughout the app.
 """
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,8 +11,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/bookstore_dev"
-    TEST_DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/bookstore_test"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/bookstore_dev"
+    )
+    TEST_DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5433/bookstore_test"
+    )
 
     # Security
     SECRET_KEY: str = "changeme-in-production"

@@ -12,6 +12,7 @@ Example imports to add in later phases:
     # Phase 4 (Books): from app.books.models import Book  # noqa: F401
     # Phase 5 (Cart):  from app.cart.models import CartItem  # noqa: F401
 """
+
 from sqlalchemy.orm import DeclarativeBase
 
 

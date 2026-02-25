@@ -6,6 +6,7 @@ All error responses follow the convention:
 AppError: Custom application exception with structured error codes.
 Handlers registered in app/main.py via add_exception_handler().
 """
+
 import logging
 
 from fastapi import Request
@@ -65,7 +66,9 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
     Never leaks stack traces or internal details regardless of environment.
     """
-    logger.exception("Unhandled exception on %s %s: %s", request.method, request.url, exc)
+    logger.exception(
+        "Unhandled exception on %s %s: %s", request.method, request.url, exc
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "code": "INTERNAL_ERROR"},
