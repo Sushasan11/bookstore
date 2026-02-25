@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 
 ## Current Position
 
-Phase: 7 of 9 (Orders) -- In Progress
-Plan: 1 of 2 in current phase (plan 07-01 done)
-Status: Phase 7 in progress — 1 of 2 plans done (07-01: full orders vertical slice with checkout orchestration)
-Last activity: 2026-02-25 — Plan 07-01 complete (Order/OrderItem models, migration, OrderRepository with SELECT FOR UPDATE, MockPaymentService, OrderService checkout, 4 REST endpoints; 94/94 tests pass)
+Phase: 7 of 9 (Orders) -- Complete
+Plan: 2 of 2 in current phase (all done)
+Status: Phase 7 complete — 2 of 2 plans done (07-01: orders vertical slice, 07-02: 14 integration tests)
+Last activity: 2026-02-25 — Plan 07-02 complete (14 order integration tests, service cart-clear bug fix; 108/108 tests pass)
 
-Progress: [█████████░] 94%
+Progress: [█████████░] 97%
 
 ## Performance Metrics
 
@@ -33,11 +33,11 @@ Progress: [█████████░] 94%
 | Phase 04 Catalog | 3/3 | ~25 min | ~8 min |
 | Phase 05 Discovery | 3/3 | ~55 min | ~18 min |
 | Phase 06 Cart | 2/2 | 9 min | 4.5 min |
-| Phase 07 Orders | 1/2 | 5 min | 5 min |
+| Phase 07 Orders | 2/2 | 24 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (~18 min), 06-01 (6 min), 06-02 (3 min), 07-01 (5 min)
-- Trend: Stable
+- Last 5 plans: 06-01 (6 min), 06-02 (3 min), 07-01 (5 min), 07-02 (19 min)
+- Trend: Stable (07-02 longer due to SQLAlchemy identity map debugging)
 
 *Updated after each plan completion*
 
@@ -120,6 +120,9 @@ Recent decisions affecting current work:
 - [Phase 07-orders]: lock_books uses SELECT FOR UPDATE with ORDER BY Book.id ascending — book_ids must be pre-sorted by caller for deadlock prevention
 - [Phase 07-orders]: MockPaymentService with force_fail=True allows deterministic test control of 90% success rate payment simulation
 - [Phase 07-orders]: unit_price copied from book.price at checkout time — order history immune to future price changes
+- [Phase 07-02]: session.expire(cart) required after item deletion in checkout — SQLAlchemy identity map returns deleted objects via selectinload unless explicitly expired; same-session requests read stale state without this fix
+- [Phase 07-02]: MockPaymentService.charge patched with AsyncMock(return_value=True) in test _checkout helper — prevents 10% random 402 failure from making test suite flaky; force_fail path unchanged
+- [Phase 07-02]: asyncio.gather not viable for concurrent checkout testing with shared ASGI test session — sequential checkout invariant test (stock=1 → 201 then 409) proves same stock safety guarantee
 
 ### Pending Todos
 
@@ -133,4 +136,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 07-01-PLAN.md (Phase 7 Orders plan 01: full orders vertical slice — Order/OrderItem models, migration d4e5f6a7b8c9, OrderRepository with SELECT FOR UPDATE, MockPaymentService, OrderService checkout orchestration, 4 REST endpoints; 94/94 tests pass)
+Stopped at: Completed 07-02-PLAN.md (Phase 7 Orders plan 02: 14 order integration tests covering COMM-03/04/05/ENGM-06, SQLAlchemy cart-clear bug fix in service.py; 108/108 tests pass — Phase 7 complete)
