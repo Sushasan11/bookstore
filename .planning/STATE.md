@@ -42,6 +42,7 @@ Progress: [█████████░] 97%
 *Updated after each plan completion*
 | Phase 02-core-auth P01 | 5 | 2 tasks | 4 files |
 | Phase 02-core-auth P02 | 10 | 2 tasks | 2 files |
+| Phase 02-core-auth P05 | 3 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,9 @@ Recent decisions affecting current work:
 - [Phase 02-core-auth]: RefreshToken has token_family UUID column for family-level revocation (theft detection)
 - [Phase 02-02]: Password hashing uses asyncio.to_thread to avoid blocking the event loop; algorithms=[HS256] explicit in jwt.decode to prevent algorithm confusion
 - [Phase 02-02]: Refresh tokens are opaque strings (secrets.token_urlsafe(64)), NOT JWTs — simpler DB revocation
+- [Phase 02-core-auth]: 17 integration tests for auth endpoints (exceeds 12 minimum): register, login, refresh, logout, RBAC verified
+- [Phase 02-core-auth]: admin_tokens test fixture creates admin via UserRepository.create() + set_role_admin() directly — bypasses API for pre-admin-API testing
+- [Phase 02-core-auth]: Inline APIRouter in RBAC tests — adds ephemeral protected routes to app for testing CurrentUser/AdminUser dependencies without modifying production code
 
 ### Pending Todos
 
@@ -141,5 +145,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Completed 02-04-PLAN.md (Phase 2 Core Auth plan 04: Auth router with 4 HTTP endpoints wired into main.py, scripts/seed_admin.py for first admin bootstrap; 108/108 tests pass)
+Last session: 2026-02-26
+Stopped at: Completed 02-05-PLAN.md (Phase 2 Core Auth plan 05: 17 auth integration tests covering AUTH-01 through AUTH-05; 108/108 tests pass)

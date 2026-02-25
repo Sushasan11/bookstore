@@ -183,7 +183,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 4/4 | Complete | 2026-02-25 |
-| 2. Core Auth | 4/5 | In Progress|  |
+| 2. Core Auth | 5/5 | Complete   | 2026-02-25 |
 | 3. OAuth | 3/3 | Complete | 2026-02-25 |
 | 4. Catalog | 3/3 | Complete | 2026-02-25 |
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
