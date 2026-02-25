@@ -142,4 +142,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 02-02-PLAN.md (Phase 2 Core Auth plan 02: JWT security module, Pydantic auth schemas; all 108 tests pass)
+Stopped at: Completed 02-03-PLAN.md (Phase 2 Core Auth plan 03: AuthService with timing-safe login and refresh token rotation, UserRepository, RefreshTokenRepository, RBAC FastAPI dependencies; all 108 tests pass)
