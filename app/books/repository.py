@@ -1,9 +1,29 @@
 """Repository layer for Genre and Book database access."""
 
-from sqlalchemy import select
+import re
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.books.models import Book, Genre
+
+
+def _build_tsquery(q: str) -> str:
+    """Convert raw user search input to a safe prefix tsquery string.
+
+    Each whitespace-delimited token gets ':*' appended for prefix matching.
+    Non-word, non-hyphen characters are stripped to prevent tsquery injection.
+
+    Examples:
+      'tolkien' -> 'tolkien:*'
+      'lord rings' -> 'lord:* & rings:*'
+      'C++ programming' -> 'C:* & programming:*'
+      '' -> '' (caller skips FTS when empty)
+    """
+    tokens = re.split(r"\s+", q.strip())
+    clean = [re.sub(r"[^\w-]", "", t, flags=re.UNICODE) for t in tokens if t]
+    prefix_tokens = [f"{t}:*" for t in clean if t]
+    return " & ".join(prefix_tokens)
 
 
 class GenreRepository:
@@ -61,3 +81,76 @@ class BookRepository:
         book.stock_quantity = quantity
         await self.session.flush()
         return book
+
+    async def search(
+        self,
+        *,
+        q: str | None = None,
+        genre_id: int | None = None,
+        author: str | None = None,
+        sort: str = "title",
+        page: int = 1,
+        size: int = 20,
+    ) -> tuple[list[Book], int]:
+        """Return (books, total_count) for the given search/filter/sort/page.
+
+        When q is provided: filters by FTS match AND sorts by ts_rank DESC
+          (relevance sort overrides the sort parameter -- locked decision).
+        When q is absent: sorts by the sort parameter.
+
+        Sort values: 'title' (A-Z), 'price' (asc), 'date' (publish_date asc),
+          'created_at' (desc -- newest first). Tiebreaker: Book.id asc (stable pagination).
+
+        genre_id and author filters combine with AND when both are provided.
+        """
+        stmt = select(Book)
+
+        # FTS filter
+        if q:
+            tsquery_str = _build_tsquery(q)
+            if tsquery_str:
+                ts_query = func.to_tsquery("simple", tsquery_str)
+                stmt = stmt.where(Book.search_vector.bool_op("@@")(ts_query))
+
+        # Genre filter (exact match by ID -- clients pick from GET /genres list)
+        if genre_id is not None:
+            stmt = stmt.where(Book.genre_id == genre_id)
+
+        # Author filter (case-insensitive substring -- covers "J.R.R. Tolkien" when searching "tolkien")
+        if author:
+            stmt = stmt.where(Book.author.ilike(f"%{author}%"))
+
+        # Sort order
+        if q:
+            tsquery_str_for_rank = _build_tsquery(q)
+            if tsquery_str_for_rank:
+                ts_query_rank = func.to_tsquery("simple", tsquery_str_for_rank)
+                stmt = stmt.order_by(
+                    func.ts_rank(Book.search_vector, ts_query_rank).desc(),
+                    Book.id,
+                )
+            # If tsquery_str is empty (all special chars stripped), fall through to default sort
+            else:
+                stmt = stmt.order_by(Book.title, Book.id)
+        else:
+            sort_map = {
+                "title": (Book.title, Book.id),
+                "price": (Book.price, Book.id),
+                "date": (Book.publish_date, Book.id),
+                "created_at": (Book.created_at.desc(), Book.id),
+            }
+            order_cols = sort_map.get(sort, (Book.title, Book.id))
+            stmt = stmt.order_by(*order_cols)
+
+        # Total count BEFORE pagination (reuses same filters)
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self.session.scalar(count_stmt)
+
+        # Apply pagination
+        offset = (page - 1) * size
+        stmt = stmt.limit(size).offset(offset)
+
+        result = await self.session.execute(stmt)
+        books = list(result.scalars().all())
+
+        return books, total or 0

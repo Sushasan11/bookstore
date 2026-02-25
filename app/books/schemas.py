@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, computed_field, Field, field_validator
 
 
 def _validate_isbn(isbn: str) -> str:
@@ -101,6 +101,42 @@ class BookResponse(BaseModel):
     stock_quantity: int
 
     model_config = {"from_attributes": True}
+
+
+class BookDetailResponse(BaseModel):
+    """Response for GET /books/{id} -- extends BookResponse with computed in_stock field.
+
+    in_stock is a derived boolean (stock_quantity > 0) -- not stored in DB.
+    stock_quantity is still included for admin-facing clients that need the exact count.
+    """
+
+    id: int
+    title: str
+    author: str
+    price: Decimal
+    isbn: str | None
+    genre_id: int | None
+    description: str | None
+    cover_image_url: str | None
+    publish_date: date | None
+    stock_quantity: int
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def in_stock(self) -> bool:
+        """True when at least one copy is available."""
+        return self.stock_quantity > 0
+
+    model_config = {"from_attributes": True}
+
+
+class BookListResponse(BaseModel):
+    """Paginated book list response envelope for GET /books."""
+
+    items: list[BookResponse]
+    total: int
+    page: int
+    size: int
 
 
 class GenreCreate(BaseModel):

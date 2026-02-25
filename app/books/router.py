@@ -1,10 +1,14 @@
 """Catalog HTTP endpoints: book CRUD, stock management, genre taxonomy."""
 
-from fastapi import APIRouter, status
+from typing import Literal
+
+from fastapi import APIRouter, Query, status
 
 from app.books.repository import BookRepository, GenreRepository
 from app.books.schemas import (
     BookCreate,
+    BookDetailResponse,
+    BookListResponse,
     BookResponse,
     BookUpdate,
     GenreCreate,
@@ -40,16 +44,52 @@ async def create_book(
     return BookResponse.model_validate(book)
 
 
-@router.get("/books/{book_id}", response_model=BookResponse)
-async def get_book(book_id: int, db: DbSession) -> BookResponse:
-    """Get book by ID. Public -- no auth required.
+@router.get("/books", response_model=BookListResponse)
+async def list_books(
+    db: DbSession,
+    q: str | None = Query(None, description="Full-text search across title and author"),
+    genre_id: int | None = Query(None, description="Filter by genre ID (from GET /genres)"),
+    author: str | None = Query(None, description="Filter by author name (case-insensitive partial match)"),
+    sort: Literal["title", "price", "date", "created_at"] = Query(
+        "title", description="Sort order: title (A-Z), price (asc), date (publish_date asc), created_at (newest first)"
+    ),
+    page: int = Query(1, ge=1, description="Page number, 1-indexed"),
+    size: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+) -> BookListResponse:
+    """Browse the book catalog. Public -- no auth required.
 
+    Supports pagination (page/size), sorting (sort), full-text search (q),
+    and filtering by genre (genre_id) and author. Filters combine with AND.
+
+    When q is present, results are sorted by relevance (ts_rank) regardless of sort param.
+    """
+    service = _make_service(db)
+    books, total = await service.list_books(
+        q=q,
+        genre_id=genre_id,
+        author=author,
+        sort=sort,
+        page=page,
+        size=size,
+    )
+    return BookListResponse(
+        items=[BookResponse.model_validate(b) for b in books],
+        total=total,
+        page=page,
+        size=size,
+    )
+
+
+@router.get("/books/{book_id}", response_model=BookDetailResponse)
+async def get_book(book_id: int, db: DbSession) -> BookDetailResponse:
+    """Get book by ID including stock status. Public -- no auth required.
+
+    Returns in_stock boolean (true when stock_quantity > 0).
     404 if book not found.
-    Used by tests and downstream features to verify book state.
     """
     service = _make_service(db)
     book = await service._get_book_or_404(book_id)
-    return BookResponse.model_validate(book)
+    return BookDetailResponse.model_validate(book)
 
 
 @router.put("/books/{book_id}", response_model=BookResponse)

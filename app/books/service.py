@@ -71,5 +71,29 @@ class BookService:
             )
         return await self.genre_repo.create(name)
 
+    async def list_books(
+        self,
+        *,
+        q: str | None = None,
+        genre_id: int | None = None,
+        author: str | None = None,
+        sort: str = "title",
+        page: int = 1,
+        size: int = 20,
+    ) -> tuple[list[Book], int]:
+        """Browse catalog with optional FTS search, genre/author filters, sort, and pagination.
+
+        Delegates entirely to BookRepository.search() -- no additional business logic.
+        Returns (books, total_count) for the route to wrap in BookListResponse.
+        """
+        return await self.book_repo.search(
+            q=q,
+            genre_id=genre_id,
+            author=author,
+            sort=sort,
+            page=page,
+            size=size,
+        )
+
     async def list_genres(self) -> list[Genre]:
         return await self.genre_repo.get_all()
