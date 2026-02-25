@@ -152,11 +152,11 @@ Plans:
   2. A user can DELETE `/wishlist/{book_id}` and the book is removed from their wishlist
   3. A user's wishlist shows the current price and stock status of each saved book
   4. Adding a book that is already on the wishlist returns a 409 rather than creating a duplicate entry
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: Wishlist domain — `wishlist_items` table migration with `UNIQUE(user_id, book_id)`, WishlistItem model, WishlistRepository, WishlistService
-- [ ] 08-02: Wishlist endpoints — POST `/wishlist`, GET `/wishlist`, DELETE `/wishlist/{book_id}`
+- [ ] 08-01-PLAN.md — Wishlist vertical slice: WishlistItem model, migration e5f6a7b8c9d0, repository (IntegrityError->409), service (book existence check), schemas (BookSummary with stock_quantity), router (POST/GET/DELETE /wishlist), main.py registration
+- [ ] 08-02-PLAN.md — Wishlist integration tests (TDD): tests/test_wishlist.py with 10+ cases covering ENGM-01 (add, duplicate 409, nonexistent book 404, remove, auth) and ENGM-02 (list with book details, empty list, user isolation)
 
 ### Phase 9: Pre-Booking
 **Goal**: An authenticated user can reserve an out-of-stock book and be notified in-app when stock arrives; the admin stock update flow triggers the notification automatically
@@ -189,5 +189,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
 | 6. Cart | 2/2 | Complete | 2026-02-25 |
 | 7. Orders | 2/2 | Complete   | 2026-02-25 |
-| 8. Wishlist | 0/2 | Not started | - |
+| 8. Wishlist | 1/2 | In Progress|  |
 | 9. Pre-Booking | 0/3 | Not started | - |

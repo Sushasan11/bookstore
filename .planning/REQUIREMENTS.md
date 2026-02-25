@@ -41,8 +41,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Engagement
 
-- [ ] **ENGM-01**: User can add/remove books from wishlist
-- [ ] **ENGM-02**: User can view their wishlist
+- [x] **ENGM-01**: User can add/remove books from wishlist
+- [x] **ENGM-02**: User can view their wishlist
 - [ ] **ENGM-03**: User can pre-book (reserve) an out-of-stock book
 - [ ] **ENGM-04**: User is notified in-app when a reserved book is back in stock
 - [ ] **ENGM-05**: User can view and cancel their reservations
@@ -111,8 +111,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMM-03 | Phase 7 | Complete |
 | COMM-04 | Phase 7 | Complete |
 | COMM-05 | Phase 7 | Complete |
-| ENGM-01 | Phase 8 | Pending |
-| ENGM-02 | Phase 8 | Pending |
+| ENGM-01 | Phase 8 | Complete |
+| ENGM-02 | Phase 8 | Complete |
 | ENGM-03 | Phase 9 | Pending |
 | ENGM-04 | Phase 9 | Pending |
 | ENGM-05 | Phase 9 | Pending |

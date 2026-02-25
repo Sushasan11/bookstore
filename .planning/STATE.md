@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 7 - Orders
+**Current focus:** Phase 8 - Wishlist
 
 ## Current Position
 
-Phase: 7 of 9 (Orders) -- Complete
-Plan: 2 of 2 in current phase (all done)
-Status: Phase 7 complete — 2 of 2 plans done (07-01: orders vertical slice, 07-02: 14 integration tests)
-Last activity: 2026-02-25 — Plan 07-02 complete (14 order integration tests, service cart-clear bug fix; 108/108 tests pass)
+Phase: 8 of 9 (Wishlist) -- Complete
+Plan: 1 of 1 in current phase (all done)
+Status: Phase 8 complete — 1 of 1 plans done (08-01: wishlist vertical slice)
+Last activity: 2026-02-26 — Plan 08-01 complete (wishlist model, migration, repo, service, router; 108/108 tests pass)
 
-Progress: [█████████░] 97%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Progress: [█████████░] 97%
 | Phase 02-core-auth P01 | 5 | 2 tasks | 4 files |
 | Phase 02-core-auth P02 | 10 | 2 tasks | 2 files |
 | Phase 02-core-auth P05 | 3 | 1 tasks | 1 files |
+| Phase 08-wishlist P01 | 5 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -133,6 +134,8 @@ Recent decisions affecting current work:
 - [Phase 02-core-auth]: 17 integration tests for auth endpoints (exceeds 12 minimum): register, login, refresh, logout, RBAC verified
 - [Phase 02-core-auth]: admin_tokens test fixture creates admin via UserRepository.create() + set_role_admin() directly — bypasses API for pre-admin-API testing
 - [Phase 02-core-auth]: Inline APIRouter in RBAC tests — adds ephemeral protected routes to app for testing CurrentUser/AdminUser dependencies without modifying production code
+- [Phase 08-wishlist]: WishlistItem.book_id uses CASCADE on delete (not SET NULL like OrderItem) — wishlist item is meaningless without its book
+- [Phase 08-wishlist]: DELETE /wishlist/{book_id} uses book_id as path param (natural key) — avoids exposing internal item IDs; no quantity column — a book is either on the wishlist or not
 
 ### Pending Todos
 
@@ -146,4 +149,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 02-05-PLAN.md (Phase 2 Core Auth plan 05: 17 auth integration tests covering AUTH-01 through AUTH-05; 108/108 tests pass)
+Stopped at: Completed 08-01-PLAN.md (Phase 8 Wishlist plan 01: wishlist vertical slice — WishlistItem model, migration, repo, service, router; 108/108 tests pass)
