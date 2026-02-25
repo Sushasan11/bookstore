@@ -41,12 +41,16 @@ class WishlistRepository:
         return item
 
     async def get_all_for_user(self, user_id: int) -> list[WishlistItem]:
-        """Return all wishlist items for a user, newest first, with books eager-loaded."""
+        """Return all wishlist items for a user, newest first, with books eager-loaded.
+
+        Secondary sort by id DESC provides a stable tiebreaker when multiple items share
+        the same added_at timestamp (e.g., during fast test inserts).
+        """
         result = await self.session.execute(
             select(WishlistItem)
             .where(WishlistItem.user_id == user_id)
             .options(selectinload(WishlistItem.book))
-            .order_by(WishlistItem.added_at.desc())
+            .order_by(WishlistItem.added_at.desc(), WishlistItem.id.desc())
         )
         return list(result.scalars().all())
 
