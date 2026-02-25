@@ -25,6 +25,8 @@ from app.core.exceptions import (
 )
 from app.core.health import router as health_router
 from app.core.oauth import configure_oauth
+from app.orders.router import admin_router as orders_admin_router
+from app.orders.router import router as orders_router
 from app.users.router import router as auth_router
 
 
@@ -64,6 +66,8 @@ def create_app() -> FastAPI:
     application.include_router(auth_router)
     application.include_router(books_router)
     application.include_router(cart_router)
+    application.include_router(orders_router)
+    application.include_router(orders_admin_router)
 
     return application
 
