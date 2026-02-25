@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 6 - Cart
+**Current focus:** Phase 7 - Orders
 
 ## Current Position
 
-Phase: 6 of 9 (Cart) -- COMPLETE
-Plan: 2 of 2 in current phase (plan 06-02 done)
-Status: Phase 6 complete — all 2 plans done (06-01: cart vertical slice, 06-02: cart integration tests)
-Last activity: 2026-02-25 — Plan 06-02 complete (15 cart integration tests covering COMM-01 and COMM-02; 94/94 tests pass)
+Phase: 7 of 9 (Orders) -- In Progress
+Plan: 1 of 2 in current phase (plan 07-01 done)
+Status: Phase 7 in progress — 1 of 2 plans done (07-01: full orders vertical slice with checkout orchestration)
+Last activity: 2026-02-25 — Plan 07-01 complete (Order/OrderItem models, migration, OrderRepository with SELECT FOR UPDATE, MockPaymentService, OrderService checkout, 4 REST endpoints; 94/94 tests pass)
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -33,9 +33,10 @@ Progress: [█████████░] 93%
 | Phase 04 Catalog | 3/3 | ~25 min | ~8 min |
 | Phase 05 Discovery | 3/3 | ~55 min | ~18 min |
 | Phase 06 Cart | 2/2 | 9 min | 4.5 min |
+| Phase 07 Orders | 1/2 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (10 min), 05-01, 05-02, 05-03 (~18 min avg), 06-01 (6 min), 06-02 (3 min)
+- Last 5 plans: 05-03 (~18 min), 06-01 (6 min), 06-02 (3 min), 07-01 (5 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -115,6 +116,10 @@ Recent decisions affecting current work:
 - [Phase 06 Plan 02]: Module-specific email prefixes in cart test fixtures (cart_admin@, cart_user@, etc.) — avoids collisions with other test module users sharing same test DB schema
 - [Phase 06 Plan 02]: out_of_stock_book fixture relies on default stock_quantity=0 — no PATCH /stock needed, documents zero-stock intent without extra HTTP call
 - [Phase 06 Plan 02]: total_price tolerance check uses abs(float - expected) < 0.02 — avoids fragile exact comparison on Decimal-to-float conversion
+- [Phase 07-orders]: OrderItem.book_id uses SET NULL on delete — preserves order history when book removed from catalog
+- [Phase 07-orders]: lock_books uses SELECT FOR UPDATE with ORDER BY Book.id ascending — book_ids must be pre-sorted by caller for deadlock prevention
+- [Phase 07-orders]: MockPaymentService with force_fail=True allows deterministic test control of 90% success rate payment simulation
+- [Phase 07-orders]: unit_price copied from book.price at checkout time — order history immune to future price changes
 
 ### Pending Todos
 
@@ -122,10 +127,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 7]: Multi-item checkout deadlock prevention pattern (ascending ID lock order vs. SKIP LOCKED with retry) should be confirmed during Phase 7 planning
+- [RESOLVED Phase 7]: Multi-item checkout deadlock prevention implemented using ascending ID lock order (SELECT FOR UPDATE ORDER BY Book.id) — SKIP LOCKED approach not needed
 - [Phase 9]: Stock update to pre-booking notification coupling placement (BookService calling PreBookRepository directly vs. domain events) must be decided before Phase 9 to avoid circular imports
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 06-02-PLAN.md (Phase 6 Cart plan 02: 15 cart integration tests — COMM-01/COMM-02 coverage, ownership enforcement, cross-session persistence, computed totals; 94/94 tests pass; Phase 6 COMPLETE)
+Stopped at: Completed 07-01-PLAN.md (Phase 7 Orders plan 01: full orders vertical slice — Order/OrderItem models, migration d4e5f6a7b8c9, OrderRepository with SELECT FOR UPDATE, MockPaymentService, OrderService checkout orchestration, 4 REST endpoints; 94/94 tests pass)

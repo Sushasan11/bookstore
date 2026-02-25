@@ -35,9 +35,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **COMM-01**: User can add books to shopping cart
 - [x] **COMM-02**: User can update cart item quantity or remove items
-- [ ] **COMM-03**: User can checkout cart with mock payment (creates order, decrements stock)
-- [ ] **COMM-04**: User can view order confirmation after checkout
-- [ ] **COMM-05**: User can view order history with line items
+- [x] **COMM-03**: User can checkout cart with mock payment (creates order, decrements stock)
+- [x] **COMM-04**: User can view order confirmation after checkout
+- [x] **COMM-05**: User can view order history with line items
 
 ### Engagement
 
@@ -46,7 +46,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **ENGM-03**: User can pre-book (reserve) an out-of-stock book
 - [ ] **ENGM-04**: User is notified in-app when a reserved book is back in stock
 - [ ] **ENGM-05**: User can view and cancel their reservations
-- [ ] **ENGM-06**: Admin can view all placed orders
+- [x] **ENGM-06**: Admin can view all placed orders
 
 ## v2 Requirements
 
@@ -108,15 +108,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-04 | Phase 5 | Pending |
 | COMM-01 | Phase 6 | Complete |
 | COMM-02 | Phase 6 | Complete |
-| COMM-03 | Phase 7 | Pending |
-| COMM-04 | Phase 7 | Pending |
-| COMM-05 | Phase 7 | Pending |
+| COMM-03 | Phase 7 | Complete |
+| COMM-04 | Phase 7 | Complete |
+| COMM-05 | Phase 7 | Complete |
 | ENGM-01 | Phase 8 | Pending |
 | ENGM-02 | Phase 8 | Pending |
 | ENGM-03 | Phase 9 | Pending |
 | ENGM-04 | Phase 9 | Pending |
 | ENGM-05 | Phase 9 | Pending |
-| ENGM-06 | Phase 7 | Pending |
+| ENGM-06 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 26 total
