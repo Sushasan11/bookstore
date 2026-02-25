@@ -40,6 +40,7 @@ Progress: [█████████░] 97%
 - Trend: Stable (07-02 longer due to SQLAlchemy identity map debugging)
 
 *Updated after each plan completion*
+| Phase 02-core-auth P01 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,8 @@ Recent decisions affecting current work:
 - [Phase 07-02]: session.expire(cart) required after item deletion in checkout — SQLAlchemy identity map returns deleted objects via selectinload unless explicitly expired; same-session requests read stale state without this fix
 - [Phase 07-02]: MockPaymentService.charge patched with AsyncMock(return_value=True) in test _checkout helper — prevents 10% random 402 failure from making test suite flaky; force_fail path unchanged
 - [Phase 07-02]: asyncio.gather not viable for concurrent checkout testing with shared ASGI test session — sequential checkout invariant test (stock=1 → 201 then 409) proves same stock safety guarantee
+- [Phase 02-core-auth]: UserRole is a StrEnum with values user and admin — no roles table, no extensibility needed
+- [Phase 02-core-auth]: RefreshToken has token_family UUID column for family-level revocation (theft detection)
 
 ### Pending Todos
 
@@ -136,4 +139,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 07-02-PLAN.md (Phase 7 Orders plan 02: 14 order integration tests covering COMM-03/04/05/ENGM-06, SQLAlchemy cart-clear bug fix in service.py; 108/108 tests pass — Phase 7 complete)
+Stopped at: Completed 02-01-PLAN.md (Phase 2 Core Auth plan 01: User/RefreshToken SQLAlchemy models, UserRole StrEnum, Alembic migration 451f9697aceb; all 108 tests pass)
