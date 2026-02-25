@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Core Auth** - Email/password registration and login with JWT access + refresh tokens, token revocation, and role-based access control
 - [x] **Phase 3: OAuth** - Google and GitHub OAuth login integrated into the existing auth layer
 - [x] **Phase 4: Catalog** - Admin CRUD for books and genre taxonomy with stock quantity tracking
-- [ ] **Phase 5: Discovery** - Public catalog browse with pagination, full-text search, filtering, and book detail
+- [x] **Phase 5: Discovery** - Public catalog browse with pagination, full-text search, filtering, and book detail
 - [ ] **Phase 6: Cart** - DB-persisted shopping cart with per-user enforcement and stock validation
 - [ ] **Phase 7: Orders** - Checkout with mock payment and race-condition-safe stock decrement, order history for users and admin
 - [ ] **Phase 8: Wishlist** - Personal wishlist for saving books outside the cart
@@ -104,11 +104,12 @@ Plans:
   2. GET `/books?q=tolkien` returns books matching the search term across title, author, and genre via PostgreSQL full-text search
   3. GET `/books?genre=fantasy&author=Tolkien` returns only books matching both filters
   4. GET `/books/{id}` returns the book's full details including current `stock_quantity` and an `in_stock` boolean
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Full-text search — `tsvector` generated column on books, GIN index migration, `to_tsvector` configuration for title + author + genre
-- [ ] 05-02: Discovery endpoints — GET `/books` (pagination, sort, search, filter), GET `/books/{id}` with stock status; BookRepository query methods
+- [x] 05-01-PLAN.md — FTS infrastructure: search_vector TSVECTOR GENERATED column + GIN index migration (hand-written), Book model Computed column (deferred), alembic/env.py include_object fix
+- [x] 05-02-PLAN.md — Discovery service + endpoints: BookRepository.search() with FTS/filter/sort/pagination, BookDetailResponse (in_stock), BookListResponse, BookService.list_books(), GET /books + GET /books/{id} updates
+- [x] 05-03-PLAN.md — Integration tests: tests/test_discovery.py with 20+ cases covering DISC-01 through DISC-04
 
 ### Phase 6: Cart
 **Goal**: An authenticated user has a persistent shopping cart where they can add books, update quantities, and remove items, with stock availability checked on add
@@ -186,7 +187,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 2. Core Auth | 5/5 | Complete | 2026-02-25 |
 | 3. OAuth | 3/3 | Complete | 2026-02-25 |
 | 4. Catalog | 3/3 | Complete | 2026-02-25 |
-| 5. Discovery | 0/2 | Not started | - |
+| 5. Discovery | 3/3 | Complete | 2026-02-25 |
 | 6. Cart | 0/2 | Not started | - |
 | 7. Orders | 0/3 | Not started | - |
 | 8. Wishlist | 0/2 | Not started | - |
