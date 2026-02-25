@@ -17,6 +17,8 @@ pydantic-settings = "^2.13.1"
 python-multipart = "*"
 email-validator = "*"
 python-dotenv = "*"
+PyJWT = "^2.11.0"
+pwdlib = {version = "^0.3.0", extras = ["argon2"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

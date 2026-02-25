@@ -21,4 +21,4 @@ class Base(DeclarativeBase):
 
 
 # Model imports — add each model here as phases are implemented
-# No models exist yet in Phase 1; imports will be added in subsequent phases
+from app.users.models import RefreshToken, User  # noqa: F401
