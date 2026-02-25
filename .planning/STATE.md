@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 
 ## Current Position
 
-Phase: 6 of 9 (Cart) -- IN PROGRESS
-Plan: 1 of 2 in current phase (plan 06-01 done)
-Status: In progress — plan 06-01 done, plan 06-02 (cart integration tests) next
-Last activity: 2026-02-25 — Plan 06-01 complete (cart vertical slice: Cart/CartItem models, migration b2c3d4e5f6a7, repository with ON CONFLICT get-or-create, service with stock/ownership validation, 4 REST endpoints)
+Phase: 6 of 9 (Cart) -- COMPLETE
+Plan: 2 of 2 in current phase (plan 06-02 done)
+Status: Phase 6 complete — all 2 plans done (06-01: cart vertical slice, 06-02: cart integration tests)
+Last activity: 2026-02-25 — Plan 06-02 complete (15 cart integration tests covering COMM-01 and COMM-02; 94/94 tests pass)
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: ~3 min
 - Total execution time: ~0.6 hours
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 90%
 | Phase 03 OAuth | 3/3 | ~15 min | ~5 min |
 | Phase 04 Catalog | 3/3 | ~25 min | ~8 min |
 | Phase 05 Discovery | 3/3 | ~55 min | ~18 min |
-| Phase 06 Cart | 1/2 | 6 min | 6 min |
+| Phase 06 Cart | 2/2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (5 min), 04-03 (10 min), 05-01, 05-02, 05-03 (~18 min avg), 06-01 (6 min)
+- Last 5 plans: 04-03 (10 min), 05-01, 05-02, 05-03 (~18 min avg), 06-01 (6 min), 06-02 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -112,6 +112,9 @@ Recent decisions affecting current work:
 - [Phase 06 Plan 01]: session.refresh(item, ["book"]) after add flush — loads book relationship for CartItemResponse without extra selectinload on insert path
 - [Phase 06 Plan 01]: TYPE_CHECKING guard for Book import in cart/models.py — avoids circular import while keeping Mapped[Book] annotation for type checkers
 - [Phase 06 Plan 01]: int(current_user["sub"]) cast in every route handler — JWT sub is always string, must cast to int for user_id comparisons
+- [Phase 06 Plan 02]: Module-specific email prefixes in cart test fixtures (cart_admin@, cart_user@, etc.) — avoids collisions with other test module users sharing same test DB schema
+- [Phase 06 Plan 02]: out_of_stock_book fixture relies on default stock_quantity=0 — no PATCH /stock needed, documents zero-stock intent without extra HTTP call
+- [Phase 06 Plan 02]: total_price tolerance check uses abs(float - expected) < 0.02 — avoids fragile exact comparison on Decimal-to-float conversion
 
 ### Pending Todos
 
@@ -125,4 +128,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 06-01-PLAN.md (Phase 6 Cart plan 01: full cart vertical slice — Cart/CartItem models, migration b2c3d4e5f6a7, CartRepository with ON CONFLICT get-or-create, CartService with stock/ownership validation, 4 REST endpoints registered in app)
+Stopped at: Completed 06-02-PLAN.md (Phase 6 Cart plan 02: 15 cart integration tests — COMM-01/COMM-02 coverage, ownership enforcement, cross-session persistence, computed totals; 94/94 tests pass; Phase 6 COMPLETE)

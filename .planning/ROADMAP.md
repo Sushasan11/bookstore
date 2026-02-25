@@ -124,8 +124,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Cart domain + endpoints: Cart/CartItem models, migration, schemas, repository (ON CONFLICT get-or-create, selectinload), service (stock check, ownership), router (GET /cart, POST/PUT/DELETE /cart/items), main.py registration
-- [ ] 06-02-PLAN.md — Cart integration tests (TDD): tests/test_cart.py with 15+ cases covering COMM-01 (add, out-of-stock, duplicate, empty cart) and COMM-02 (update, delete, ownership enforcement, cross-session persistence)
+- [x] 06-01-PLAN.md — Cart domain + endpoints: Cart/CartItem models, migration, schemas, repository (ON CONFLICT get-or-create, selectinload), service (stock check, ownership), router (GET /cart, POST/PUT/DELETE /cart/items), main.py registration
+- [x] 06-02-PLAN.md — Cart integration tests (TDD): tests/test_cart.py with 15+ cases covering COMM-01 (add, out-of-stock, duplicate, empty cart) and COMM-02 (update, delete, ownership enforcement, cross-session persistence)
 
 ### Phase 7: Orders
 **Goal**: An authenticated user can checkout their cart with a mock payment to create an order, view their order history, and an admin can view all orders placed on the platform
@@ -188,7 +188,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 3. OAuth | 3/3 | Complete | 2026-02-25 |
 | 4. Catalog | 3/3 | Complete | 2026-02-25 |
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
-| 6. Cart | 1/2 | In Progress|  |
+| 6. Cart | 2/2 | Complete | 2026-02-25 |
 | 7. Orders | 0/3 | Not started | - |
 | 8. Wishlist | 0/2 | Not started | - |
 | 9. Pre-Booking | 0/3 | Not started | - |
