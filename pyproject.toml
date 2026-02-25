@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "bookstore"
+version = "0.1.0"
+description = "Bookstore e-commerce API"
+authors = ["Your Name <you@example.com>"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = {version = "^0.133.0", extras = ["standard"]}
+uvicorn = {version = "^0.41.0", extras = ["standard"]}
+sqlalchemy = {version = "^2.0.47", extras = ["asyncio"]}
+alembic = "^1.18.4"
+asyncpg = "^0.31.0"
+pydantic = "^2.12.5"
+pydantic-settings = "^2.13.1"
+python-multipart = "*"
+email-validator = "*"
+python-dotenv = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-asyncio = "^1.3.0"
+httpx = "^0.28.1"
+ruff = "^0.15.2"
+mypy = "*"
+taskipy = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.taskipy.tasks]
+dev = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+test = "pytest tests/ -v"
+lint = "ruff check . && ruff format --check ."
+format = "ruff format . && ruff check --fix ."
+migrate = "alembic upgrade head"
+makemigration = "alembic revision --autogenerate"
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
