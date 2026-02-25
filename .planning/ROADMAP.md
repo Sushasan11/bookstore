@@ -13,9 +13,9 @@ Build a FastAPI + PostgreSQL bookstore API from greenfield to a complete commerc
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Async FastAPI app with PostgreSQL, Alembic, pydantic-settings, and all tooling configured correctly before any feature work begins
-- [ ] **Phase 2: Core Auth** - Email/password registration and login with JWT access + refresh tokens, token revocation, and role-based access control
-- [ ] **Phase 3: OAuth** - Google and GitHub OAuth login integrated into the existing auth layer
+- [x] **Phase 1: Infrastructure** - Async FastAPI app with PostgreSQL, Alembic, pydantic-settings, and all tooling configured correctly before any feature work begins
+- [x] **Phase 2: Core Auth** - Email/password registration and login with JWT access + refresh tokens, token revocation, and role-based access control
+- [x] **Phase 3: OAuth** - Google and GitHub OAuth login integrated into the existing auth layer
 - [ ] **Phase 4: Catalog** - Admin CRUD for books and genre taxonomy with stock quantity tracking
 - [ ] **Phase 5: Discovery** - Public catalog browse with pagination, full-text search, filtering, and book detail
 - [ ] **Phase 6: Cart** - DB-persisted shopping cart with per-user enforcement and stock validation
@@ -53,13 +53,14 @@ Plans:
   3. A user with an expired access token can POST to `/auth/refresh` and receive a new access token without re-entering credentials
   4. A logged-in user can POST to `/auth/logout` and subsequent use of their refresh token is rejected with 401
   5. An unauthenticated request to a protected endpoint returns 401; a user-token request to an admin endpoint returns 403
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: User domain — `users` table migration, User model, hashed password with pwdlib/argon2 in thread pool, UserRepository, UserService
-- [ ] 02-02: JWT layer — `app/core/security.py` with PyJWT encode/decode, `jti` in tokens, 15-min access TTL, refresh token DB storage with revocation
-- [ ] 02-03: Auth endpoints — POST `/auth/register`, POST `/auth/login`, POST `/auth/refresh`, POST `/auth/logout`
-- [ ] 02-04: Dependencies — `get_current_user`, `require_admin` in `app/core/deps.py`; RBAC applied at router level
+- [x] 02-01-PLAN.md — User domain: User + RefreshToken SQLAlchemy models with UserRole enum, Alembic migration creating users and refresh_tokens tables
+- [x] 02-02-PLAN.md — Security layer: app/core/security.py with HS256 JWT (hash_password, create_access_token, decode_access_token, generate_refresh_token) and Pydantic schemas
+- [x] 02-03-PLAN.md — Repository + service + RBAC: UserRepository, RefreshTokenRepository, AuthService (timing-safe login, token rotation, family revocation), get_current_user and require_admin deps
+- [x] 02-04-PLAN.md — Auth endpoints + admin seed: POST /auth/register, /login, /refresh, /logout router wired into main.py; scripts/seed_admin.py for first admin
+- [x] 02-05-PLAN.md — Integration tests (TDD): tests/test_auth.py covering all 4 endpoints + RBAC; 12+ test cases verifying success + error paths
 
 ### Phase 3: OAuth
 **Goal**: Users can authenticate with their Google or GitHub account and receive the same JWT token pair as email/password users, with the accounts linked if the email already exists
@@ -70,11 +71,12 @@ Plans:
   2. A user can initiate OAuth login for GitHub via `GET /auth/github` and be redirected to GitHub's authorization screen
   3. After completing the OAuth flow, the user receives a JWT access + refresh token pair identical in structure to email/password login tokens
   4. If the OAuth email matches an existing account, the OAuth login authenticates to that existing account (no duplicate user created)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: OAuth provider setup — Google and GitHub OAuth app credentials, `app/core/oauth.py` with provider config, callback URL registration
-- [ ] 03-02: OAuth endpoints and account linking — GET `/auth/google`, GET `/auth/google/callback`, GET `/auth/github`, GET `/auth/github/callback`; account lookup/create logic
+- [x] 03-01-PLAN.md — OAuth foundation: OAuthAccount model, hashed_password nullable migration, Authlib provider registry (Google OIDC + GitHub OAuth2), SessionMiddleware, config settings
+- [x] 03-02-PLAN.md — OAuth service and endpoints: OAuthAccountRepository, AuthService.oauth_login(), login guard for OAuth-only users, GET /auth/google, /auth/google/callback, /auth/github, /auth/github/callback
+- [x] 03-03-PLAN.md — OAuth integration tests: tests/test_oauth.py with mocked Authlib providers covering redirects, callbacks, account linking, OAuth-only users, error cases
 
 ### Phase 4: Catalog
 **Goal**: An admin can fully manage the book catalog — creating, editing, and deleting books with all metadata and stock quantities, and managing the genre taxonomy — so there is data for all downstream features to work with
@@ -176,13 +178,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 4/4 | Verifying |  |
-| 2. Core Auth | 0/4 | Not started | - |
-| 3. OAuth | 0/2 | Not started | - |
+| 1. Infrastructure | 4/4 | Complete | 2026-02-25 |
+| 2. Core Auth | 5/5 | Complete | 2026-02-25 |
+| 3. OAuth | 3/3 | Complete | 2026-02-25 |
 | 4. Catalog | 0/3 | Not started | - |
 | 5. Discovery | 0/2 | Not started | - |
 | 6. Cart | 0/2 | Not started | - |
