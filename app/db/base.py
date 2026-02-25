@@ -21,4 +21,4 @@ class Base(DeclarativeBase):
 
 
 # Model imports — add each model here as phases are implemented
-from app.users.models import RefreshToken, User  # noqa: F401
+from app.users.models import OAuthAccount, RefreshToken, User  # noqa: F401, E402

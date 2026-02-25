@@ -11,7 +11,9 @@ Usage:
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.sessions import SessionMiddleware
 
+from app.core.config import get_settings
 from app.core.exceptions import (
     AppError,
     app_error_handler,
@@ -20,6 +22,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.health import router as health_router
+from app.core.oauth import configure_oauth
 from app.users.router import router as auth_router
 
 
@@ -43,6 +46,16 @@ def create_app() -> FastAPI:
         RequestValidationError, validation_exception_handler
     )  # type: ignore[arg-type]
     application.add_exception_handler(Exception, generic_exception_handler)
+
+    # SessionMiddleware required for Authlib OAuth state management (CSRF).
+    application.add_middleware(
+        SessionMiddleware,
+        secret_key=get_settings().SECRET_KEY,
+        max_age=600,
+    )
+
+    # Register OAuth providers (Google OIDC + GitHub OAuth2).
+    configure_oauth()
 
     # Include routers
     application.include_router(health_router)
