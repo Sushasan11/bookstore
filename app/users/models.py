@@ -43,7 +43,7 @@ class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     oauth_provider: Mapped[str] = mapped_column(String(50), nullable=False)
     oauth_account_id: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
