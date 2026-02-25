@@ -78,8 +78,19 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    """Handle Pydantic RequestValidationError — keeps 422 format, adds code field."""
+    """Handle Pydantic RequestValidationError — keeps 422 format, adds code field.
+
+    Pydantic error dicts may contain non-serializable objects (e.g. ValueError
+    in ctx.error). Convert them to strings to avoid JSON serialization failures.
+    """
+    errors = []
+    for err in exc.errors():
+        err = dict(err)
+        ctx = err.get("ctx")
+        if isinstance(ctx, dict):
+            err["ctx"] = {k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v for k, v in ctx.items()}
+        errors.append(err)
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "code": "VALIDATION_ERROR"},
+        content={"detail": errors, "code": "VALIDATION_ERROR"},
     )

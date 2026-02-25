@@ -70,13 +70,13 @@ def decode_access_token(token: str) -> dict:
             status_code=401,
             detail="Access token has expired",
             code="AUTH_TOKEN_EXPIRED",
-        )
+        ) from None
     except InvalidTokenError:
         raise AppError(
             status_code=401,
             detail="Invalid access token",
             code="AUTH_TOKEN_INVALID",
-        )
+        ) from None
 
 
 def generate_refresh_token() -> str:
