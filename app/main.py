@@ -20,6 +20,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.health import router as health_router
+from app.users.router import router as auth_router
 
 
 def create_app() -> FastAPI:
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     application.include_router(health_router)
+    application.include_router(auth_router)
 
     return application
 
