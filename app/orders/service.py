@@ -80,9 +80,13 @@ class OrderService:
         order = await self.order_repo.create_order(user_id, cart.items, book_map)
 
         # Step 7: Clear cart items (cart row itself is preserved)
-        for item in cart.items:
+        # Snapshot items list before deletion to avoid iterating a mutating collection
+        items_to_delete = list(cart.items)
+        for item in items_to_delete:
             await self.cart_repo.session.delete(item)
         await self.cart_repo.session.flush()
+        # Expire the cart so subsequent reads reload items from DB, not the identity map
+        self.cart_repo.session.expire(cart)
 
         return order
 
