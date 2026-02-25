@@ -137,12 +137,11 @@ Plans:
   3. Concurrent checkouts for the same book do not result in negative stock (race condition safety verified)
   4. A user can GET `/orders` to view their complete order history with line items and prices at time of purchase
   5. An admin can GET `/admin/orders` to view all orders placed by all users
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Orders domain — `orders` and `order_items` table migrations with `unit_price` snapshot field, Order and OrderItem models
-- [ ] 07-02: Checkout endpoint — POST `/orders/checkout` with single-transaction `SELECT FOR UPDATE` on book stock rows (locked in ascending ID order to prevent deadlocks), mock payment confirmation, cart clear
-- [ ] 07-03: Order history endpoints — GET `/orders` (user's orders), GET `/orders/{id}` (order detail), GET `/admin/orders` (admin all orders)
+- [ ] 07-01-PLAN.md — Full orders vertical slice: Order/OrderItem models, migration, schemas, repository (SELECT FOR UPDATE stock locking), MockPaymentService, OrderService checkout orchestration, all 4 endpoints (POST /orders/checkout, GET /orders, GET /orders/{id}, GET /admin/orders)
+- [ ] 07-02-PLAN.md — Orders integration tests (TDD): tests/test_orders.py with 13+ cases covering COMM-03 (checkout, empty cart, insufficient stock, payment failure, concurrency), COMM-04 (response structure, price snapshot), COMM-05 (order history, user isolation), ENGM-06 (admin orders, access control)
 
 ### Phase 8: Wishlist
 **Goal**: An authenticated user can maintain a personal wishlist of books they want to remember but are not ready to purchase
@@ -189,6 +188,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 4. Catalog | 3/3 | Complete | 2026-02-25 |
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
 | 6. Cart | 2/2 | Complete | 2026-02-25 |
-| 7. Orders | 0/3 | Not started | - |
+| 7. Orders | 0/2 | Not started | - |
 | 8. Wishlist | 0/2 | Not started | - |
 | 9. Pre-Booking | 0/3 | Not started | - |
