@@ -5,15 +5,18 @@ from decimal import Decimal
 
 from sqlalchemy import (
     CheckConstraint,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
     Text,
     func,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -39,6 +42,7 @@ class Book(Base):
     __table_args__ = (
         CheckConstraint("stock_quantity >= 0", name="ck_books_stock_non_negative"),
         CheckConstraint("price > 0", name="ck_books_price_positive"),
+        Index("ix_books_search_vector", "search_vector", postgresql_using="gin"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -63,6 +67,16 @@ class Book(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "setweight(to_tsvector('simple', coalesce(title, '')), 'A') || "
+            "setweight(to_tsvector('simple', coalesce(author, '')), 'B')",
+            persisted=True,
+        ),
+        nullable=True,
+        deferred=True,
     )
 
     genre: Mapped["Genre | None"] = relationship(back_populates="books")

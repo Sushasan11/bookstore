@@ -36,6 +36,18 @@ def get_url() -> str:
     return settings.DATABASE_URL
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """Exclude FTS GIN index from autogenerate detection (Alembic bug #1390).
+
+    Alembic repeatedly detects expression-based GIN indexes as changed due to
+    PostgreSQL normalizing the stored expression differently from what Alembic writes.
+    Excluding this index prevents spurious migrations after initial creation.
+    """
+    if type_ == "index" and name == "ix_books_search_vector":
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -55,6 +67,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -66,6 +79,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
