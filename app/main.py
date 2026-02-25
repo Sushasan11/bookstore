@@ -7,6 +7,7 @@ Creates and configures the FastAPI application instance with:
 Usage:
     uvicorn app.main:app --reload
 """
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -37,7 +38,9 @@ def create_app() -> FastAPI:
     # Most specific (AppError) first, most generic (Exception) last.
     application.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
-    application.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(
+        RequestValidationError, validation_exception_handler
+    )  # type: ignore[arg-type]
     application.add_exception_handler(Exception, generic_exception_handler)
 
     # Include routers

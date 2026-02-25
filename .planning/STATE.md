@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 1 of 9 (Infrastructure)
-Plan: 2 of 4 in current phase
-Status: In Progress
-Last activity: 2026-02-25 — Plan 01-02 complete: Async SQLAlchemy engine, session factory, DeclarativeBase, get_db dependency
+Plan: 4 of 4 in current phase
+Status: Execution Complete — Awaiting Verification
+Last activity: 2026-02-25 — Plan 01-04 complete: pytest async fixtures, 3 smoke tests passing, ruff clean
 
-Progress: [##░░░░░░░░] 6%
+Progress: [####░░░░░░] 11%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 4
 - Average duration: 3.5 min
-- Total execution time: 0.12 hours
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 01 Infrastructure | 2/4 | 7 min | 3.5 min |
+| Phase 01 Infrastructure | 4/4 | 15 min | 3.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min, 2 tasks, 20 files), 01-02 (2 min, 2 tasks, 3 files)
+- Last 5 plans: 01-01 (5 min, 2 tasks, 20 files), 01-02 (2 min, 2 tasks, 3 files), 01-03 (3 min, 2 tasks, 4 files), 01-04 (5 min, 2 tasks, 6 files)
 - Trend: Baseline
 
 *Updated after each plan completion*
@@ -51,6 +51,11 @@ Recent decisions affecting current work:
 - [Phase 01 Plan 02]: expire_on_commit=False is mandatory on AsyncSessionLocal — prevents MissingGreenlet on every route accessing model attributes after commit
 - [Phase 01 Plan 02]: app/db/base.py serves dual purpose: DeclarativeBase AND Alembic model aggregator — all future model imports go here
 - [Phase 01 Plan 02]: DbSession = Annotated[AsyncSession, Depends(get_db)] type alias established for clean route parameter declarations
+- [Phase 01 Plan 03]: env.py reads DATABASE_URL from get_settings() at runtime, not from alembic.ini -- single source of truth for database configuration
+- [Phase 01 Plan 03]: compare_type=True in both offline and online modes ensures Alembic detects column type changes during autogenerate
+- [Phase 01 Plan 03]: All future model imports must go in app/db/base.py for Alembic autogenerate to discover them
+- [Phase 01 Plan 04]: asyncio_default_test_loop_scope = session required alongside asyncio_default_fixture_loop_scope = session — prevents Future attached to different loop with session-scoped async fixtures
+- [Phase 01 Plan 04]: All async test fixtures use pytest_asyncio.fixture; test_engine is session-scoped, db_session and client are function-scoped with rollback
 
 ### Pending Todos
 
@@ -66,5 +71,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 01-02-PLAN.md — ready to execute Plan 01-03 (Alembic async setup)
+Stopped at: All 4 Phase 1 plans executed — awaiting verification and phase completion
 Resume file: None

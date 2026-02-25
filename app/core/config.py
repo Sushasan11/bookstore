@@ -12,10 +12,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/bookstore_dev"
+        "postgresql+asyncpg://postgres:postgres@127.0.0.1:5434/bookstore_dev"
     )
     TEST_DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres:postgres@localhost:5433/bookstore_test"
+        "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/bookstore_test"
     )
 
     # Security

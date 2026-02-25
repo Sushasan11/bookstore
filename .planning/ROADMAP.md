@@ -40,8 +40,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold: Poetry setup, directory structure, pydantic-settings config, FastAPI app factory with exception handlers
 - [x] 01-02-PLAN.md — Database layer: async engine with postgresql+asyncpg://, AsyncSessionLocal with expire_on_commit=False, get_db dependency
-- [ ] 01-03-PLAN.md — Alembic setup: async env.py with correct model import pattern, database connectivity verification
-- [ ] 01-04-PLAN.md — Tooling: pytest-asyncio conftest.py with async fixtures, smoke tests, ruff verification
+- [x] 01-03-PLAN.md — Alembic setup: async env.py with correct model import pattern, database connectivity verification
+- [x] 01-04-PLAN.md — Tooling: pytest-asyncio conftest.py with async fixtures, smoke tests, ruff verification
 
 ### Phase 2: Core Auth
 **Goal**: Users can register and log in with email/password, stay authenticated across sessions with refresh tokens, log out with token revocation, and all endpoints enforce admin vs user roles
@@ -180,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 2/4 | In Progress|  |
+| 1. Infrastructure | 4/4 | Verifying |  |
 | 2. Core Auth | 0/4 | Not started | - |
 | 3. OAuth | 0/2 | Not started | - |
 | 4. Catalog | 0/3 | Not started | - |

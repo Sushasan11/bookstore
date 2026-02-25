@@ -18,7 +18,7 @@ from app.main import app
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5433/bookstore_test",
+    "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/bookstore_test",
 )
 
 
