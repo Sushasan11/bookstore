@@ -21,6 +21,7 @@ from app.core.exceptions import (
     http_exception_handler,
     validation_exception_handler,
 )
+from app.books.router import router as books_router
 from app.core.health import router as health_router
 from app.core.oauth import configure_oauth
 from app.users.router import router as auth_router
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     # Include routers
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(books_router)
 
     return application
 

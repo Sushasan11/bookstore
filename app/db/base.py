@@ -1,16 +1,8 @@
-"""SQLAlchemy DeclarativeBase and model aggregator.
+"""SQLAlchemy DeclarativeBase.
 
-This file has TWO purposes:
-1. Defines the DeclarativeBase that all models inherit from
-2. Imports all models so Alembic can discover them for autogenerate migrations
-
-Without model imports here, Alembic sees an empty metadata and produces
-empty or destructive migrations. Add each model import as its phase is added.
-
-Example imports to add in later phases:
-    # Phase 2 (Users): from app.users.models import User  # noqa: F401
-    # Phase 4 (Books): from app.books.models import Book  # noqa: F401
-    # Phase 5 (Cart):  from app.cart.models import CartItem  # noqa: F401
+Defines the DeclarativeBase that all models inherit from.
+Model imports for Alembic discovery live in alembic/env.py to avoid
+circular imports (models import Base from here).
 """
 
 from sqlalchemy.orm import DeclarativeBase
@@ -18,7 +10,3 @@ from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     pass
-
-
-# Model imports — add each model here as phases are implemented
-from app.users.models import OAuthAccount, RefreshToken, User  # noqa: F401, E402
