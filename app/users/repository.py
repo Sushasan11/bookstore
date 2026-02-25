@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.users.models import RefreshToken, User, UserRole
+from app.users.models import OAuthAccount, RefreshToken, User, UserRole
 
 
 class UserRepository:
@@ -27,6 +27,14 @@ class UserRepository:
         Does NOT accept a role parameter — role elevation is impossible via this method.
         """
         user = User(email=email, hashed_password=hashed_password)
+        self.session.add(user)
+        await self.session.flush()
+        return user
+
+    async def create_oauth_user(self, email: str) -> User:
+        """Create a new user without a password (OAuth-only).
+        Default role=USER, hashed_password=None."""
+        user = User(email=email, hashed_password=None)
         self.session.add(user)
         await self.session.flush()
         return user
@@ -88,3 +96,31 @@ class RefreshTokenRepository:
             )
             .values(revoked_at=datetime.now(UTC))
         )
+
+
+class OAuthAccountRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def get_by_provider_and_id(
+        self, provider: str, provider_account_id: str
+    ) -> OAuthAccount | None:
+        result = await self.session.execute(
+            select(OAuthAccount).where(
+                OAuthAccount.oauth_provider == provider,
+                OAuthAccount.oauth_account_id == provider_account_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def create(
+        self, user_id: int, oauth_provider: str, oauth_account_id: str
+    ) -> OAuthAccount:
+        account = OAuthAccount(
+            user_id=user_id,
+            oauth_provider=oauth_provider,
+            oauth_account_id=oauth_account_id,
+        )
+        self.session.add(account)
+        await self.session.flush()
+        return account

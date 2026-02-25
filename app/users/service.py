@@ -9,7 +9,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.users.repository import RefreshTokenRepository, UserRepository
+from app.users.repository import OAuthAccountRepository, RefreshTokenRepository, UserRepository
 
 # Pre-compute at module load for timing-safe login.
 # Even when user not found, we run verify_password against DUMMY_HASH
@@ -23,9 +23,11 @@ class AuthService:
         self,
         user_repo: UserRepository,
         rt_repo: RefreshTokenRepository,
+        oauth_repo: OAuthAccountRepository | None = None,
     ) -> None:
         self.user_repo = user_repo
         self.rt_repo = rt_repo
+        self.oauth_repo = oauth_repo
 
     async def register(self, email: str, password: str) -> tuple[str, str]:
         """Register a new user. Returns (access_token, refresh_token)."""
@@ -59,6 +61,13 @@ class AuthService:
                 status_code=401,
                 detail="Invalid email or password",
                 code="AUTH_INVALID_CREDENTIALS",
+            )
+
+        if user.hashed_password is None:
+            raise AppError(
+                status_code=400,
+                detail="This account uses social login. Please log in with Google or GitHub.",
+                code="AUTH_OAUTH_ONLY_ACCOUNT",
             )
 
         if not await verify_password(password, user.hashed_password):
@@ -118,3 +127,47 @@ class AuthService:
         if rt is None or rt.is_revoked:
             return
         await self.rt_repo.revoke(refresh_token)
+
+    async def oauth_login(
+        self, provider: str, provider_user_id: str, email: str
+    ) -> tuple[str, str]:
+        """Authenticate via OAuth. Links to existing account if email matches.
+        Returns (access_token, refresh_token)."""
+        if self.oauth_repo is None:
+            raise AppError(
+                status_code=500,
+                detail="OAuth not configured",
+                code="AUTH_OAUTH_NOT_CONFIGURED",
+            )
+
+        # 1. Check if this OAuth identity already exists
+        oauth_account = await self.oauth_repo.get_by_provider_and_id(
+            provider, provider_user_id
+        )
+        if oauth_account:
+            user = await self.user_repo.get_by_id(oauth_account.user_id)
+        else:
+            # 2. Check if email matches existing user
+            user = await self.user_repo.get_by_email(email)
+            if not user:
+                # 3. Create new user (no password -- OAuth-only)
+                user = await self.user_repo.create_oauth_user(email=email)
+            # 4. Link OAuth identity to user
+            await self.oauth_repo.create(
+                user_id=user.id,
+                oauth_provider=provider,
+                oauth_account_id=provider_user_id,
+            )
+
+        if user is None or not user.is_active:
+            raise AppError(
+                status_code=401,
+                detail="User not found or inactive",
+                code="AUTH_USER_INACTIVE",
+            )
+
+        # 5. Issue same JWT token pair as email/password login
+        access_token = create_access_token(user.id, user.role.value)
+        raw_rt = generate_refresh_token()
+        await self.rt_repo.create(raw_rt, user.id)
+        return access_token, raw_rt
