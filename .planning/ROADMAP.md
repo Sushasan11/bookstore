@@ -188,7 +188,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 3. OAuth | 3/3 | Complete | 2026-02-25 |
 | 4. Catalog | 3/3 | Complete | 2026-02-25 |
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
-| 6. Cart | 0/2 | Planned | - |
+| 6. Cart | 1/2 | In Progress|  |
 | 7. Orders | 0/3 | Not started | - |
 | 8. Wishlist | 0/2 | Not started | - |
 | 9. Pre-Booking | 0/3 | Not started | - |

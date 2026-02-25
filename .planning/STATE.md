@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 5 - Discovery (up next)
+**Current focus:** Phase 6 - Cart
 
 ## Current Position
 
-Phase: 5 of 9 (Discovery) -- COMPLETE
-Plan: 3 of 3 in current phase (all plans done)
-Status: Complete — plan 05-03 done, Phase 5 Discovery fully complete
-Last activity: 2026-02-25 — Plan 05-03 complete (Discovery integration tests: 23 tests covering DISC-01 through DISC-04 — pagination, sort, FTS search, genre/author filters, book detail in_stock)
+Phase: 6 of 9 (Cart) -- IN PROGRESS
+Plan: 1 of 2 in current phase (plan 06-01 done)
+Status: In progress — plan 06-01 done, plan 06-02 (cart integration tests) next
+Last activity: 2026-02-25 — Plan 06-01 complete (cart vertical slice: Cart/CartItem models, migration b2c3d4e5f6a7, repository with ON CONFLICT get-or-create, service with stock/ownership validation, 4 REST endpoints)
 
 Progress: [█████████░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: ~3 min
 - Total execution time: ~0.6 hours
 
@@ -32,9 +32,10 @@ Progress: [█████████░] 90%
 | Phase 03 OAuth | 3/3 | ~15 min | ~5 min |
 | Phase 04 Catalog | 3/3 | ~25 min | ~8 min |
 | Phase 05 Discovery | 3/3 | ~55 min | ~18 min |
+| Phase 06 Cart | 1/2 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (5 min), 04-01 (10 min), 04-02 (5 min), 04-03 (10 min)
+- Last 5 plans: 04-02 (5 min), 04-03 (10 min), 05-01, 05-02, 05-03 (~18 min avg), 06-01 (6 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -106,6 +107,11 @@ Recent decisions affecting current work:
 - [Phase 05 Plan 02]: _build_tsquery strips non-word/non-hyphen chars to prevent tsquery injection; :* suffix enables prefix matching
 - [Phase 05 Plan 03]: test_list_books_sort_created_at uses set membership (not strict ID ordering) — created_at timestamps may be identical in fast test runs making strict order flaky
 - [Phase 05 Plan 03]: 23 integration tests cover DISC-01 (pagination+sort), DISC-02 (FTS search), DISC-03 (genre/author filters), DISC-04 (book detail in_stock)
+- [Phase 06 Plan 01]: pg INSERT ON CONFLICT DO NOTHING for CartRepository.get_or_create — race-condition-safe one-cart-per-user without SELECT then INSERT gap
+- [Phase 06 Plan 01]: Virtual empty cart on GET — CartService.get_cart returns CartResponse(items=[]) when no DB row exists, does not create DB row on read
+- [Phase 06 Plan 01]: session.refresh(item, ["book"]) after add flush — loads book relationship for CartItemResponse without extra selectinload on insert path
+- [Phase 06 Plan 01]: TYPE_CHECKING guard for Book import in cart/models.py — avoids circular import while keeping Mapped[Book] annotation for type checkers
+- [Phase 06 Plan 01]: int(current_user["sub"]) cast in every route handler — JWT sub is always string, must cast to int for user_id comparisons
 
 ### Pending Todos
 
@@ -115,9 +121,8 @@ None yet.
 
 - [Phase 7]: Multi-item checkout deadlock prevention pattern (ascending ID lock order vs. SKIP LOCKED with retry) should be confirmed during Phase 7 planning
 - [Phase 9]: Stock update to pre-booking notification coupling placement (BookService calling PreBookRepository directly vs. domain events) must be decided before Phase 9 to avoid circular imports
-- [Infrastructure]: Bash tool non-functional in this session (Windows temp path issue: D--Python-claude-test double-dash). All file changes for 05-01 and 05-02 are complete but test suite run and git commits require manual execution or a new session where Bash tool works.
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 05-03-PLAN.md (Phase 5 Discovery plan 03: 23 integration tests in tests/test_discovery.py covering DISC-01 through DISC-04; file changes complete, git commits pending due to Bash tool issue — see SUMMARY for manual commit instructions)
+Stopped at: Completed 06-01-PLAN.md (Phase 6 Cart plan 01: full cart vertical slice — Cart/CartItem models, migration b2c3d4e5f6a7, CartRepository with ON CONFLICT get-or-create, CartService with stock/ownership validation, 4 REST endpoints registered in app)
