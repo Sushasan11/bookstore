@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-02-25T19:17:29.011Z"
+progress:
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 24
+  completed_plans: 24
+---
+
 # Project State
 
 ## Project Reference
@@ -10,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 8 of 9 (Wishlist) -- Complete
-Plan: 1 of 1 in current phase (all done)
-Status: Phase 8 complete — 1 of 1 plans done (08-01: wishlist vertical slice)
-Last activity: 2026-02-26 — Plan 08-01 complete (wishlist model, migration, repo, service, router; 108/108 tests pass)
+Plan: 2 of 2 in current phase (all done)
+Status: Phase 8 complete — 2 of 2 plans done (08-01: wishlist vertical slice, 08-02: integration tests)
+Last activity: 2026-02-26 — Plan 08-02 complete (13 wishlist integration tests; 121/121 tests pass)
 
 Progress: [██████████] 100%
 
@@ -44,6 +57,7 @@ Progress: [██████████] 100%
 | Phase 02-core-auth P02 | 10 | 2 tasks | 2 files |
 | Phase 02-core-auth P05 | 3 | 1 tasks | 1 files |
 | Phase 08-wishlist P01 | 5 | 2 tasks | 8 files |
+| Phase 08-wishlist P02 | 6 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -136,6 +150,7 @@ Recent decisions affecting current work:
 - [Phase 02-core-auth]: Inline APIRouter in RBAC tests — adds ephemeral protected routes to app for testing CurrentUser/AdminUser dependencies without modifying production code
 - [Phase 08-wishlist]: WishlistItem.book_id uses CASCADE on delete (not SET NULL like OrderItem) — wishlist item is meaningless without its book
 - [Phase 08-wishlist]: DELETE /wishlist/{book_id} uses book_id as path param (natural key) — avoids exposing internal item IDs; no quantity column — a book is either on the wishlist or not
+- [Phase 08-wishlist]: get_all_for_user adds id DESC secondary tiebreaker — added_at timestamps are identical on fast inserts; without id DESC the ORDER BY is non-deterministic
 
 ### Pending Todos
 
@@ -149,4 +164,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 08-01-PLAN.md (Phase 8 Wishlist plan 01: wishlist vertical slice — WishlistItem model, migration, repo, service, router; 108/108 tests pass)
+Stopped at: Completed 08-02-PLAN.md (Phase 8 Wishlist plan 02: wishlist integration tests — 13 tests covering ENGM-01 and ENGM-02; 121/121 tests pass)

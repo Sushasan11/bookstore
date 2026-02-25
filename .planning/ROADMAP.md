@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Discovery** - Public catalog browse with pagination, full-text search, filtering, and book detail
 - [ ] **Phase 6: Cart** - DB-persisted shopping cart with per-user enforcement and stock validation
 - [x] **Phase 7: Orders** - Checkout with mock payment and race-condition-safe stock decrement, order history for users and admin (completed 2026-02-25)
-- [ ] **Phase 8: Wishlist** - Personal wishlist for saving books outside the cart
+- [x] **Phase 8: Wishlist** - Personal wishlist for saving books outside the cart (completed 2026-02-25)
 - [ ] **Phase 9: Pre-Booking** - Reservation system for out-of-stock books with in-app notification when stock arrives
 
 ## Phase Details
@@ -189,5 +189,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 5. Discovery | 3/3 | Complete | 2026-02-25 |
 | 6. Cart | 2/2 | Complete | 2026-02-25 |
 | 7. Orders | 2/2 | Complete   | 2026-02-25 |
-| 8. Wishlist | 1/2 | In Progress|  |
+| 8. Wishlist | 2/2 | Complete   | 2026-02-25 |
 | 9. Pre-Booking | 0/3 | Not started | - |
