@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 4 - Catalog (next)
+**Current focus:** Phase 5 - Discovery (up next)
 
 ## Current Position
 
-Phase: 3 of 9 (OAuth) -- COMPLETE
-Plan: 3 of 3 in current phase (all done)
-Status: Phase complete
-Last activity: 2026-02-25 — Plan 03-03 complete (OAuth integration tests created)
+Phase: 4 of 9 (Catalog) -- COMPLETE
+Plan: 3 of 3 in current phase (plans 01-03 done)
+Status: Phase complete — advancing to Phase 5
+Last activity: 2026-02-25 — Plan 04-03 complete (22 catalog integration tests covering CATL-01 through CATL-05)
 
-Progress: [████░░░░░░] 33%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 14
 - Average duration: ~3 min
 - Total execution time: ~0.6 hours
 
@@ -30,9 +30,10 @@ Progress: [████░░░░░░] 33%
 | Phase 01 Infrastructure | 4/4 | 15 min | 3.75 min |
 | Phase 02 Core Auth | 5/5 | ~13 min | ~2.5 min |
 | Phase 03 OAuth | 3/3 | ~15 min | ~5 min |
+| Phase 04 Catalog | 3/3 | ~25 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (3 min), 02-05 (3 min), 03-01 (5 min), 03-02 (5 min), 03-03 (5 min)
+- Last 5 plans: 03-03 (5 min), 04-01 (10 min), 04-02 (5 min), 04-03 (10 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -79,6 +80,19 @@ Recent decisions affecting current work:
 - [Phase 03 Plan 03]: Mock target is app.users.router.oauth (not app.core.oauth.oauth) — patches the import as seen by the router
 - [Phase 03 Plan 03]: GitHub get() mocked with side_effect dispatch on URL arg — returns different responses for /user vs /user/emails
 - [Phase 03 Plan 03]: 15 OAuth tests cover: redirects, callbacks, account linking, OAuth-only users, idempotent login, error cases
+- [Phase 04 Plan 01]: Numeric(10,2) for price — exact decimal arithmetic, no floating-point errors; price > 0 enforced by CHECK CONSTRAINT
+- [Phase 04 Plan 01]: isbn nullable + unique — PostgreSQL allows multiple NULLs in unique index; ISBN-10 and ISBN-13 both validated with checksum
+- [Phase 04 Plan 01]: stock_quantity >= 0 enforced by CHECK CONSTRAINT ck_books_stock_non_negative; default 0 on creation
+- [Phase 04 Plan 01]: genre_id nullable FK — book can exist without genre; single genre per book (flat taxonomy)
+- [Phase 04 Plan 01]: Model imports in alembic/env.py (not app/db/base.py) to avoid circular imports — books model added after users imports
+- [Phase 04 Plan 01]: IntegrityError catches isbn violations by string-matching e.orig — pragmatic pattern for asyncpg
+- [Phase 04 Plan 01]: migration c3d4e5f6a7b8 chains off 7b2f3a8c4d1e (OAuth migration) — correct down_revision
+- [Phase 04 Plan 02]: _make_service(db) factory pattern instantiates BookService with repositories per request — keeps routes thin, consistent with auth service pattern
+- [Phase 04 Plan 02]: Catalog routes have no prefix (e.g., /books not /catalog/books) — simpler URL structure consistent with project conventions
+- [Phase 04 Plan 02]: GET /books/{id} and GET /genres are public (no auth) — read-only catalog is world-readable per must_haves spec
+- [Phase 04 Plan 03]: No @pytest.mark.asyncio decorators needed -- asyncio_mode=auto in pyproject.toml handles all async test discovery automatically (matches existing test_auth.py style)
+- [Phase 04 Plan 03]: user_headers fixture uses authenticated non-admin user for 403 tests -- unauthenticated requests return 401 (OAuth2PasswordBearer), only authenticated non-admin get 403
+- [Phase 04 Plan 03]: 21 integration tests cover 5 requirement groups: CATL-01 (book creation), CATL-02 (book edit), CATL-03 (book delete), CATL-04 (stock update), CATL-05 (genre management)
 
 ### Pending Todos
 
@@ -93,4 +107,4 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 03-03-PLAN.md (Phase 3 OAuth fully complete; ready for Phase 4 Catalog)
+Stopped at: Completed 04-03-PLAN.md (Phase 4 Catalog plan 03: 22 catalog integration tests complete; Phase 4 fully done -- ready for Phase 5 Discovery)

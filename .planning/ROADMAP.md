@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure** - Async FastAPI app with PostgreSQL, Alembic, pydantic-settings, and all tooling configured correctly before any feature work begins
 - [x] **Phase 2: Core Auth** - Email/password registration and login with JWT access + refresh tokens, token revocation, and role-based access control
 - [x] **Phase 3: OAuth** - Google and GitHub OAuth login integrated into the existing auth layer
-- [ ] **Phase 4: Catalog** - Admin CRUD for books and genre taxonomy with stock quantity tracking
+- [x] **Phase 4: Catalog** - Admin CRUD for books and genre taxonomy with stock quantity tracking
 - [ ] **Phase 5: Discovery** - Public catalog browse with pagination, full-text search, filtering, and book detail
 - [ ] **Phase 6: Cart** - DB-persisted shopping cart with per-user enforcement and stock validation
 - [ ] **Phase 7: Orders** - Checkout with mock payment and race-condition-safe stock decrement, order history for users and admin
@@ -88,12 +88,12 @@ Plans:
   3. An admin can DELETE `/books/{id}` and the book is no longer retrievable
   4. An admin can PATCH `/books/{id}/stock` to set stock quantity and the updated quantity is reflected immediately
   5. An admin can POST to `/genres` to add a genre and GET `/genres` to list all genres
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Books domain — `books` and `genres` table migrations, Book and Genre models with `stock_quantity` field and `CHECK CONSTRAINT (stock_quantity >= 0)`
-- [ ] 04-02: Admin book endpoints — POST/PUT/DELETE `/books`, BookRepository, BookService with `require_admin` guard
-- [ ] 04-03: Stock and genre management — PATCH `/books/{id}/stock`, POST/GET `/genres`, GenreRepository
+- [x] 04-01-PLAN.md — Books domain: Genre + Book SQLAlchemy models, Alembic migration (genres then books with CHECK CONSTRAINTs), Pydantic schemas with ISBN-10/13 checksum validation, GenreRepository + BookRepository, BookService with 404/409 handling
+- [x] 04-02-PLAN.md — Catalog endpoints: POST/GET/PUT/DELETE /books + PATCH /books/{id}/stock + POST/GET /genres wired into FastAPI app with AdminUser guard
+- [x] 04-03-PLAN.md — Catalog integration tests (TDD): tests/test_catalog.py covering all 5 requirements with 20+ test cases (happy path + error paths + admin enforcement)
 
 ### Phase 5: Discovery
 **Goal**: Any visitor can browse the book catalog with pagination and sorting, search by title, author, or genre using full-text search, filter by genre or author, and view a book's full details including current stock status
@@ -185,7 +185,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 1. Infrastructure | 4/4 | Complete | 2026-02-25 |
 | 2. Core Auth | 5/5 | Complete | 2026-02-25 |
 | 3. OAuth | 3/3 | Complete | 2026-02-25 |
-| 4. Catalog | 0/3 | Not started | - |
+| 4. Catalog | 3/3 | Complete | 2026-02-25 |
 | 5. Discovery | 0/2 | Not started | - |
 | 6. Cart | 0/2 | Not started | - |
 | 7. Orders | 0/3 | Not started | - |
