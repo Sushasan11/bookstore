@@ -9,7 +9,11 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.users.repository import OAuthAccountRepository, RefreshTokenRepository, UserRepository
+from app.users.repository import (
+    OAuthAccountRepository,
+    RefreshTokenRepository,
+    UserRepository,
+)
 
 # Pre-compute at module load for timing-safe login.
 # Even when user not found, we run verify_password against DUMMY_HASH

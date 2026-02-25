@@ -7,7 +7,11 @@ from starlette.requests import Request
 from app.core.deps import DbSession
 from app.core.exceptions import AppError
 from app.core.oauth import oauth
-from app.users.repository import OAuthAccountRepository, RefreshTokenRepository, UserRepository
+from app.users.repository import (
+    OAuthAccountRepository,
+    RefreshTokenRepository,
+    UserRepository,
+)
 from app.users.schemas import LoginRequest, RefreshRequest, TokenResponse, UserCreate
 from app.users.service import AuthService
 
@@ -80,7 +84,7 @@ async def google_callback(request: Request, db: DbSession) -> TokenResponse:
             status_code=401,
             detail=f"Google authentication failed: {e.description}",
             code="AUTH_OAUTH_FAILED",
-        )
+        ) from e
 
     userinfo = token.get("userinfo")
     if not userinfo or not userinfo.get("email"):
@@ -132,7 +136,7 @@ async def github_callback(request: Request, db: DbSession) -> TokenResponse:
             status_code=401,
             detail=f"GitHub authentication failed: {e.description}",
             code="AUTH_OAUTH_FAILED",
-        )
+        ) from e
 
     # Fetch user profile
     resp = await oauth.github.get("user", token=token)
