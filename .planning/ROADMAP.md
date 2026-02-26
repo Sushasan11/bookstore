@@ -162,7 +162,7 @@ Plans:
 | 6. Cart | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 7. Orders | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 8. Wishlist | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 9. Email Infrastructure | v1.1 | 0/2 | Not started | - |
+| 9. Email Infrastructure | 1/2 | In Progress|  | - |
 | 10. Admin User Management | v1.1 | 0/? | Not started | - |
 | 11. Pre-booking | v1.1 | 0/? | Not started | - |
 | 12. Email Notifications Wiring | v1.1 | 0/? | Not started | - |

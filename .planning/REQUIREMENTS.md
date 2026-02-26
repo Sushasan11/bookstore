@@ -1,73 +1,62 @@
 # Requirements: BookStore
 
-**Defined:** 2026-02-25
+**Defined:** 2026-02-26
 **Core Value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
 
-## v1 Requirements
+## v1.1 Requirements
 
-Requirements for initial release. Each maps to roadmap phases.
+Requirements for milestone v1.1: Pre-booking, Notifications & Admin. Each maps to roadmap phases.
 
-### Authentication
+### Pre-booking
 
-- [x] **AUTH-01**: User can sign up with email and password
-- [x] **AUTH-02**: User can log in and receive JWT access + refresh tokens
-- [x] **AUTH-03**: User can refresh expired access token using refresh token
-- [x] **AUTH-04**: User can log out (refresh token revoked)
-- [x] **AUTH-05**: Endpoints enforce role-based access (admin vs user)
-- [x] **AUTH-06**: User can log in with Google or GitHub OAuth
+- [ ] **PRBK-01**: User can reserve (pre-book) an out-of-stock book
+- [ ] **PRBK-02**: User can view their list of pre-booked books
+- [ ] **PRBK-03**: User can cancel a pre-booking
+- [ ] **PRBK-04**: Pre-booking is rejected with 409 when the book is currently in stock
+- [ ] **PRBK-05**: Pre-booking records track status (waiting → notified → cancelled) with notified_at timestamp
+- [ ] **PRBK-06**: When admin restocks a book, all waiting pre-bookers are notified simultaneously (broadcast)
 
-### Catalog
+### Email Notifications
 
-- [x] **CATL-01**: Admin can add a book with title, author, price, ISBN, genre, description, cover image URL, publish date
-- [x] **CATL-02**: Admin can edit book details
-- [x] **CATL-03**: Admin can delete a book
-- [x] **CATL-04**: Admin can update book stock quantity
-- [x] **CATL-05**: Admin can manage genre taxonomy (add/list genres)
+- [x] **EMAL-01**: Email infrastructure exists with async SMTP sending via fastapi-mail
+- [ ] **EMAL-02**: User receives order confirmation email after successful checkout
+- [ ] **EMAL-03**: User receives restock alert email when a pre-booked book is restocked
+- [x] **EMAL-04**: Emails use Jinja2 HTML templates with plain-text fallback
+- [x] **EMAL-05**: Email sending never blocks or delays the API response (BackgroundTasks)
+- [x] **EMAL-06**: Email is only sent after the database transaction commits (no email on rollback)
 
-### Discovery
+### Admin User Management
 
-- [ ] **DISC-01**: User can browse books with pagination and sorting (by title, price, date)
-- [ ] **DISC-02**: User can search books by title, author, or genre (full-text search)
-- [ ] **DISC-03**: User can filter books by genre and/or author
-- [ ] **DISC-04**: User can view book details including stock status
+- [ ] **ADMN-01**: Admin can view a paginated list of all users
+- [ ] **ADMN-02**: Admin can filter user list by role and active status
+- [ ] **ADMN-03**: Admin can deactivate a user account (sets is_active=false, revokes all refresh tokens)
+- [ ] **ADMN-04**: Admin can reactivate a previously deactivated user account
+- [ ] **ADMN-05**: Admin cannot deactivate themselves or other admin users
 
-### Commerce
+## Future Requirements
 
-- [x] **COMM-01**: User can add books to shopping cart
-- [x] **COMM-02**: User can update cart item quantity or remove items
-- [x] **COMM-03**: User can checkout cart with mock payment (creates order, decrements stock)
-- [x] **COMM-04**: User can view order confirmation after checkout
-- [x] **COMM-05**: User can view order history with line items
+Deferred to v2+. Tracked but not in current roadmap.
 
-### Engagement
+### Enhanced Auth
 
-- [x] **ENGM-01**: User can add/remove books from wishlist
-- [x] **ENGM-02**: User can view their wishlist
-- [ ] **ENGM-03**: User can pre-book (reserve) an out-of-stock book
-- [ ] **ENGM-04**: User is notified in-app when a reserved book is back in stock
-- [ ] **ENGM-05**: User can view and cancel their reservations
-- [x] **ENGM-06**: Admin can view all placed orders
+- **EAUTH-01**: JWT invalidation on user deactivation (immediate token revocation)
+- **EAUTH-02**: Welcome email on user registration
 
-## v2 Requirements
+### Advanced Pre-booking
 
-Deferred to future release. Tracked but not in current roadmap.
+- **APRBK-01**: Pre-booking with quantity > 1
+- **APRBK-02**: Auto-add to cart on restock
+- **APRBK-03**: Auto-reserve stock for pre-bookers (FIFO queue fulfillment)
 
-### Notifications
+### Email Analytics
 
-- **NOTF-01**: User receives email notifications for order confirmation
-- **NOTF-02**: User receives email when reserved book is back in stock
-- **NOTF-03**: User can configure notification preferences
+- **EANL-01**: Email delivery confirmation tracking
+- **EANL-02**: Email open/click tracking
 
-### Moderation
+### Admin
 
-- **MODR-01**: Admin can manage users (view, deactivate)
-- **MODR-02**: Admin can manage genres in bulk
-
-### Enhanced Commerce
-
-- **ECOM-01**: Price range filter on catalog
-- **ECOM-02**: Multiple genre filtering (AND/OR)
-- **ECOM-03**: Auto-fulfill reservations (convert to cart item when stock arrives)
+- **AADM-01**: Admin can promote/demote user roles
+- **AADM-02**: Admin can hard-delete users
 
 ## Out of Scope
 
@@ -75,15 +64,12 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Real payment integration (Stripe) | Mock payment sufficient for v1; real integration doubles complexity with PCI scope |
-| Email delivery system | In-app notifications only for v1; email requires SMTP infrastructure |
-| User reviews and ratings | Requires moderation strategy; distracts from core commerce |
-| Social features (reading lists, follows) | Different product model; not a social platform |
-| Recommendation engine | Cold-start problem; needs transaction data first |
-| Guest checkout | Breaks order history, wishlist, pre-booking linkage |
-| Mobile app | API-first; web/API only |
-| Multi-tenant / multiple storefronts | Single bookstore |
-| Advanced search (Elasticsearch) | PostgreSQL full-text search sufficient at this scale |
+| Real payment integration | Mock payment sufficient for v1.1 |
+| Real-time notifications (WebSocket) | Email sufficient for restock alerts |
+| Admin UI / dashboard | API-only; no frontend in scope |
+| Celery / Redis task queue | BackgroundTasks sufficient at v1.1 volume |
+| SMTP provider selection | Ops decision outside milestone scope |
+| Email template visual design system (MJML) | Inline CSS sufficient for transactional emails |
 
 ## Traceability
 
@@ -91,38 +77,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 2 | Done |
-| AUTH-02 | Phase 2 | Done |
-| AUTH-03 | Phase 2 | Done |
-| AUTH-04 | Phase 2 | Done |
-| AUTH-05 | Phase 2 | Done |
-| AUTH-06 | Phase 3 | Done |
-| CATL-01 | Phase 4 | Done |
-| CATL-02 | Phase 4 | Done |
-| CATL-03 | Phase 4 | Done |
-| CATL-04 | Phase 4 | Done |
-| CATL-05 | Phase 4 | Done |
-| DISC-01 | Phase 5 | Pending |
-| DISC-02 | Phase 5 | Pending |
-| DISC-03 | Phase 5 | Pending |
-| DISC-04 | Phase 5 | Pending |
-| COMM-01 | Phase 6 | Complete |
-| COMM-02 | Phase 6 | Complete |
-| COMM-03 | Phase 7 | Complete |
-| COMM-04 | Phase 7 | Complete |
-| COMM-05 | Phase 7 | Complete |
-| ENGM-01 | Phase 8 | Complete |
-| ENGM-02 | Phase 8 | Complete |
-| ENGM-03 | Phase 9 | Pending |
-| ENGM-04 | Phase 9 | Pending |
-| ENGM-05 | Phase 9 | Pending |
-| ENGM-06 | Phase 7 | Complete |
+| EMAL-01 | Phase 9 | Complete |
+| EMAL-04 | Phase 9 | Complete |
+| EMAL-05 | Phase 9 | Complete |
+| EMAL-06 | Phase 9 | Complete |
+| ADMN-01 | Phase 10 | Pending |
+| ADMN-02 | Phase 10 | Pending |
+| ADMN-03 | Phase 10 | Pending |
+| ADMN-04 | Phase 10 | Pending |
+| ADMN-05 | Phase 10 | Pending |
+| PRBK-01 | Phase 11 | Pending |
+| PRBK-02 | Phase 11 | Pending |
+| PRBK-03 | Phase 11 | Pending |
+| PRBK-04 | Phase 11 | Pending |
+| PRBK-05 | Phase 11 | Pending |
+| PRBK-06 | Phase 11 | Pending |
+| EMAL-02 | Phase 12 | Pending |
+| EMAL-03 | Phase 12 | Pending |
 
 **Coverage:**
-- v1 requirements: 26 total
-- Mapped to phases: 26
+- v1.1 requirements: 17 total
+- Mapped to phases: 17
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after Phase 4 completion — CATL-01 through CATL-05 marked Done*
+*Requirements defined: 2026-02-26*
+*Last updated: 2026-02-26 — traceability filled after roadmap creation*
