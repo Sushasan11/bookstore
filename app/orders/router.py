@@ -1,12 +1,14 @@
 """Order HTTP endpoints: POST /orders/checkout, GET /orders, GET /orders/{id}, GET /admin/orders."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, BackgroundTasks, status
 
 from app.cart.repository import CartRepository
 from app.core.deps import ActiveUser, AdminUser, DbSession
+from app.email.service import EmailSvc
 from app.orders.repository import OrderRepository
 from app.orders.schemas import CheckoutRequest, OrderResponse
 from app.orders.service import MockPaymentService, OrderService
+from app.users.repository import UserRepository
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 admin_router = APIRouter(prefix="/admin/orders", tags=["admin"])
@@ -25,7 +27,11 @@ def _make_service(db: DbSession) -> OrderService:
     "/checkout", response_model=OrderResponse, status_code=status.HTTP_201_CREATED
 )
 async def checkout(
-    body: CheckoutRequest, db: DbSession, current_user: ActiveUser
+    body: CheckoutRequest,
+    db: DbSession,
+    current_user: ActiveUser,
+    background_tasks: BackgroundTasks,
+    email_svc: EmailSvc,
 ) -> OrderResponse:
     """Convert the authenticated user's cart into a confirmed order.
 
@@ -36,7 +42,34 @@ async def checkout(
     user_id = int(current_user["sub"])
     service = _make_service(db)
     order = await service.checkout(user_id, body)
-    return OrderResponse.model_validate(order)
+
+    # Build response first — total_price is a computed field on OrderResponse, not on ORM
+    order_response = OrderResponse.model_validate(order)
+
+    # Enqueue confirmation email (post-commit via BackgroundTasks — EMAL-06 safe)
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(user_id)
+    if user:
+        email_svc.enqueue(
+            background_tasks,
+            to=user.email,
+            template_name="order_confirmation.html",
+            subject="Your Bookstore order is confirmed",
+            context={
+                "order_id": order.id,
+                "items": [
+                    {
+                        "title": item.book.title if item.book else "Unknown Book",
+                        "quantity": item.quantity,
+                        "unit_price": f"{item.unit_price:.2f}",
+                    }
+                    for item in order.items
+                ],
+                "total_price": f"{order_response.total_price:.2f}",
+            },
+        )
+
+    return order_response
 
 
 @router.get("", response_model=list[OrderResponse])

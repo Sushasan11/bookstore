@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, BackgroundTasks, Query, status
 
 from app.books.repository import BookRepository, GenreRepository
 from app.books.schemas import (
@@ -17,6 +17,7 @@ from app.books.schemas import (
 )
 from app.books.service import BookService
 from app.core.deps import AdminUser, DbSession
+from app.email.service import EmailSvc
 
 router = APIRouter(tags=["catalog"])
 
@@ -119,13 +120,18 @@ async def delete_book(book_id: int, db: DbSession, admin: AdminUser) -> None:
 
 @router.patch("/books/{book_id}/stock", response_model=BookResponse)
 async def update_stock(
-    book_id: int, body: StockUpdate, db: DbSession, admin: AdminUser
+    book_id: int,
+    body: StockUpdate,
+    db: DbSession,
+    admin: AdminUser,
+    background_tasks: BackgroundTasks,
+    email_svc: EmailSvc,
 ) -> BookResponse:
     """Set absolute stock quantity. Admin only.
 
     When stock transitions from 0 to >0, all waiting pre-bookings are atomically
     notified (status set to 'notified' with notified_at timestamp).
-    Phase 12 wires email dispatch for notified users.
+    Enqueues restock alert emails for all notified users via BackgroundTasks.
 
     quantity >= 0 enforced by Pydantic (ge=0) and DB CHECK CONSTRAINT.
     404 if book not found.
@@ -133,15 +139,27 @@ async def update_stock(
     from app.prebooks.repository import (
         PreBookRepository,  # avoid circular at module level
     )
+    from app.users.repository import UserRepository
 
     service = _make_service(db)
     prebook_repo = PreBookRepository(db)
     book, notified_user_ids = await service.set_stock_and_notify(
         book_id, body.quantity, prebook_repo
     )
-    # Phase 12 wires email here: for uid in notified_user_ids: email_svc.enqueue(...)
-    # notified_user_ids is intentionally captured but not yet used
-    _ = notified_user_ids
+
+    # Enqueue restock alert emails for all notified users (EMAL-03)
+    if notified_user_ids:
+        user_repo = UserRepository(db)
+        email_map = await user_repo.get_emails_by_ids(notified_user_ids)
+        for uid, email_addr in email_map.items():
+            email_svc.enqueue(
+                background_tasks,
+                to=email_addr,
+                template_name="restock_alert.html",
+                subject=f"'{book.title}' is back in stock",
+                context={"book_title": book.title, "book_id": book.id},
+            )
+
     return BookResponse.model_validate(book)
 
 
