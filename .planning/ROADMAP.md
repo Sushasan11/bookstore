@@ -3,156 +3,92 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** - Phases 1-8 (shipped 2026-02-25)
-- 🚧 **v1.1 Pre-booking, Notifications & Admin** - Phases 9-12 (in progress)
+- ✅ **v1.1 Pre-booking, Notifications & Admin** - Phases 9-12 (shipped 2026-02-26)
+- 🚧 **v2.0 Reviews & Ratings** - Phases 13-15 (in progress)
 
 ## Phases
 
 <details>
 <summary>✅ v1.0 MVP (Phases 1-8) — SHIPPED 2026-02-25</summary>
 
-### Phase 1: Infrastructure
-**Goal**: Project scaffolding, async FastAPI + PostgreSQL stack, CI tooling, and Alembic migrations in place.
-**Plans**: 4 plans
-
-Plans:
-- [x] 01-01: Project setup, Poetry, FastAPI skeleton
-- [x] 01-02: PostgreSQL + SQLAlchemy async engine + Alembic
-- [x] 01-03: Health-check endpoint, error handlers, logging
-- [x] 01-04: Test infrastructure (pytest-asyncio, test DB)
-
-### Phase 2: Core Auth
-**Goal**: Users can register, log in with email/password, and authenticate via JWT access + refresh tokens.
-**Plans**: 5 plans
-
-Plans:
-- [x] 02-01: User model + Alembic migration
-- [x] 02-02: Password hashing + registration endpoint
-- [x] 02-03: Login + JWT access token issuance
-- [x] 02-04: Refresh token (opaque, DB-persisted, family revocation)
-- [x] 02-05: Auth integration tests
-
-### Phase 3: OAuth
-**Goal**: Users can sign up and log in via Google and GitHub OAuth flows.
-**Plans**: 3 plans
-
-Plans:
-- [x] 03-01: OAuth provider setup (Authlib, config)
-- [x] 03-02: Google + GitHub callback handlers, OAuthAccount model
-- [x] 03-03: OAuth integration tests
-
-### Phase 4: Catalog
-**Goal**: Admins can manage a full book catalog with genres, stock, and ISBN validation.
-**Plans**: 3 plans
-
-Plans:
-- [x] 04-01: Book + Genre models, migrations, admin CRUD
-- [x] 04-02: Stock management endpoints
-- [x] 04-03: Catalog integration tests
-
-### Phase 5: Discovery
-**Goal**: Users can browse and search books by title, author, or genre with full-text search and pagination.
-**Plans**: 3 plans
-
-Plans:
-- [x] 05-01: Full-text search (PostgreSQL FTS, tsvector)
-- [x] 05-02: Filter + pagination endpoints
-- [x] 05-03: Discovery integration tests
-
-### Phase 6: Cart
-**Goal**: Users can build a shopping cart and complete checkout with race-condition-safe stock decrement.
-**Plans**: 2 plans
-
-Plans:
-- [x] 06-01: Cart model, add/remove/view endpoints
-- [x] 06-02: Checkout with SELECT FOR UPDATE, stock validation
-
-### Phase 7: Orders
-**Goal**: Users can view their order history with price-at-purchase snapshots; admins can manage all orders.
-**Plans**: 2 plans
-
-Plans:
-- [x] 07-01: Order + OrderItem models, checkout → order creation
-- [x] 07-02: Order history endpoints + admin order management
-
-### Phase 8: Wishlist
-**Goal**: Users can add and remove books from a personal wishlist and see current price/stock.
-**Plans**: 2 plans
-
-Plans:
-- [x] 08-01: Wishlist model, add/remove/view endpoints
-- [x] 08-02: Wishlist integration tests
+- [x] Phase 1: Infrastructure (4/4 plans) — completed 2026-02-25
+- [x] Phase 2: Core Auth (5/5 plans) — completed 2026-02-25
+- [x] Phase 3: OAuth (3/3 plans) — completed 2026-02-25
+- [x] Phase 4: Catalog (3/3 plans) — completed 2026-02-25
+- [x] Phase 5: Discovery (3/3 plans) — completed 2026-02-25
+- [x] Phase 6: Cart (2/2 plans) — completed 2026-02-25
+- [x] Phase 7: Orders (2/2 plans) — completed 2026-02-25
+- [x] Phase 8: Wishlist (2/2 plans) — completed 2026-02-25
 
 </details>
 
-### 🚧 v1.1 Pre-booking, Notifications & Admin (In Progress)
+<details>
+<summary>✅ v1.1 Pre-booking, Notifications & Admin (Phases 9-12) — SHIPPED 2026-02-26</summary>
 
-**Milestone Goal:** Enable users to reserve out-of-stock books and receive email notifications; give admins user lifecycle management.
+- [x] Phase 9: Email Infrastructure (2/2 plans) — completed 2026-02-26
+- [x] Phase 10: Admin User Management (2/2 plans) — completed 2026-02-26
+- [x] Phase 11: Pre-booking (2/2 plans) — completed 2026-02-26
+- [x] Phase 12: Email Notifications Wiring (2/2 plans) — completed 2026-02-26
+
+</details>
+
+### v2.0 Reviews & Ratings (In Progress)
+
+**Milestone Goal:** Let verified purchasers rate and review books, with admin moderation and aggregate ratings surfaced on book detail.
+
+- [ ] **Phase 13: Review Data Layer** - Review model, migration, and repository (with verified-purchase query)
+- [ ] **Phase 14: Review CRUD Endpoints** - All review endpoints with auth, verified-purchase gate, and admin moderation
+- [ ] **Phase 15: Book Detail Aggregates** - Average rating and review count on book detail response
 
 ## Phase Details
 
-### Phase 9: Email Infrastructure
-**Goal**: A tested, reusable email service exists that sends async HTML emails via BackgroundTasks, never blocking the API and never sending before a DB commit.
-**Depends on**: Phase 8 (v1.0 complete)
-**Requirements**: EMAL-01, EMAL-04, EMAL-05, EMAL-06
+### Phase 13: Review Data Layer
+**Goal**: The reviews table exists in PostgreSQL with correct constraints, and all data-access operations are available through a repository
+**Depends on**: Phase 12 (existing codebase foundation)
+**Requirements**: REVW-05, VPRC-01
 **Success Criteria** (what must be TRUE):
-  1. An email can be triggered from any router endpoint via FastAPI BackgroundTasks without delaying the HTTP response
-  2. Emails render with Jinja2 HTML templates and include a plain-text fallback
-  3. No real SMTP connection is made during tests (MAIL_SUPPRESS_SEND=True suppresses sending transparently)
-  4. Email is never dispatched if the database transaction rolls back — only fired post-commit via BackgroundTasks
-**Plans**: 2 plans
+  1. A migration runs cleanly with `alembic upgrade head` creating the `reviews` table with `UniqueConstraint(user_id, book_id)` and `CheckConstraint(rating >= 1 AND rating <= 5)`
+  2. Attempting to insert two reviews for the same user/book pair raises a database-level integrity error (not just an application check)
+  3. `ReviewRepository` exposes create, get, update, delete, paginated list, and aggregate methods that the service layer can call
+  4. `OrderRepository` exposes `has_user_purchased_book(user_id, book_id)` returning `True` only for users with a confirmed order containing that book
+  5. The `Review` model is registered in `app/db/base.py` and `pytest tests/test_health.py` passes without `UndefinedTableError`
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 09-01: Core email infrastructure — fastapi-mail, Settings, EmailService, base.html template
-- [ ] 09-02: Email unit + integration tests — template rendering, BackgroundTasks pipeline, post-commit safety
+- [ ] 13-01-PLAN.md — Review model, Alembic migration, and ReviewRepository (wave 1)
+- [ ] 13-02-PLAN.md — OrderRepository purchase-check method and integration tests (wave 2)
 
-### Phase 10: Admin User Management
-**Goal**: Admins can view, filter, deactivate, and reactivate user accounts; deactivated users lose the ability to obtain new access tokens immediately.
-**Depends on**: Phase 9
-**Requirements**: ADMN-01, ADMN-02, ADMN-03, ADMN-04, ADMN-05
+### Phase 14: Review CRUD Endpoints
+**Goal**: Users can submit, view, edit, and delete reviews through the API, with verified-purchase enforcement and admin moderation working correctly
+**Depends on**: Phase 13
+**Requirements**: REVW-01, REVW-02, REVW-03, REVW-04, VPRC-02, ADMR-01
 **Success Criteria** (what must be TRUE):
-  1. Admin can retrieve a paginated list of all users, optionally filtered by role and/or active status
-  2. Admin can deactivate a user: the user's is_active flag is set to false and all their refresh tokens are revoked simultaneously
-  3. Admin can reactivate a previously deactivated user so they can log in again
-  4. Attempting to deactivate an admin account (including one's own) is rejected with an appropriate error
-**Plans**: 2 plans
-
-Plans:
-- [ ] 10-01-PLAN.md — Admin module, repository extensions, is_active enforcement, and router registration
-- [ ] 10-02-PLAN.md — Admin user management integration tests
-
-### Phase 11: Pre-booking
-**Goal**: Users can reserve out-of-stock books, view and cancel their reservations, and all waiting pre-bookers are notified (status updated) when admin restocks the book.
-**Depends on**: Phase 10
-**Requirements**: PRBK-01, PRBK-02, PRBK-03, PRBK-04, PRBK-05, PRBK-06
-**Success Criteria** (what must be TRUE):
-  1. User can pre-book an out-of-stock book; a second attempt for the same book is rejected as a duplicate
-  2. Pre-booking is rejected with 409 when the book has stock_quantity > 0
-  3. User can view all their pre-bookings showing current status (waiting, notified, cancelled) and notified_at timestamp
-  4. User can cancel a pre-booking; the record is soft-deleted (status set to cancelled)
-  5. When admin updates a book's stock from 0 to > 0, all pre-bookings with status "waiting" transition atomically to "notified" with a notified_at timestamp
-**Plans**: 2 plans
-
-Plans:
-- [x] 11-01: PreBooking model, repository, service, router, and BookService restock notification extension
-- [ ] 11-02: Pre-booking integration tests (all PRBK requirements)
-
-### Phase 12: Email Notifications Wiring
-**Goal**: Order confirmation emails fire after successful checkout and restock alert emails fire when a book is restocked, both as post-commit background tasks using the Phase 9 infrastructure.
-**Depends on**: Phase 11
-**Requirements**: EMAL-02, EMAL-03
-**Success Criteria** (what must be TRUE):
-  1. After a successful checkout, the user receives an order confirmation email containing the order ID, line items, and total
-  2. When a book is restocked, every user with a waiting pre-booking receives a restock alert email for that book
-  3. No email is sent if checkout fails or the transaction rolls back
-  4. Email dispatch does not delay the HTTP response on either the checkout or stock-update endpoint
+  1. A user who completed an order containing a book can submit a 1-5 star rating with optional text, and receives 201; a user without a qualifying purchase receives 403
+  2. Submitting a second review for the same book returns 409 — duplicate is rejected at both application and database level
+  3. A user can update their own review's rating and/or text via PATCH and see the changes reflected in subsequent GET requests
+  4. A user can delete their own review; attempting to delete another user's review returns 403
+  5. An admin can delete any review regardless of who submitted it; the review response includes a `verified_purchase: true/false` flag
+  6. `GET /books/{book_id}/reviews` returns paginated reviews sorted by `created_at DESC` with 179 existing tests still passing
 **Plans**: TBD
 
 Plans:
-- [ ] 12-01: TBD
+- [ ] 14-01: ReviewService and router — create and list endpoints
+- [ ] 14-02: Edit, delete, and admin moderation endpoints with full test coverage
+
+### Phase 15: Book Detail Aggregates
+**Goal**: Book detail responses include a live average rating and review count reflecting the current state of the reviews table
+**Depends on**: Phase 14
+**Requirements**: AGGR-01, AGGR-02
+**Success Criteria** (what must be TRUE):
+  1. `GET /books/{id}` returns `avg_rating` rounded to one decimal place (e.g., `4.3`) and `review_count` as an integer
+  2. When no reviews exist for a book, `avg_rating` is `null` and `review_count` is `0` — the endpoint does not error
+  3. After a review is submitted, the next `GET /books/{id}` call reflects the updated aggregate without any manual cache invalidation
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: BookDetailResponse schema update and aggregate integration
 
 ## Progress
-
-**Execution Order:** Phases execute in numeric order: 9 → 10 → 11 → 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -164,7 +100,10 @@ Plans:
 | 6. Cart | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 7. Orders | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 8. Wishlist | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 9. Email Infrastructure | 2/2 | Complete   | 2026-02-26 | - |
-| 10. Admin User Management | 2/2 | Complete    | 2026-02-26 | - |
-| 11. Pre-booking | 2/2 | Complete    | 2026-02-26 | - |
-| 12. Email Notifications Wiring | 2/2 | Complete   | 2026-02-26 | - |
+| 9. Email Infrastructure | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 13. Review Data Layer | 1/2 | In Progress|  | - |
+| 14. Review CRUD Endpoints | v2.0 | 0/2 | Not started | - |
+| 15. Book Detail Aggregates | v2.0 | 0/1 | Not started | - |
