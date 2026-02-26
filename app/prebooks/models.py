@@ -41,7 +41,7 @@ class PreBooking(Base):
         ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True
     )
     status: Mapped[PreBookStatus] = mapped_column(
-        SAEnum(PreBookStatus, name="prebookstatus"),
+        SAEnum(PreBookStatus, name="prebookstatus", values_callable=lambda e: [v.value for v in e]),
         nullable=False,
         default=PreBookStatus.WAITING,
     )
