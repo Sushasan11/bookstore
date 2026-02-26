@@ -11,6 +11,7 @@ from app.cart.models import Cart, CartItem  # noqa: F401
 from app.core.config import get_settings
 from app.db.base import Base
 from app.orders.models import Order, OrderItem  # noqa: F401
+from app.prebooks.models import PreBooking  # noqa: F401
 from app.users.models import OAuthAccount, RefreshToken, User  # noqa: F401
 from app.wishlist.models import WishlistItem  # noqa: F401
 
