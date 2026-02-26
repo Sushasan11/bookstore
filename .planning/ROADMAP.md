@@ -114,10 +114,11 @@ Plans:
   2. Admin can deactivate a user: the user's is_active flag is set to false and all their refresh tokens are revoked simultaneously
   3. Admin can reactivate a previously deactivated user so they can log in again
   4. Attempting to deactivate an admin account (including one's own) is rejected with an appropriate error
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md — Admin module, repository extensions, is_active enforcement, and router registration
+- [ ] 10-02-PLAN.md — Admin user management integration tests
 
 ### Phase 11: Pre-booking
 **Goal**: Users can reserve out-of-stock books, view and cancel their reservations, and all waiting pre-bookers are notified (status updated) when admin restocks the book.
@@ -163,6 +164,6 @@ Plans:
 | 7. Orders | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 8. Wishlist | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 9. Email Infrastructure | 2/2 | Complete   | 2026-02-26 | - |
-| 10. Admin User Management | v1.1 | 0/? | Not started | - |
+| 10. Admin User Management | v1.1 | 0/2 | Not started | - |
 | 11. Pre-booking | v1.1 | 0/? | Not started | - |
 | 12. Email Notifications Wiring | v1.1 | 0/? | Not started | - |
