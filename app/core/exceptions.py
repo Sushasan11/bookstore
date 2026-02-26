@@ -51,6 +51,32 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content=body)
 
 
+class DuplicateReviewError(Exception):
+    """Raised when a user tries to submit a second review for the same book.
+
+    Carries existing_review_id so the 409 response can include it,
+    enabling frontends to redirect to the edit flow.
+    """
+
+    def __init__(self, existing_review_id: int) -> None:
+        self.existing_review_id = existing_review_id
+        super().__init__(f"Duplicate review, existing review ID: {existing_review_id}")
+
+
+async def duplicate_review_handler(
+    request: Request, exc: DuplicateReviewError
+) -> JSONResponse:
+    """Handle DuplicateReviewError - returns 409 with existing_review_id."""
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": "You have already reviewed this book",
+            "code": "DUPLICATE_REVIEW",
+            "existing_review_id": exc.existing_review_id,
+        },
+    )
+
+
 async def http_exception_handler(
     request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
