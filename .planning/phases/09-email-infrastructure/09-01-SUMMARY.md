@@ -88,7 +88,7 @@ Each task was committed atomically:
 1. **Task 1: Install fastapi-mail and add MAIL_* settings to config** - `e6f5723` (feat)
 2. **Task 2: Create EmailService class and base.html template** - `5cfdf37` (feat)
 
-**Plan metadata:** _(to be added after STATE.md update commit)_
+**Plan metadata:** `c4edeeb` (docs: complete email infrastructure core plan)
 
 ## Files Created/Modified
 - `app/email/__init__.py` - Package init (empty)
