@@ -6,7 +6,7 @@ from app.books.repository import BookRepository
 from app.cart.repository import CartItemRepository, CartRepository
 from app.cart.schemas import CartItemAdd, CartItemResponse, CartItemUpdate, CartResponse
 from app.cart.service import CartService
-from app.core.deps import CurrentUser, DbSession
+from app.core.deps import ActiveUser, DbSession
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -21,7 +21,7 @@ def _make_service(db: DbSession) -> CartService:
 
 
 @router.get("", response_model=CartResponse)
-async def get_cart(db: DbSession, current_user: CurrentUser) -> CartResponse:
+async def get_cart(db: DbSession, current_user: ActiveUser) -> CartResponse:
     """Return the authenticated user's cart.
 
     Returns empty items list (not 404) when the user has no cart yet.
@@ -35,7 +35,7 @@ async def get_cart(db: DbSession, current_user: CurrentUser) -> CartResponse:
     "/items", response_model=CartItemResponse, status_code=status.HTTP_201_CREATED
 )
 async def add_cart_item(
-    body: CartItemAdd, db: DbSession, current_user: CurrentUser
+    body: CartItemAdd, db: DbSession, current_user: ActiveUser
 ) -> CartItemResponse:
     """Add a book to the user's cart.
 
@@ -51,7 +51,7 @@ async def add_cart_item(
 
 @router.put("/items/{item_id}", response_model=CartItemResponse)
 async def update_cart_item(
-    item_id: int, body: CartItemUpdate, db: DbSession, current_user: CurrentUser
+    item_id: int, body: CartItemUpdate, db: DbSession, current_user: ActiveUser
 ) -> CartItemResponse:
     """Update the quantity of a cart item.
 
@@ -66,7 +66,7 @@ async def update_cart_item(
 
 @router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_cart_item(
-    item_id: int, db: DbSession, current_user: CurrentUser
+    item_id: int, db: DbSession, current_user: ActiveUser
 ) -> None:
     """Remove an item from the user's cart.
 

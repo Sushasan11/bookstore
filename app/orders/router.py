@@ -3,7 +3,7 @@
 from fastapi import APIRouter, status
 
 from app.cart.repository import CartRepository
-from app.core.deps import AdminUser, CurrentUser, DbSession
+from app.core.deps import ActiveUser, AdminUser, DbSession
 from app.orders.repository import OrderRepository
 from app.orders.schemas import CheckoutRequest, OrderResponse
 from app.orders.service import MockPaymentService, OrderService
@@ -25,7 +25,7 @@ def _make_service(db: DbSession) -> OrderService:
     "/checkout", response_model=OrderResponse, status_code=status.HTTP_201_CREATED
 )
 async def checkout(
-    body: CheckoutRequest, db: DbSession, current_user: CurrentUser
+    body: CheckoutRequest, db: DbSession, current_user: ActiveUser
 ) -> OrderResponse:
     """Convert the authenticated user's cart into a confirmed order.
 
@@ -40,7 +40,7 @@ async def checkout(
 
 
 @router.get("", response_model=list[OrderResponse])
-async def list_orders(db: DbSession, current_user: CurrentUser) -> list[OrderResponse]:
+async def list_orders(db: DbSession, current_user: ActiveUser) -> list[OrderResponse]:
     """Return the authenticated user's order history with line items."""
     user_id = int(current_user["sub"])
     service = _make_service(db)
@@ -50,7 +50,7 @@ async def list_orders(db: DbSession, current_user: CurrentUser) -> list[OrderRes
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
-    order_id: int, db: DbSession, current_user: CurrentUser
+    order_id: int, db: DbSession, current_user: ActiveUser
 ) -> OrderResponse:
     """Return a specific order owned by the authenticated user.
 

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, status
 
 from app.books.repository import BookRepository
-from app.core.deps import CurrentUser, DbSession
+from app.core.deps import ActiveUser, DbSession
 from app.wishlist.repository import WishlistRepository
 from app.wishlist.schemas import WishlistAdd, WishlistItemResponse, WishlistResponse
 from app.wishlist.service import WishlistService
@@ -23,7 +23,7 @@ def _make_service(db: DbSession) -> WishlistService:
     "", response_model=WishlistItemResponse, status_code=status.HTTP_201_CREATED
 )
 async def add_to_wishlist(
-    body: WishlistAdd, db: DbSession, current_user: CurrentUser
+    body: WishlistAdd, db: DbSession, current_user: ActiveUser
 ) -> WishlistItemResponse:
     """Add a book to the authenticated user's wishlist.
 
@@ -37,7 +37,7 @@ async def add_to_wishlist(
 
 
 @router.get("", response_model=WishlistResponse)
-async def get_wishlist(db: DbSession, current_user: CurrentUser) -> WishlistResponse:
+async def get_wishlist(db: DbSession, current_user: ActiveUser) -> WishlistResponse:
     """Return the authenticated user's wishlist with current book price and stock."""
     user_id = int(current_user["sub"])
     service = _make_service(db)
@@ -49,7 +49,7 @@ async def get_wishlist(db: DbSession, current_user: CurrentUser) -> WishlistResp
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_from_wishlist(
-    book_id: int, db: DbSession, current_user: CurrentUser
+    book_id: int, db: DbSession, current_user: ActiveUser
 ) -> None:
     """Remove a book from the authenticated user's wishlist.
 
