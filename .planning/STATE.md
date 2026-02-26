@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 14 of 15 (Review CRUD Endpoints)
-Plan: 1 of 2
+Plan: 2 of 2
 Status: Complete
-Last activity: 2026-02-26 — Completed 14-01 (review schemas, service, router, DuplicateReviewError)
+Last activity: 2026-02-26 — Completed 14-02 (PATCH/DELETE endpoints, ownership enforcement, 33 integration tests)
 
-Progress: [█████░░░░░] 60% (3/5 plans)
+Progress: [██████░░░░] 80% (4/5 plans)
 
 ## Performance Metrics
 
@@ -41,7 +41,7 @@ Progress: [█████░░░░░] 60% (3/5 plans)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 13. Review Data Layer | 2/2 | 8 min | 4 min |
-| 14. Review CRUD Endpoints | 1/2 | 2 min | 2 min |
+| 14. Review CRUD Endpoints | 2/2 | 7 min | 3.5 min |
 | 15. Book Detail Aggregates | 0/1 | — | — |
 
 *Updated after each plan completion*
@@ -93,6 +93,12 @@ From Phase 14-01:
 - DuplicateReviewError handler registered before AppError in main.py — more specific handlers must precede general ones
 - GET /books/{book_id}/reviews and GET /reviews/{review_id} are public — no auth required to read reviews
 
+From Phase 14-02:
+- model_fields_set sentinel pattern: text = body.text if "text" in body.model_fields_set else _UNSET — use for any PATCH endpoint where omitted != null
+- Single DELETE endpoint for user and admin: is_admin = current_user.get("role") == "admin" passed to service; no separate admin endpoint needed
+- Re-fetch after repo.update(): session.refresh() does not re-run selectinload — call get_by_id() again after update() to eager-load relationships
+- Test fixture pattern: separate User ORM fixtures (rev_user) from header fixtures (user_headers) — allows DB-setup fixtures to access user_id without JWT parsing
+
 ### Blockers/Concerns
 
 None.
@@ -104,5 +110,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 14-01-PLAN.md (review schemas, service, router, DuplicateReviewError)
+Stopped at: Completed 14-02-PLAN.md (PATCH/DELETE endpoints, ownership enforcement, 33 integration tests)
 Resume file: None

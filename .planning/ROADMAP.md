@@ -73,7 +73,7 @@ Plans:
 
 Plans:
 - [x] 14-01-PLAN.md — ReviewService, Pydantic schemas, router for create + list endpoints with DuplicateReviewError (wave 1)
-- [ ] 14-02-PLAN.md — Update, delete, admin moderation endpoints with full integration test suite (wave 2)
+- [x] 14-02-PLAN.md — Update, delete, admin moderation endpoints with full integration test suite (wave 2)
 
 ### Phase 15: Book Detail Aggregates
 **Goal**: Book detail responses include a live average rating and review count reflecting the current state of the reviews table
@@ -105,5 +105,5 @@ Plans:
 | 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 13. Review Data Layer | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
-| 14. Review CRUD Endpoints | v2.0 | 1/2 | In Progress | - |
+| 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 0/1 | Not started | - |
