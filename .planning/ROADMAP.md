@@ -6,6 +6,7 @@
 - ✅ **v1.1 Pre-booking, Notifications & Admin** - Phases 9-12 (shipped 2026-02-26)
 - ✅ **v2.0 Reviews & Ratings** - Phases 13-15 (shipped 2026-02-27)
 - 🚧 **v2.1 Admin Dashboard & Analytics** - Phases 16-18 (in progress)
+- 📋 **v3.0 Frontend (Next.js + TypeScript)** - Phases TBD (planned, after backend completes)
 
 ## Phases
 
@@ -62,11 +63,11 @@
   3. Admin can call `GET /admin/analytics/sales/top-books?sort_by=revenue` and receive books ranked by total revenue with title, author, units sold, and revenue per book
   4. Admin can call `GET /admin/analytics/sales/top-books?sort_by=volume` and receive books ranked by units sold — distinct ordering from revenue ranking when the two diverge
   5. Only CONFIRMED orders appear in all analytics; PAYMENT_FAILED orders are silently excluded
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 16-01: AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
-- [ ] 16-02: Top-sellers endpoints and integration tests
+- [ ] 16-01-PLAN.md — AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
+- [ ] 16-02-PLAN.md — Top-books endpoint and integration tests for all sales analytics
 
 ### Phase 17: Inventory Analytics
 **Goal**: Admins can answer "what do I need to restock?" by querying books at or below a configurable stock threshold
