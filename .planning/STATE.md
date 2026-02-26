@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Pre-booking, Notifications & Admin
 status: unknown
-last_updated: "2026-02-26T08:44:47Z"
+last_updated: "2026-02-26T08:54:53.362Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 10 — Admin User Management
+**Current focus:** Phase 11 — Pre-booking
 
 ## Current Position
 
-Phase: 10 of 12 (Admin User Management)
-Plan: 2 of 2 in current phase — COMPLETE
+Phase: 11 of 12 (Pre-booking)
+Plan: 1 of 2 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 10-02 Admin user management tests (21 integration tests covering ADMN-01 through ADMN-05) complete
+Last activity: 2026-02-26 — 11-01 Pre-booking data layer and API (PreBooking model, migration, repository, service, 3 endpoints, BookService restock notification) complete
 
-Progress: [█████████░░░░░░░░░░░] 52% (v1.0 complete — 8/12 phases done; Phase 10 fully complete)
+Progress: [██████████░░░░░░░░░░] 57% (v1.0 complete — 8/12 phases done; Phase 10 fully complete; Phase 11 plan 1/2 done)
 
 ## Accumulated Context
 
@@ -70,6 +70,12 @@ From Phase 10 plan 02:
 - [Phase 10-02]: Self-deactivation test creates its own admin fixture inline to prevent test ordering dependencies on shared fixtures
 - [Phase 10-02]: Test emails use unique prefixes per test class/case to avoid cross-test DB contamination within session-scoped engine
 
+From Phase 11 plan 01:
+- [Phase 11-01]: Partial unique index on (user_id, book_id) WHERE status='waiting' enforces one active pre-booking per book per user at DB level; allows re-reservation after cancellation
+- [Phase 11-01]: notify_waiting_by_book uses bulk UPDATE with RETURNING clause — single atomic query transitions all waiting pre-bookings and returns user_ids for Phase 12 email dispatch
+- [Phase 11-01]: PreBookRepository imported locally inside update_stock function body to avoid circular import (same pattern as get_active_user/UserRepository in deps.py)
+- [Phase 11-01]: 0-to-positive transition check (old_qty == 0 and quantity > 0) prevents spurious re-notifications on subsequent quantity adjustments
+
 ### Blockers/Concerns
 
 - [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
@@ -81,5 +87,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 10-02-PLAN.md complete — Admin user management integration tests (21 tests, all ADMN requirements proven). Phase 10 fully complete. Next: Phase 11 or Phase 12
+Stopped at: 11-01-PLAN.md complete — Pre-booking data layer and API (3 tasks, 7 files created, BookService restock notification). Phase 11 plan 1/2 done. Next: 11-02 (pre-booking integration tests)
 Resume file: None
