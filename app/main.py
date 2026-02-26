@@ -28,6 +28,7 @@ from app.core.health import router as health_router
 from app.core.oauth import configure_oauth
 from app.orders.router import admin_router as orders_admin_router
 from app.orders.router import router as orders_router
+from app.prebooks.router import router as prebooks_router
 from app.users.router import router as auth_router
 from app.wishlist.router import router as wishlist_router
 
@@ -71,6 +72,7 @@ def create_app() -> FastAPI:
     application.include_router(orders_router)
     application.include_router(orders_admin_router)
     application.include_router(wishlist_router)
+    application.include_router(prebooks_router)
     application.include_router(admin_users_router)
 
     return application
