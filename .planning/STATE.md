@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Pre-booking, Notifications & Admin
 status: unknown
-last_updated: "2026-02-26T08:54:53.362Z"
+last_updated: "2026-02-26T11:28:11Z"
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 11 of 12 (Pre-booking)
-Plan: 1 of 2 in current phase — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 11-01 Pre-booking data layer and API (PreBooking model, migration, repository, service, 3 endpoints, BookService restock notification) complete
+Last activity: 2026-02-26 — 11-02 Pre-booking integration tests (18 tests covering all PRBK-01 through PRBK-06 requirements) complete. Phase 11 DONE.
 
-Progress: [██████████░░░░░░░░░░] 57% (v1.0 complete — 8/12 phases done; Phase 10 fully complete; Phase 11 plan 1/2 done)
+Progress: [████████████░░░░░░░░] 63% (v1.0 complete — 8/12 phases done; Phase 11 fully complete; Next: Phase 12)
 
 ## Accumulated Context
 
@@ -76,6 +76,11 @@ From Phase 11 plan 01:
 - [Phase 11-01]: PreBookRepository imported locally inside update_stock function body to avoid circular import (same pattern as get_active_user/UserRepository in deps.py)
 - [Phase 11-01]: 0-to-positive transition check (old_qty == 0 and quantity > 0) prevents spurious re-notifications on subsequent quantity adjustments
 
+From Phase 11 plan 02:
+- [Phase 11-02]: SAEnum with StrEnum requires values_callable=lambda e: [v.value for v in e] — SQLAlchemy defaults to enum member names (uppercase) but Alembic migration creates lowercase values; model must match migration
+- [Phase 11-02]: BookCreate schema has no stock_quantity field — in_stock_book fixture must POST book then PATCH /books/{id}/stock to set stock > 0
+- [Phase 11-02]: Ordering assertions on created_at use set membership not positional — server_default=func.now() at millisecond granularity produces identical timestamps in fast sequential inserts
+
 ### Blockers/Concerns
 
 - [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
@@ -87,5 +92,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 11-01-PLAN.md complete — Pre-booking data layer and API (3 tasks, 7 files created, BookService restock notification). Phase 11 plan 1/2 done. Next: 11-02 (pre-booking integration tests)
+Stopped at: 11-02-PLAN.md complete — Pre-booking integration tests (2 tasks, 18 tests, 2 files modified). Phase 11 complete. Next: Phase 12 (notifications)
 Resume file: None
