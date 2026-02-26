@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Pre-booking, Notifications & Admin
 status: unknown
-last_updated: "2026-02-26T05:35:40.347Z"
+last_updated: "2026-02-26T08:44:47Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 10 of 12 (Admin User Management)
-Plan: 1 of 1 in current phase — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 10-01 Admin user management (admin /users endpoints, ActiveUser lockout, repo extensions) complete
+Last activity: 2026-02-26 — 10-02 Admin user management tests (21 integration tests covering ADMN-01 through ADMN-05) complete
 
-Progress: [█████████░░░░░░░░░░░] 50% (v1.0 complete — 8/12 phases done; Phases 9-10 plan 01 complete)
+Progress: [█████████░░░░░░░░░░░] 52% (v1.0 complete — 8/12 phases done; Phase 10 fully complete)
 
 ## Accumulated Context
 
@@ -65,6 +65,11 @@ From Phase 10 plan 01:
 - [Phase 10-01]: Admin deactivation is blanket — ANY admin account (self or other) cannot be deactivated; returns 403 ADMN_CANNOT_DEACTIVATE_ADMIN
 - [Phase 10-01]: Deactivation atomically sets is_active=False AND revokes ALL refresh tokens via bulk UPDATE — refresh endpoint also checks is_active so existing tokens are invalidated
 
+From Phase 10 plan 02:
+- [Phase 10-02]: Lockout tests use GET /cart as the access-token probe — cart uses ActiveUser so it enforces is_active on every request
+- [Phase 10-02]: Self-deactivation test creates its own admin fixture inline to prevent test ordering dependencies on shared fixtures
+- [Phase 10-02]: Test emails use unique prefixes per test class/case to avoid cross-test DB contamination within session-scoped engine
+
 ### Blockers/Concerns
 
 - [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
@@ -76,5 +81,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 10-01-PLAN.md complete — Admin user management endpoints, ActiveUser lockout enforcement, repository extensions. Phase 10 plan 01 complete. Next: Phase 10 plan 02 or next phase
+Stopped at: 10-02-PLAN.md complete — Admin user management integration tests (21 tests, all ADMN requirements proven). Phase 10 fully complete. Next: Phase 11 or Phase 12
 Resume file: None
