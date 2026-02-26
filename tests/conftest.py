@@ -4,16 +4,23 @@ Provides three fixtures used by every test module:
   - test_engine: Session-scoped async engine that creates/drops tables once per session
   - db_session: Function-scoped async session that rolls back after each test
   - client: Function-scoped httpx AsyncClient wired to the FastAPI app with DB override
+
+Email fixtures:
+  - mail_config: ConnectionConfig with SUPPRESS_SEND=1 for test email capture
+  - email_service: EmailService instance with suppressed sending for tests
 """
 
 import os
+from pathlib import Path
 
 import pytest_asyncio
+from fastapi_mail import ConnectionConfig, FastMail
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.deps import get_db
 from app.db.base import Base
+from app.email.service import EmailService
 from app.main import app
 
 TEST_DATABASE_URL = os.environ.get(
@@ -74,3 +81,28 @@ async def client(db_session):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def mail_config():
+    """ConnectionConfig with SUPPRESS_SEND=1 for test email capture."""
+    return ConnectionConfig(
+        MAIL_USERNAME="test",
+        MAIL_PASSWORD="test",
+        MAIL_FROM="test@bookstore.com",
+        MAIL_PORT=587,
+        MAIL_SERVER="smtp.test.com",
+        MAIL_FROM_NAME="Bookstore Test",
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+        USE_CREDENTIALS=True,
+        VALIDATE_CERTS=False,
+        SUPPRESS_SEND=1,
+        TEMPLATE_FOLDER=Path(__file__).resolve().parent.parent / "app" / "email" / "templates",
+    )
+
+
+@pytest_asyncio.fixture
+async def email_service(mail_config):
+    """EmailService instance with suppressed sending for tests."""
+    return EmailService(config=mail_config)

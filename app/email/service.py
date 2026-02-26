@@ -62,8 +62,16 @@ class EmailService:
 
     @staticmethod
     def _strip_html(html: str) -> str:
-        """Auto-generate plain-text fallback by stripping HTML tags."""
-        text = re.sub(r'<[^>]+>', '', html)
+        """Auto-generate plain-text fallback by stripping HTML tags.
+
+        Block-level closing tags (</h1>, </p>, </div>, etc.) are replaced with
+        a space before removal so adjacent text nodes are not run together.
+        All remaining tags are then removed and whitespace is collapsed.
+        """
+        # Replace block-level closing tags with a space to separate text nodes
+        text = re.sub(r'</(?:h[1-6]|p|div|li|tr|td|th|section|article|header|footer|main|nav|aside|blockquote|pre)>', ' ', html, flags=re.IGNORECASE)
+        # Remove all remaining tags
+        text = re.sub(r'<[^>]+>', '', text)
         # Collapse whitespace runs into single spaces
         return re.sub(r'\s+', ' ', text).strip()
 
