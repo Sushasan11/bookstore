@@ -3,7 +3,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.users.models import OAuthAccount, RefreshToken, User, UserRole
@@ -44,6 +44,28 @@ class UserRepository:
         await self.session.execute(
             update(User).where(User.id == user_id).values(role=UserRole.ADMIN)
         )
+
+    async def list_paginated(
+        self,
+        *,
+        page: int = 1,
+        per_page: int = 20,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
+    ) -> tuple[list[User], int]:
+        """Return paginated list of users sorted by created_at DESC with optional filters."""
+        stmt = select(User).order_by(User.created_at.desc())
+        if role is not None:
+            stmt = stmt.where(User.role == role)
+        if is_active is not None:
+            stmt = stmt.where(User.is_active == is_active)
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self.session.scalar(count_stmt)
+        offset = (page - 1) * per_page
+        stmt = stmt.limit(per_page).offset(offset)
+        result = await self.session.execute(stmt)
+        users = list(result.scalars().all())
+        return users, total or 0
 
 
 class RefreshTokenRepository:
@@ -96,6 +118,18 @@ class RefreshTokenRepository:
             )
             .values(revoked_at=datetime.now(UTC))
         )
+
+    async def revoke_all_for_user(self, user_id: int) -> int:
+        """Revoke all non-revoked refresh tokens for a user. Returns count of revoked tokens."""
+        result = await self.session.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=datetime.now(UTC))
+        )
+        return result.rowcount
 
 
 class OAuthAccountRepository:

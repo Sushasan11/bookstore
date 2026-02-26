@@ -81,6 +81,13 @@ class AuthService:
                 code="AUTH_INVALID_CREDENTIALS",
             )
 
+        if not user.is_active:
+            raise AppError(
+                status_code=403,
+                detail="Account deactivated. Contact support.",
+                code="AUTH_ACCOUNT_DEACTIVATED",
+            )
+
         access_token = create_access_token(user.id, user.role.value)
         raw_rt = generate_refresh_token()
         await self.rt_repo.create(raw_rt, user.id)
