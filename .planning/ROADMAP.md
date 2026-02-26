@@ -52,7 +52,7 @@
   3. `ReviewRepository` exposes create, get, update, delete, paginated list, and aggregate methods that the service layer can call
   4. `OrderRepository` exposes `has_user_purchased_book(user_id, book_id)` returning `True` only for users with a confirmed order containing that book
   5. The `Review` model is registered in `app/db/base.py` and `pytest tests/test_health.py` passes without `UndefinedTableError`
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 13-01-PLAN.md — Review model, Alembic migration, and ReviewRepository (wave 1)
@@ -69,11 +69,11 @@ Plans:
   4. A user can delete their own review; attempting to delete another user's review returns 403
   5. An admin can delete any review regardless of who submitted it; the review response includes a `verified_purchase: true/false` flag
   6. `GET /books/{book_id}/reviews` returns paginated reviews sorted by `created_at DESC` with 179 existing tests still passing
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: ReviewService and router — create and list endpoints
-- [ ] 14-02: Edit, delete, and admin moderation endpoints with full test coverage
+- [x] 14-01-PLAN.md — ReviewService, Pydantic schemas, router for create + list endpoints with DuplicateReviewError (wave 1)
+- [ ] 14-02-PLAN.md — Update, delete, admin moderation endpoints with full integration test suite (wave 2)
 
 ### Phase 15: Book Detail Aggregates
 **Goal**: Book detail responses include a live average rating and review count reflecting the current state of the reviews table
@@ -104,6 +104,6 @@ Plans:
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
-| 14. Review CRUD Endpoints | v2.0 | 0/2 | Not started | - |
+| 13. Review Data Layer | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
+| 14. Review CRUD Endpoints | v2.0 | 1/2 | In Progress | - |
 | 15. Book Detail Aggregates | v2.0 | 0/1 | Not started | - |

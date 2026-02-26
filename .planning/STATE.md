@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
+milestone: v1.0
 milestone_name: Reviews & Ratings
-status: roadmap_created
-last_updated: "2026-02-26"
+status: unknown
+last_updated: "2026-02-26T14:05:29.186Z"
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 5
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 2
   completed_plans: 2
 ---
 
@@ -18,30 +18,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 13 — Review Data Layer (ready to plan)
+**Current focus:** Phase 14 — Review CRUD Endpoints
 
 ## Current Position
 
-Phase: 13 of 15 (Review Data Layer)
-Plan: 2 of 2
+Phase: 14 of 15 (Review CRUD Endpoints)
+Plan: 1 of 2
 Status: Complete
-Last activity: 2026-02-26 — Completed 13-02 (has_user_purchased_book, 23 integration tests)
+Last activity: 2026-02-26 — Completed 14-01 (review schemas, service, router, DuplicateReviewError)
 
-Progress: [████░░░░░░] 40% (2/5 plans)
+Progress: [█████░░░░░] 60% (3/5 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2 (v2.0)
-- Average duration: 4 min
-- Total execution time: 8 min
+- Total plans completed: 3 (v2.0)
+- Average duration: 3 min
+- Total execution time: 10 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 13. Review Data Layer | 2/2 | 8 min | 4 min |
-| 14. Review CRUD Endpoints | 0/2 | — | — |
+| 14. Review CRUD Endpoints | 1/2 | 2 min | 2 min |
 | 15. Book Detail Aggregates | 0/1 | — | — |
 
 *Updated after each plan completion*
@@ -86,6 +86,13 @@ From Phase 13-02:
 - PAYMENT_FAILED orders explicitly excluded — only OrderStatus.CONFIRMED counts as purchase
 - Purchase check pattern: EXISTS(Order.status==CONFIRMED, OrderItem.book_id==book_id) — reusable for any purchased-item gate
 
+From Phase 14-01:
+- DuplicateReviewError is separate from AppError (not a subclass) — its 409 body has existing_review_id which AppError handler cannot produce
+- _build_review_data() builds plain dict for ReviewResponse.model_validate() — cleaner than from_attributes when ORM field names differ (book.id -> book_id, user.email -> display_name)
+- display_name derived from email.split('@')[0] — User model has no display_name column (avatar_url always None)
+- DuplicateReviewError handler registered before AppError in main.py — more specific handlers must precede general ones
+- GET /books/{book_id}/reviews and GET /reviews/{review_id} are public — no auth required to read reviews
+
 ### Blockers/Concerns
 
 None.
@@ -97,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 13-02-PLAN.md (has_user_purchased_book, 23 integration tests)
+Stopped at: Completed 14-01-PLAN.md (review schemas, service, router, DuplicateReviewError)
 Resume file: None
