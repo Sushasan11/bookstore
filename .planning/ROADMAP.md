@@ -38,7 +38,7 @@
 
 - [x] **Phase 13: Review Data Layer** - Review model, migration, and repository (with verified-purchase query)
 - [x] **Phase 14: Review CRUD Endpoints** - All review endpoints with auth, verified-purchase gate, and admin moderation (completed 2026-02-26)
-- [ ] **Phase 15: Book Detail Aggregates** - Average rating and review count on book detail response
+- [x] **Phase 15: Book Detail Aggregates** - Average rating and review count on book detail response (completed 2026-02-26)
 
 ## Phase Details
 
@@ -83,10 +83,10 @@ Plans:
   1. `GET /books/{id}` returns `avg_rating` rounded to one decimal place (e.g., `4.3`) and `review_count` as an integer
   2. When no reviews exist for a book, `avg_rating` is `null` and `review_count` is `0` — the endpoint does not error
   3. After a review is submitted, the next `GET /books/{id}` call reflects the updated aggregate without any manual cache invalidation
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 15-01: BookDetailResponse schema update and aggregate integration
+- [ ] 15-01-PLAN.md — BookDetailResponse schema extension, get_book handler aggregate wiring, and integration tests (wave 1)
 
 ## Progress
 
@@ -106,4 +106,4 @@ Plans:
 | 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 13. Review Data Layer | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
 | 14. Review CRUD Endpoints | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
-| 15. Book Detail Aggregates | v2.0 | 0/1 | Not started | - |
+| 15. Book Detail Aggregates | 1/1 | Complete   | 2026-02-26 | - |

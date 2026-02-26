@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Reviews & Ratings
 status: unknown
-last_updated: "2026-02-26T16:53:11.918Z"
+last_updated: "2026-02-26T18:29:31.022Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 14 — Review CRUD Endpoints
+**Current focus:** Phase 15 — Book Detail Aggregates (COMPLETE)
 
 ## Current Position
 
-Phase: 14 of 15 (Review CRUD Endpoints)
-Plan: 2 of 2
+Phase: 15 of 15 (Book Detail Aggregates)
+Plan: 1 of 1
 Status: Complete
-Last activity: 2026-02-26 — Completed 14-02 (PATCH/DELETE endpoints, ownership enforcement, 33 integration tests)
+Last activity: 2026-02-27 — Completed 15-01 (avg_rating + review_count on GET /books/{id}, 6 integration tests)
 
-Progress: [██████░░░░] 80% (4/5 plans)
+Progress: [██████████] 100% (5/5 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3 (v2.0)
-- Average duration: 3 min
-- Total execution time: 10 min
+- Total plans completed: 4 (v2.0)
+- Average duration: 4.25 min
+- Total execution time: 17 min
 
 **By Phase:**
 
@@ -42,7 +42,7 @@ Progress: [██████░░░░] 80% (4/5 plans)
 |-------|-------|-------|----------|
 | 13. Review Data Layer | 2/2 | 8 min | 4 min |
 | 14. Review CRUD Endpoints | 2/2 | 7 min | 3.5 min |
-| 15. Book Detail Aggregates | 0/1 | — | — |
+| 15. Book Detail Aggregates | 1/1 | 7 min | 7 min |
 
 *Updated after each plan completion*
 
@@ -98,6 +98,8 @@ From Phase 14-02:
 - Single DELETE endpoint for user and admin: is_admin = current_user.get("role") == "admin" passed to service; no separate admin endpoint needed
 - Re-fetch after repo.update(): session.refresh() does not re-run selectinload — call get_by_id() again after update() to eager-load relationships
 - Test fixture pattern: separate User ORM fixtures (rev_user) from header fixtures (user_headers) — allows DB-setup fixtures to access user_id without JWT parsing
+- [Phase 15-book-detail-aggregates]: Cross-domain aggregate access: ReviewRepository instantiated directly in router handler - avoids circular import through BookService, mirrors Phase 11 pattern
+- [Phase 15-book-detail-aggregates]: Dict-merge pattern for BookDetailResponse: model_validate({**book_attrs, **aggregates}) when ORM object lacks computed fields - prevents ValidationError
 
 ### Blockers/Concerns
 
@@ -109,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Completed 14-02-PLAN.md (PATCH/DELETE endpoints, ownership enforcement, 33 integration tests)
+Last session: 2026-02-27
+Stopped at: Completed 15-01-PLAN.md (book detail aggregates, extend BookDetailResponse, 6 integration tests)
 Resume file: None

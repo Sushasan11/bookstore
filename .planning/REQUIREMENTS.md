@@ -11,8 +11,8 @@ Requirements for reviews & ratings milestone. Each maps to roadmap phases.
 
 - [x] **REVW-01**: User can submit a review (1-5 star rating with optional text) for a book they purchased
 - [x] **REVW-02**: User can view paginated reviews for any book
-- [ ] **REVW-03**: User can edit their own review (update rating and/or text)
-- [ ] **REVW-04**: User can delete their own review
+- [x] **REVW-03**: User can edit their own review (update rating and/or text)
+- [x] **REVW-04**: User can delete their own review
 - [x] **REVW-05**: One review per user per book (duplicate submission returns 409)
 
 ### Verified Purchase
@@ -22,12 +22,12 @@ Requirements for reviews & ratings milestone. Each maps to roadmap phases.
 
 ### Admin Moderation
 
-- [ ] **ADMR-01**: Admin can delete any review regardless of ownership
+- [x] **ADMR-01**: Admin can delete any review regardless of ownership
 
 ### Aggregates
 
-- [ ] **AGGR-01**: Book detail response includes average rating (rounded to 1 decimal)
-- [ ] **AGGR-02**: Book detail response includes total review count
+- [x] **AGGR-01**: Book detail response includes average rating (rounded to 1 decimal)
+- [x] **AGGR-02**: Book detail response includes total review count
 
 ## Future Requirements
 
@@ -58,14 +58,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | REVW-01 | Phase 14 | Complete |
 | REVW-02 | Phase 14 | Complete |
-| REVW-03 | Phase 14 | Pending |
-| REVW-04 | Phase 14 | Pending |
+| REVW-03 | Phase 14 | Complete |
+| REVW-04 | Phase 14 | Complete |
 | REVW-05 | Phase 13 | Complete |
 | VPRC-01 | Phase 13 | Complete |
 | VPRC-02 | Phase 14 | Complete |
-| ADMR-01 | Phase 14 | Pending |
-| AGGR-01 | Phase 15 | Pending |
-| AGGR-02 | Phase 15 | Pending |
+| ADMR-01 | Phase 14 | Complete |
+| AGGR-01 | Phase 15 | Complete |
+| AGGR-02 | Phase 15 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 10 total
