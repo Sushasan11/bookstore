@@ -12,7 +12,7 @@ from app.books.repository import BookRepository
 from app.core.exceptions import AppError, DuplicateReviewError
 from app.orders.repository import OrderRepository
 from app.reviews.models import Review
-from app.reviews.repository import ReviewRepository, _UNSET
+from app.reviews.repository import _UNSET, ReviewRepository
 
 
 class ReviewService:

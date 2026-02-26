@@ -5,8 +5,13 @@ from fastapi import APIRouter, Query, status
 from app.books.repository import BookRepository
 from app.core.deps import ActiveUser, DbSession
 from app.orders.repository import OrderRepository
-from app.reviews.repository import ReviewRepository, _UNSET
-from app.reviews.schemas import ReviewCreate, ReviewListResponse, ReviewResponse, ReviewUpdate
+from app.reviews.repository import _UNSET, ReviewRepository
+from app.reviews.schemas import (
+    ReviewCreate,
+    ReviewListResponse,
+    ReviewResponse,
+    ReviewUpdate,
+)
 from app.reviews.service import ReviewService
 
 router = APIRouter(tags=["reviews"])
