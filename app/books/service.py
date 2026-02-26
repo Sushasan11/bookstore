@@ -1,11 +1,18 @@
 """BookService: business rules for book and genre management."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy.exc import IntegrityError
 
 from app.books.models import Book, Genre
 from app.books.repository import BookRepository, GenreRepository
 from app.books.schemas import BookCreate, BookUpdate
 from app.core.exceptions import AppError
+
+if TYPE_CHECKING:
+    from app.prebooks.repository import PreBookRepository
 
 
 class BookService:
@@ -59,6 +66,29 @@ class BookService:
     async def set_stock(self, book_id: int, quantity: int) -> Book:
         book = await self._get_book_or_404(book_id)
         return await self.book_repo.set_stock(book, quantity)
+
+    async def set_stock_and_notify(
+        self,
+        book_id: int,
+        quantity: int,
+        prebook_repo: PreBookRepository,
+    ) -> tuple[Book, list[int]]:
+        """Set stock and notify waiting pre-bookers if transitioning from 0 to >0.
+
+        Returns (book, notified_user_ids).
+        Caller (router) receives user_ids for background task enqueueing (Phase 12).
+        Notification fires ONLY on 0-to-positive transition — locked decision per STATE.md.
+        Both stock update and notification occur atomically in the same DB transaction.
+        """
+        book = await self._get_book_or_404(book_id)
+        old_qty = book.stock_quantity
+        book = await self.book_repo.set_stock(book, quantity)
+
+        notified_user_ids: list[int] = []
+        if old_qty == 0 and quantity > 0:
+            notified_user_ids = await prebook_repo.notify_waiting_by_book(book_id)
+
+        return book, notified_user_ids
 
     async def create_genre(self, name: str) -> Genre:
         existing = await self.genre_repo.get_by_name(name)

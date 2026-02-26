@@ -123,12 +123,25 @@ async def update_stock(
 ) -> BookResponse:
     """Set absolute stock quantity. Admin only.
 
+    When stock transitions from 0 to >0, all waiting pre-bookings are atomically
+    notified (status set to 'notified' with notified_at timestamp).
+    Phase 12 wires email dispatch for notified users.
+
     quantity >= 0 enforced by Pydantic (ge=0) and DB CHECK CONSTRAINT.
-    Absolute set (not increment/decrement) -- Phase 7 handles stock decrement via SELECT FOR UPDATE.
     404 if book not found.
     """
+    from app.prebooks.repository import (
+        PreBookRepository,  # avoid circular at module level
+    )
+
     service = _make_service(db)
-    book = await service.set_stock(book_id, body.quantity)
+    prebook_repo = PreBookRepository(db)
+    book, notified_user_ids = await service.set_stock_and_notify(
+        book_id, body.quantity, prebook_repo
+    )
+    # Phase 12 wires email here: for uid in notified_user_ids: email_svc.enqueue(...)
+    # notified_user_ids is intentionally captured but not yet used
+    _ = notified_user_ids
     return BookResponse.model_validate(book)
 
 
