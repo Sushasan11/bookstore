@@ -19,9 +19,7 @@ class Cart(Base):
 
     __tablename__ = "carts"
 
-    __table_args__ = (
-        UniqueConstraint("user_id", name="uq_carts_user_id"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", name="uq_carts_user_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
@@ -35,7 +33,7 @@ class Cart(Base):
         nullable=False,
     )
 
-    items: Mapped[list["CartItem"]] = relationship(
+    items: Mapped[list[CartItem]] = relationship(
         back_populates="cart",
         cascade="all, delete-orphan",
     )
@@ -68,5 +66,5 @@ class CartItem(Base):
         nullable=False,
     )
 
-    cart: Mapped["Cart"] = relationship(back_populates="items")
-    book: Mapped["Book"] = relationship()
+    cart: Mapped[Cart] = relationship(back_populates="items")
+    book: Mapped[Book] = relationship()

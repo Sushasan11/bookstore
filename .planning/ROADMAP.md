@@ -4,7 +4,8 @@
 
 - ✅ **v1.0 MVP** - Phases 1-8 (shipped 2026-02-25)
 - ✅ **v1.1 Pre-booking, Notifications & Admin** - Phases 9-12 (shipped 2026-02-26)
-- 🚧 **v2.0 Reviews & Ratings** - Phases 13-15 (in progress)
+- ✅ **v2.0 Reviews & Ratings** - Phases 13-15 (shipped 2026-02-27)
+- 🚧 **v2.1 Admin Dashboard & Analytics** - Phases 16-18 (in progress)
 
 ## Phases
 
@@ -32,61 +33,69 @@
 
 </details>
 
-### v2.0 Reviews & Ratings (In Progress)
+<details>
+<summary>✅ v2.0 Reviews & Ratings (Phases 13-15) — SHIPPED 2026-02-27</summary>
 
-**Milestone Goal:** Let verified purchasers rate and review books, with admin moderation and aggregate ratings surfaced on book detail.
+- [x] Phase 13: Review Data Layer (2/2 plans) — completed 2026-02-26
+- [x] Phase 14: Review CRUD Endpoints (2/2 plans) — completed 2026-02-26
+- [x] Phase 15: Book Detail Aggregates (1/1 plan) — completed 2026-02-27
 
-- [x] **Phase 13: Review Data Layer** - Review model, migration, and repository (with verified-purchase query)
-- [x] **Phase 14: Review CRUD Endpoints** - All review endpoints with auth, verified-purchase gate, and admin moderation (completed 2026-02-26)
-- [x] **Phase 15: Book Detail Aggregates** - Average rating and review count on book detail response (completed 2026-02-26)
+</details>
+
+### 🚧 v2.1 Admin Dashboard & Analytics (In Progress)
+
+**Milestone Goal:** Give admins operational visibility into sales performance, inventory health, and review quality through API endpoints.
+
+- [ ] **Phase 16: Sales Analytics** - Revenue summary with period comparison, top-selling books by revenue and volume
+- [ ] **Phase 17: Inventory Analytics** - Low-stock alerts with configurable threshold
+- [ ] **Phase 18: Review Moderation Dashboard** - Admin review listing with filters and bulk delete
 
 ## Phase Details
 
-### Phase 13: Review Data Layer
-**Goal**: The reviews table exists in PostgreSQL with correct constraints, and all data-access operations are available through a repository
-**Depends on**: Phase 12 (existing codebase foundation)
-**Requirements**: REVW-05, VPRC-01
+### Phase 16: Sales Analytics
+**Goal**: Admins can answer "how is the store performing?" through revenue summary, period-over-period comparison, and top-seller rankings
+**Depends on**: Phase 15 (existing orders/order_items tables, AdminUser dependency)
+**Requirements**: SALES-01, SALES-02, SALES-03, SALES-04
 **Success Criteria** (what must be TRUE):
-  1. A migration runs cleanly with `alembic upgrade head` creating the `reviews` table with `UniqueConstraint(user_id, book_id)` and `CheckConstraint(rating >= 1 AND rating <= 5)`
-  2. Attempting to insert two reviews for the same user/book pair raises a database-level integrity error (not just an application check)
-  3. `ReviewRepository` exposes create, get, update, delete, paginated list, and aggregate methods that the service layer can call
-  4. `OrderRepository` exposes `has_user_purchased_book(user_id, book_id)` returning `True` only for users with a confirmed order containing that book
-  5. The `Review` model is registered in `app/db/base.py` and `pytest tests/test_health.py` passes without `UndefinedTableError`
-**Plans:** 2/2 plans complete
+  1. Admin can call `GET /admin/analytics/sales/summary?period=today` and receive total revenue, order count, and AOV for the requested period
+  2. Admin can call `GET /admin/analytics/sales/summary?period=week` and see a delta percentage comparing current week revenue to the previous week
+  3. Admin can call `GET /admin/analytics/sales/top-books?sort_by=revenue` and receive books ranked by total revenue with title, author, units sold, and revenue per book
+  4. Admin can call `GET /admin/analytics/sales/top-books?sort_by=volume` and receive books ranked by units sold — distinct ordering from revenue ranking when the two diverge
+  5. Only CONFIRMED orders appear in all analytics; PAYMENT_FAILED orders are silently excluded
+**Plans**: TBD
 
 Plans:
-- [x] 13-01-PLAN.md — Review model, Alembic migration, and ReviewRepository (wave 1)
-- [x] 13-02-PLAN.md — OrderRepository purchase-check method and integration tests (wave 2)
+- [ ] 16-01: AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
+- [ ] 16-02: Top-sellers endpoints and integration tests
 
-### Phase 14: Review CRUD Endpoints
-**Goal**: Users can submit, view, edit, and delete reviews through the API, with verified-purchase enforcement and admin moderation working correctly
-**Depends on**: Phase 13
-**Requirements**: REVW-01, REVW-02, REVW-03, REVW-04, VPRC-02, ADMR-01
+### Phase 17: Inventory Analytics
+**Goal**: Admins can answer "what do I need to restock?" by querying books at or below a configurable stock threshold
+**Depends on**: Phase 16 (analytics infrastructure: router, schemas, repository base)
+**Requirements**: INV-01
 **Success Criteria** (what must be TRUE):
-  1. A user who completed an order containing a book can submit a 1-5 star rating with optional text, and receives 201; a user without a qualifying purchase receives 403
-  2. Submitting a second review for the same book returns 409 — duplicate is rejected at both application and database level
-  3. A user can update their own review's rating and/or text via PATCH and see the changes reflected in subsequent GET requests
-  4. A user can delete their own review; attempting to delete another user's review returns 403
-  5. An admin can delete any review regardless of who submitted it; the review response includes a `verified_purchase: true/false` flag
-  6. `GET /books/{book_id}/reviews` returns paginated reviews sorted by `created_at DESC` with 179 existing tests still passing
-**Plans**: 2 plans
+  1. Admin can call `GET /admin/analytics/inventory/low-stock?threshold=10` and receive all books with stock at or below 10, ordered by stock ascending
+  2. The threshold parameter is configurable per request — changing from `threshold=5` to `threshold=20` returns a different, correctly filtered set
+  3. Books with zero stock appear at the top of the low-stock list (ordered by stock ascending)
+**Plans**: TBD
 
 Plans:
-- [x] 14-01-PLAN.md — ReviewService, Pydantic schemas, router for create + list endpoints with DuplicateReviewError (wave 1)
-- [x] 14-02-PLAN.md — Update, delete, admin moderation endpoints with full integration test suite (wave 2)
+- [ ] 17-01: Low-stock endpoint and integration tests
 
-### Phase 15: Book Detail Aggregates
-**Goal**: Book detail responses include a live average rating and review count reflecting the current state of the reviews table
-**Depends on**: Phase 14
-**Requirements**: AGGR-01, AGGR-02
+### Phase 18: Review Moderation Dashboard
+**Goal**: Admins can list, filter, and bulk-delete reviews to maintain review quality across the catalog
+**Depends on**: Phase 15 (Review model, soft-delete convention, ReviewRepository)
+**Requirements**: MOD-01, MOD-02
 **Success Criteria** (what must be TRUE):
-  1. `GET /books/{id}` returns `avg_rating` rounded to one decimal place (e.g., `4.3`) and `review_count` as an integer
-  2. When no reviews exist for a book, `avg_rating` is `null` and `review_count` is `0` — the endpoint does not error
-  3. After a review is submitted, the next `GET /books/{id}` call reflects the updated aggregate without any manual cache invalidation
-**Plans**: 1 plan
+  1. Admin can call `GET /admin/reviews?page=1&per_page=20` and receive a paginated list of all non-deleted reviews with reviewer and book context
+  2. Admin can filter reviews by book, user, or rating range — e.g. `?book_id=5&rating_min=1&rating_max=2` returns only low-rated reviews for that book
+  3. Admin can sort review results by date or rating in ascending or descending order
+  4. Admin can call `DELETE /admin/reviews/bulk` with a list of review IDs and have all matching non-deleted reviews soft-deleted in a single operation
+  5. Soft-deleted reviews do not reappear in subsequent calls to `GET /admin/reviews`
+**Plans**: TBD
 
 Plans:
-- [ ] 15-01-PLAN.md — BookDetailResponse schema extension, get_book handler aggregate wiring, and integration tests (wave 1)
+- [ ] 18-01: AdminReviewResponse schema, list_all_admin() repository method, and admin review list endpoint
+- [ ] 18-02: bulk_delete() repository method, bulk delete endpoint, and integration tests
 
 ## Progress
 
@@ -104,6 +113,9 @@ Plans:
 | 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 13. Review Data Layer | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
-| 14. Review CRUD Endpoints | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
-| 15. Book Detail Aggregates | 1/1 | Complete   | 2026-02-26 | - |
+| 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
+| 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
+| 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
+| 16. Sales Analytics | v2.1 | 0/2 | Not started | - |
+| 17. Inventory Analytics | v2.1 | 0/1 | Not started | - |
+| 18. Review Moderation Dashboard | v2.1 | 0/2 | Not started | - |

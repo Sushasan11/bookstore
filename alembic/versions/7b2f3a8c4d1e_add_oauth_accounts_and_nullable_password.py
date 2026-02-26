@@ -6,16 +6,17 @@ Create Date: 2026-02-25 18:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "7b2f3a8c4d1e"
-down_revision: Union[str, Sequence[str], None] = "451f9697aceb"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "451f9697aceb"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -52,9 +53,7 @@ def upgrade() -> None:
             name="uq_oauth_provider_account",
         ),
     )
-    op.create_index(
-        "ix_oauth_accounts_user_id", "oauth_accounts", ["user_id"]
-    )
+    op.create_index("ix_oauth_accounts_user_id", "oauth_accounts", ["user_id"])
 
 
 def downgrade() -> None:

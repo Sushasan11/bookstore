@@ -1,54 +1,56 @@
 # Requirements: BookStore
 
-**Defined:** 2026-02-26
+**Defined:** 2026-02-27
 **Core Value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
 
-## v2.0 Requirements
+## v2.1 Requirements
 
-Requirements for reviews & ratings milestone. Each maps to roadmap phases.
+Requirements for milestone v2.1: Admin Dashboard & Analytics. Each maps to roadmap phases.
 
-### Review CRUD
+### Sales Analytics
 
-- [x] **REVW-01**: User can submit a review (1-5 star rating with optional text) for a book they purchased
-- [x] **REVW-02**: User can view paginated reviews for any book
-- [x] **REVW-03**: User can edit their own review (update rating and/or text)
-- [x] **REVW-04**: User can delete their own review
-- [x] **REVW-05**: One review per user per book (duplicate submission returns 409)
+- [ ] **SALES-01**: Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month
+- [ ] **SALES-02**: Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary
+- [ ] **SALES-03**: Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue
+- [ ] **SALES-04**: Admin can view top-selling books ranked by volume (units sold) with book title and author
 
-### Verified Purchase
+### Inventory Analytics
 
-- [x] **VPRC-01**: Only users with a completed order containing the book can submit a review
-- [x] **VPRC-02**: Review response includes "verified purchase" indicator
+- [ ] **INV-01**: Admin can query books with stock at or below a configurable threshold, ordered by stock ascending
 
-### Admin Moderation
+### Review Moderation
 
-- [x] **ADMR-01**: Admin can delete any review regardless of ownership
-
-### Aggregates
-
-- [x] **AGGR-01**: Book detail response includes average rating (rounded to 1 decimal)
-- [x] **AGGR-02**: Book detail response includes total review count
+- [ ] **MOD-01**: Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range)
+- [ ] **MOD-02**: Admin can bulk-delete reviews by providing a list of review IDs
 
 ## Future Requirements
 
-### Search Enhancement
+Deferred to future release. Tracked but not in current roadmap.
 
-- **SRCH-01**: User can sort/filter books by average rating in search results
+### Sales Analytics (v2.x)
 
-### Social
+- **SALES-05**: Admin can view AOV trend over time (weekly/monthly buckets)
+- **SALES-06**: Admin can view revenue breakdown by genre
 
-- **SOCL-01**: Helpfulness voting on reviews (upvote/downvote)
-- **SOCL-02**: Sort reviews by helpfulness
+### Inventory Analytics (v2.x)
+
+- **INV-02**: Admin can view stock turnover velocity per book (units sold per period vs current stock)
+- **INV-03**: Admin can view pre-booking demand ranking (most-waited-for out-of-stock books)
 
 ## Out of Scope
 
+Explicitly excluded. Documented to prevent scope creep.
+
 | Feature | Reason |
 |---------|--------|
-| Helpfulness voting | Adds table, deduplication, sort complexity — defer until review volume justifies it |
-| Pre-moderation queue | Reactive admin-delete is the correct pattern; pre-moderation suppresses authentic reviews |
-| Anonymous reviews | FTC 2024 rules prohibit fake reviews; all reviews tied to authenticated users |
-| Review replies/comments | Not a social platform; reviews are standalone |
-| Rating sort in search | Deferred to future — keep v2.0 focused on core review CRUD |
+| Real-time streaming analytics (WebSockets) | Admin analytics are not real-time; REST endpoints with explicit refresh are correct |
+| Materialized views / analytics tables | Live SQL aggregates on indexed columns are fast enough at current volume |
+| Celery / Redis for analytics | Existing constraint; BackgroundTasks sufficient, analytics are synchronous queries |
+| User cohort analysis | BI tool feature, not operational admin panel; requires complex query surface |
+| Revenue forecasting / demand prediction | Insufficient data history; manual judgment with velocity signals is correct |
+| Automated review flagging / AI moderation | External API cost + false-positive management unjustified at current review volume |
+| CSV/PDF export | API-first project; consumers handle formatting; adds file-gen complexity |
+| Pre-moderation review queue | Already rejected in v2.0; reactive admin-delete is correct pattern |
 
 ## Traceability
 
@@ -56,22 +58,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REVW-01 | Phase 14 | Complete |
-| REVW-02 | Phase 14 | Complete |
-| REVW-03 | Phase 14 | Complete |
-| REVW-04 | Phase 14 | Complete |
-| REVW-05 | Phase 13 | Complete |
-| VPRC-01 | Phase 13 | Complete |
-| VPRC-02 | Phase 14 | Complete |
-| ADMR-01 | Phase 14 | Complete |
-| AGGR-01 | Phase 15 | Complete |
-| AGGR-02 | Phase 15 | Complete |
+| SALES-01 | Phase 16 | Pending |
+| SALES-02 | Phase 16 | Pending |
+| SALES-03 | Phase 16 | Pending |
+| SALES-04 | Phase 16 | Pending |
+| INV-01 | Phase 17 | Pending |
+| MOD-01 | Phase 18 | Pending |
+| MOD-02 | Phase 18 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 10 total
-- Mapped to phases: 10
-- Unmapped: 0
+- v2.1 requirements: 7 total
+- Mapped to phases: 7
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after v2.0 roadmap creation*
+*Requirements defined: 2026-02-27*
+*Last updated: 2026-02-27 after roadmap creation (v2.1 phases 16-18)*
