@@ -93,7 +93,7 @@ Each task was committed atomically:
 2. **Task 2: Create admin module and register router** - `3cbd1c9` (feat)
 3. **Task 3: Migrate cart, orders, and wishlist routers from CurrentUser to ActiveUser** - `c905e16` (feat)
 
-**Plan metadata:** (pending final docs commit)
+**Plan metadata:** `a97627c` (docs: complete plan)
 
 ## Files Created/Modified
 
