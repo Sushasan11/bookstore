@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Pre-booking, Notifications & Admin
 status: unknown
-last_updated: "2026-02-26T11:28:11Z"
+last_updated: "2026-02-26T11:36:51.408Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 11 — Pre-booking
+**Current focus:** Phase 12 — Email Notifications Wiring
 
 ## Current Position
 
-Phase: 11 of 12 (Pre-booking)
-Plan: 2 of 2 in current phase — COMPLETE
+Phase: 12 of 12 (Email Notifications Wiring)
+Plan: 1 of 2 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 11-02 Pre-booking integration tests (18 tests covering all PRBK-01 through PRBK-06 requirements) complete. Phase 11 DONE.
+Last activity: 2026-02-26 — 12-01 Email notifications wiring (2 tasks, 5 files; order confirmation and restock alert emails wired into routers) complete.
 
-Progress: [████████████░░░░░░░░] 63% (v1.0 complete — 8/12 phases done; Phase 11 fully complete; Next: Phase 12)
+Progress: [█████████████░░░░░░░] 67% (v1.0 complete — 8/12 phases done; Phase 11 fully complete; Phase 12 plan 1 of 2 complete)
 
 ## Accumulated Context
 
@@ -81,9 +81,16 @@ From Phase 11 plan 02:
 - [Phase 11-02]: BookCreate schema has no stock_quantity field — in_stock_book fixture must POST book then PATCH /books/{id}/stock to set stock > 0
 - [Phase 11-02]: Ordering assertions on created_at use set membership not positional — server_default=func.now() at millisecond granularity produces identical timestamps in fast sequential inserts
 
+From Phase 12 plan 01:
+- [Phase 12-01]: Email enqueue placed AFTER service.checkout()/set_stock_and_notify() — structural guarantee that no email fires on any failure path (EMAL-06 compliance)
+- [Phase 12-01]: JWT payload has only sub+role (no email) — checkout fetches user from DB via UserRepository.get_by_id(user_id) to get recipient email address
+- [Phase 12-01]: UserRepository.get_emails_by_ids() uses single IN query for batch email lookup in update_stock() — avoids N+1 queries for restock alerts
+- [Phase 12-01]: UserRepository imported at module level in orders/router.py; local import inside update_stock() body in books/router.py following PreBookRepository pattern to avoid circular imports
+- [Phase 12-01]: total_price is a Pydantic @computed_field on OrderResponse, not on ORM model — build OrderResponse.model_validate(order) BEFORE constructing email context
+
 ### Blockers/Concerns
 
-- [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
+None.
 
 ### Pending Todos
 
@@ -92,5 +99,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 11-02-PLAN.md complete — Pre-booking integration tests (2 tasks, 18 tests, 2 files modified). Phase 11 complete. Next: Phase 12 (notifications)
+Stopped at: 12-01-PLAN.md complete — Email wiring (2 tasks, 5 files: 2 templates + UserRepository.get_emails_by_ids + checkout email + update_stock email). Phase 12 plan 1 of 2 done. Next: Phase 12-02 (email integration tests)
 Resume file: None

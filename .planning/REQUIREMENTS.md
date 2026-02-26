@@ -9,18 +9,18 @@ Requirements for milestone v1.1: Pre-booking, Notifications & Admin. Each maps t
 
 ### Pre-booking
 
-- [ ] **PRBK-01**: User can reserve (pre-book) an out-of-stock book
-- [ ] **PRBK-02**: User can view their list of pre-booked books
-- [ ] **PRBK-03**: User can cancel a pre-booking
-- [ ] **PRBK-04**: Pre-booking is rejected with 409 when the book is currently in stock
-- [ ] **PRBK-05**: Pre-booking records track status (waiting → notified → cancelled) with notified_at timestamp
-- [ ] **PRBK-06**: When admin restocks a book, all waiting pre-bookers are notified simultaneously (broadcast)
+- [x] **PRBK-01**: User can reserve (pre-book) an out-of-stock book
+- [x] **PRBK-02**: User can view their list of pre-booked books
+- [x] **PRBK-03**: User can cancel a pre-booking
+- [x] **PRBK-04**: Pre-booking is rejected with 409 when the book is currently in stock
+- [x] **PRBK-05**: Pre-booking records track status (waiting → notified → cancelled) with notified_at timestamp
+- [x] **PRBK-06**: When admin restocks a book, all waiting pre-bookers are notified simultaneously (broadcast)
 
 ### Email Notifications
 
 - [x] **EMAL-01**: Email infrastructure exists with async SMTP sending via fastapi-mail
-- [ ] **EMAL-02**: User receives order confirmation email after successful checkout
-- [ ] **EMAL-03**: User receives restock alert email when a pre-booked book is restocked
+- [x] **EMAL-02**: User receives order confirmation email after successful checkout
+- [x] **EMAL-03**: User receives restock alert email when a pre-booked book is restocked
 - [x] **EMAL-04**: Emails use Jinja2 HTML templates with plain-text fallback
 - [x] **EMAL-05**: Email sending never blocks or delays the API response (BackgroundTasks)
 - [x] **EMAL-06**: Email is only sent after the database transaction commits (no email on rollback)
@@ -86,14 +86,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMN-03 | Phase 10 | Complete |
 | ADMN-04 | Phase 10 | Complete |
 | ADMN-05 | Phase 10 | Complete |
-| PRBK-01 | Phase 11 | Pending |
-| PRBK-02 | Phase 11 | Pending |
-| PRBK-03 | Phase 11 | Pending |
-| PRBK-04 | Phase 11 | Pending |
-| PRBK-05 | Phase 11 | Pending |
-| PRBK-06 | Phase 11 | Pending |
-| EMAL-02 | Phase 12 | Pending |
-| EMAL-03 | Phase 12 | Pending |
+| PRBK-01 | Phase 11 | Complete |
+| PRBK-02 | Phase 11 | Complete |
+| PRBK-03 | Phase 11 | Complete |
+| PRBK-04 | Phase 11 | Complete |
+| PRBK-05 | Phase 11 | Complete |
+| PRBK-06 | Phase 11 | Complete |
+| EMAL-02 | Phase 12 | Complete |
+| EMAL-03 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 17 total
