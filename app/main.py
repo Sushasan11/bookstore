@@ -19,7 +19,9 @@ from app.cart.router import router as cart_router
 from app.core.config import get_settings
 from app.core.exceptions import (
     AppError,
+    DuplicateReviewError,
     app_error_handler,
+    duplicate_review_handler,
     generic_exception_handler,
     http_exception_handler,
     validation_exception_handler,
@@ -29,6 +31,7 @@ from app.core.oauth import configure_oauth
 from app.orders.router import admin_router as orders_admin_router
 from app.orders.router import router as orders_router
 from app.prebooks.router import router as prebooks_router
+from app.reviews.router import router as reviews_router
 from app.users.router import router as auth_router
 from app.wishlist.router import router as wishlist_router
 
@@ -46,7 +49,9 @@ def create_app() -> FastAPI:
     )
 
     # Register exception handlers in precedence order:
-    # Most specific (AppError) first, most generic (Exception) last.
+    # Most specific first, most generic (Exception) last.
+    # DuplicateReviewError before AppError — it has a non-standard 409 body with existing_review_id.
+    application.add_exception_handler(DuplicateReviewError, duplicate_review_handler)  # type: ignore[arg-type]
     application.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
     application.add_exception_handler(
@@ -74,6 +79,7 @@ def create_app() -> FastAPI:
     application.include_router(wishlist_router)
     application.include_router(prebooks_router)
     application.include_router(admin_users_router)
+    application.include_router(reviews_router)
 
     return application
 
