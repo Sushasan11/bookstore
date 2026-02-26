@@ -130,10 +130,11 @@ Plans:
   3. User can view all their pre-bookings showing current status (waiting, notified, cancelled) and notified_at timestamp
   4. User can cancel a pre-booking; the record is soft-deleted (status set to cancelled)
   5. When admin updates a book's stock from 0 to > 0, all pre-bookings with status "waiting" transition atomically to "notified" with a notified_at timestamp
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01: PreBooking model, repository, service, router, and BookService restock notification extension
+- [ ] 11-02: Pre-booking integration tests (all PRBK requirements)
 
 ### Phase 12: Email Notifications Wiring
 **Goal**: Order confirmation emails fire after successful checkout and restock alert emails fire when a book is restocked, both as post-commit background tasks using the Phase 9 infrastructure.
@@ -164,6 +165,6 @@ Plans:
 | 7. Orders | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 8. Wishlist | v1.0 | 2/2 | Complete | 2026-02-25 |
 | 9. Email Infrastructure | 2/2 | Complete   | 2026-02-26 | - |
-| 10. Admin User Management | 2/2 | Complete   | 2026-02-26 | - |
-| 11. Pre-booking | v1.1 | 0/? | Not started | - |
+| 10. Admin User Management | 2/2 | Complete    | 2026-02-26 | - |
+| 11. Pre-booking | v1.1 | 0/2 | Not started | - |
 | 12. Email Notifications Wiring | v1.1 | 0/? | Not started | - |
