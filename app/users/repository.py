@@ -21,6 +21,19 @@ class UserRepository:
         result = await self.session.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
+    async def get_emails_by_ids(self, user_ids: list[int]) -> dict[int, str]:
+        """Return {user_id: email} for the given list of user IDs.
+
+        Uses a single IN query regardless of list length.
+        Returns empty dict for empty input.
+        """
+        if not user_ids:
+            return {}
+        result = await self.session.execute(
+            select(User.id, User.email).where(User.id.in_(user_ids))
+        )
+        return {row.id: row.email for row in result}
+
     async def create(self, email: str, hashed_password: str) -> User:
         """Create a new user with default role=USER.
 

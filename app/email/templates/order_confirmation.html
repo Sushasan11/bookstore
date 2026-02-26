@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed — Bookstore{% endblock %}
+{% block content %}
+<h2 style="color: #1a202c;">Your order is confirmed!</h2>
+<p>Order #{{ order_id }}</p>
+<table width="100%" style="border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Book</th>
+      <th style="text-align: right; padding: 8px; border-bottom: 1px solid #e2e8f0;">Qty</th>
+      <th style="text-align: right; padding: 8px; border-bottom: 1px solid #e2e8f0;">Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f4f4f4;">{{ item.title }}</td>
+      <td style="text-align: right; padding: 8px; border-bottom: 1px solid #f4f4f4;">{{ item.quantity }}</td>
+      <td style="text-align: right; padding: 8px; border-bottom: 1px solid #f4f4f4;">${{ item.unit_price }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="text-align: right; font-weight: bold; margin-top: 16px;">Total: ${{ total_price }}</p>
+{% endblock %}
