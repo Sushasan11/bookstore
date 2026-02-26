@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** BookStore API v2.0 — Reviews & Ratings
-**Domain:** E-commerce bookstore backend — adding review system to an existing FastAPI service
-**Researched:** 2026-02-26
+**Project:** BookStore API v2.1 — Admin Dashboard & Analytics
+**Domain:** Admin analytics API with review moderation for an existing FastAPI bookstore backend
+**Researched:** 2026-02-27
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This is a well-scoped v2.0 milestone, not a greenfield project. The existing v1.1 system (9,473 LOC, 179 passing tests) provides all the infrastructure needed: FastAPI, async SQLAlchemy 2.0, PostgreSQL, Pydantic v2, JWT auth with role-based dependencies, and an established module pattern. No new libraries are required. The recommended approach is to follow the existing five-file module pattern (`models → schemas → repository → service → router`) for a new `app/reviews/` module, with minimal targeted modifications to three existing files (`OrderRepository`, `BookDetailResponse`, and the book detail router endpoint). Every feature maps cleanly to existing patterns already in use for cart, wishlist, orders, and pre-booking.
+This is an additive milestone on top of a working v2.0 FastAPI/PostgreSQL/SQLAlchemy 2.0 codebase (12,010 LOC, 240 passing tests, 5-file domain module pattern). The v2.1 scope is three feature groups — sales analytics, inventory analytics, and review moderation dashboard — all read-only, admin-only endpoints querying existing tables. No new database tables, no new infrastructure, and no new frameworks are needed. PostgreSQL's native aggregation functions (`date_trunc`, `SUM`, `COUNT`, `LAG`, window functions) accessed via the already-installed SQLAlchemy 2.0 `func` namespace handle every analytics requirement. The recommended approach is a single new `app/admin/analytics_repository.py` for all cross-domain aggregate SQL, a thin `app/admin/analytics_service.py` for period-comparison orchestration, a new `app/admin/analytics_router.py`, and two new admin-list/bulk-delete methods added to the existing `ReviewRepository`.
 
-The key architectural decisions are: (1) compute `average_rating` and `review_count` live from the `reviews` table at read time via SQL aggregates — not stored denormalized columns on `books`, which would require cache invalidation on every review mutation; (2) enforce the one-review-per-user-per-book rule at both the DB level (`UniqueConstraint`) and service layer for race-condition safety; (3) enforce the verified-purchase gate by joining `order_items` to `orders` and filtering `orders.status = 'confirmed'`, injecting `OrderRepository` into `ReviewService` to avoid circular imports. Cross-domain reads use repository injection (not service injection), consistent with the `BookService`/`PreBookRepository` pattern already in the codebase.
+The recommended phase order is: (1) Sales Analytics — establishes the analytics infrastructure, (2) Inventory Analytics — extends the same infrastructure with additional models, (3) Review Moderation Dashboard — isolated change to the existing `ReviewRepository`. All three phases can deliver independently. The highest-value P1 features (revenue summary with period-over-period, top sellers, AOV, low-stock alerts, admin review listing, bulk review delete) are well-documented patterns with low implementation risk. The anti-features list is equally important: real-time WebSockets, Celery/Redis workers, Pandas/DuckDB, materialized views, and AI review moderation are all explicitly out of scope at this scale.
 
-The primary risks are all technical implementation details, not architectural unknowns. The most impactful pitfall is the verified-purchase query: querying only `orders` (which has no `book_id`) or forgetting the `status = 'confirmed'` filter would allow unverified reviews through. The second critical pitfall is the model registry: adding `app/reviews/models.py` without importing it in `app/db/base.py` causes test suite failures. Both are easily prevented by following the established codebase patterns. All seven critical pitfalls identified have clear prevention strategies requiring no major design changes.
+The primary risks are all silent data quality errors, not crashes: including `PAYMENT_FAILED` orders in revenue calculations, joining `order_items → books` with INNER JOIN (dropping deleted-book revenue), missing `deleted_at IS NULL` on the admin review query, and using `datetime.now()` instead of `datetime.now(timezone.utc)` for period bounds. A secondary risk is the N+1 for bulk review delete — must use a single `UPDATE ... WHERE id IN (...)` statement with `synchronize_session="fetch"`, not a loop over individual `session.delete()` calls. All eight critical pitfalls have clear, tested prevention strategies documented in PITFALLS.md.
 
 ---
 
@@ -19,126 +19,133 @@ The primary risks are all technical implementation details, not architectural un
 
 ### Recommended Stack
 
-The existing locked stack covers every v2.0 requirement without additions. The analysis evaluated and rejected `fastapi-pagination` (inconsistent with existing manual pagination), `sqlalchemy-utils` aggregated attributes (ORM event complexity for a two-line aggregate), `bleach` (JSON API has no XSS risk), and `slowapi` (out of scope). The only non-trivial stack caveat is the PostgreSQL `ROUND` function: two-argument `ROUND(value, places)` requires a `NUMERIC` cast because `func.avg()` returns `DOUBLE PRECISION` by default — `func.round(func.avg(Review.rating).cast(Numeric), 1)` is required. This is documented but not yet exercised in this specific codebase (MEDIUM confidence).
+The existing stack is fully sufficient for v2.1. FastAPI 0.133, SQLAlchemy 2.0.47 (asyncio), asyncpg 0.31, Pydantic v2.12, PostgreSQL (docker-compose), Alembic 1.18, and pytest-asyncio are locked and proven. No new core packages are required. The one optional addition is a manual TTL cache (Python-level `dict` + `time.monotonic()`) at the service layer to avoid re-aggregating expensive queries on every admin page refresh. `cachetools 7.0.1` can be used if preferred, but `asyncache` (the bridge library) must be avoided — it is Python 3.8–3.10 only and incompatible with this project's Python 3.13 target.
 
 **Core technologies:**
-- **FastAPI 0.133.0:** Routing, dependency injection, OpenAPI docs — no change from v1.1
-- **SQLAlchemy 2.0.47 (async):** ORM model, `UniqueConstraint`, `CheckConstraint`, `func.avg()`, `func.count()`, `exists()` subquery for verified-purchase — all standard patterns already in use
-- **Pydantic 2.12.5:** `Field(ge=1, le=5)` for rating validation; `| None` union types for optional fields; `model_config = {"from_attributes": True}` for ORM serialization
-- **PostgreSQL:** Constraint enforcement, indexed FK scans for aggregates, CASCADE delete on reviews when book/user deleted
-- **Alembic 1.18.4:** One new migration: `CREATE TABLE reviews` with `UniqueConstraint`, `CheckConstraint`, indexes on `(book_id)` and `(user_id)`
-- **asyncpg 0.31.0:** Async driver; `IntegrityError` wraps `UniqueViolationError` — must be caught and converted to 409 in the repository
+- **PostgreSQL (existing):** `date_trunc`, `FILTER` clause on aggregates, `SUM`/`COUNT`/`AVG`, `LAG`/`RANK` window functions — all native, no extra tooling
+- **SQLAlchemy 2.0 (existing):** `func.date_trunc()`, `func.sum()`, `func.count()`, `case()`, `over()` for windows, `update().where().in_()` for bulk soft-delete
+- **asyncpg 0.31 (existing):** Passes all SQL constructs through to PostgreSQL; TIMESTAMPTZ columns require timezone-aware Python datetimes
+- **Pydantic v2 (existing):** Response schemas for structured analytics payloads; `Decimal` fields serialize to string by default — must use `float` or `PlainSerializer(float)` for numeric JSON output
+- **Manual TTL dict (no install):** `dict[str, tuple[Any, float]]` + `time.monotonic()` — sufficient for admin-frequency analytics requests; Redis/Celery explicitly out of scope
+
+**What not to use:** Pandas/Polars (full-table pull into Python), DuckDB (duplicate of PostgreSQL), Redis/fastapi-cache2 (out of scope), asyncache (Python 3.10 max), TimescaleDB/InfluxDB (OLAP overkill), Celery (out of scope), SQLModel (schema divergence risk).
 
 ### Expected Features
 
-**Must have (table stakes — all P1 for v2.0):**
-- Submit star rating (1-5) with optional text body — `POST /books/{book_id}/reviews`
-- One review per user per book — DB `UniqueConstraint` + service 409 response
-- Verified-purchase gate — `orders` + `order_items` EXISTS check, `confirmed` status only
-- Edit own review — `PATCH /reviews/{review_id}`, owner-only, updates `updated_at`
-- Delete own review — `DELETE /books/{book_id}/reviews/{review_id}`, owner-only
-- Admin delete any review — same endpoint, role check in service layer (`actor_role == "admin"`)
-- Average rating on book detail — `avg_rating: float | None` + `review_count: int` via SQL aggregate
-- Paginated review list — `GET /books/{book_id}/reviews?page=1&size=20`, sorted `created_at DESC`
-- `user_has_reviewed` flag on book detail — boolean for authenticated users, LOW complexity, high UX value
+All v2.1 features are delivered from existing tables — no schema migrations needed.
 
-**Should have (differentiators — P2 for v2.x after validation):**
-- Rating distribution breakdown (`rating_breakdown: {1: N, ..., 5: N}`) — trust signal, one extra GROUP BY aggregate
-- Reviewer display name — available from existing `User` model, no new table
+**Must have — Sales Analytics (P1):**
+- `GET /admin/analytics/sales/summary?period=today|week|month` — revenue total, order count, AOV, and period-over-period delta; period-over-period comes free with the summary query
+- `GET /admin/analytics/sales/top-books?limit=10&sort_by=revenue|volume` — top-N books by revenue (SUM unit_price * quantity) or volume (SUM quantity); these are two distinct metrics that must produce distinct rankings
+- `GET /admin/analytics/sales/aov-trend?period=week|month&buckets=N` — AOV per time bucket for trend visualization (MEDIUM complexity, can be deferred to P2)
 
-**Defer to v3+ (out of scope for v2.0):**
-- Helpfulness voting — requires `review_votes` table, vote deduplication, sort-by-helpful; review volume too low to justify
-- Review photo/media uploads — requires S3, CDN, thumbnail generation; separate infrastructure milestone
-- Sort reviews by helpfulness — depends on helpfulness voting first
-- Email prompt after order delivery to leave a review — depends on stable review system + email template work
+**Must have — Inventory Analytics (P1):**
+- `GET /admin/analytics/inventory/low-stock?threshold=10` — books at or below threshold, ordered by stock ascending; threshold is a query param, not hardcoded; includes waitlist count from pre-bookings
+- `GET /admin/analytics/inventory/turnover?limit=10&days=30` — units sold in the period (sales velocity, not a ratio to current stock — avoids division by zero on out-of-stock books)
+- `GET /admin/analytics/inventory/prebook-demand?limit=10` — books with most WAITING pre-bookings only (`status = 'waiting'` filter mandatory)
 
-**Explicit anti-features (do not build):**
-- Anonymous reviews — breaks verified-purchase gate entirely
-- Pre-moderation queue — latency hurts UX; reactive admin delete is sufficient at this scale
-- Incentivized reviews — FTC 2024 rules, up to $51,744/violation
-- Weighted average — opaque to users, no practical benefit at this scale
+**Must have — Review Moderation (P1):**
+- `GET /admin/reviews?book_id=&user_id=&rating_min=&rating_max=&sort_by=&order=&page=&per_page=` — paginated admin review listing; uses a new `AdminReviewResponse` schema (not the user-facing `ReviewResponse`) to avoid N+1 `verified_purchase` lookups
+- `DELETE /admin/reviews/bulk` with body `{"ids": [...]}` — bulk soft-delete (sets `deleted_at`, not hard DELETE); returns count actually deleted
+
+**Should have / defer (P2):**
+- `GET /admin/analytics/sales/by-genre` — revenue breakdown by genre; useful only when genre data is populated
+- AOV trend — can ship as P2 if P1 is already ambitious
+
+**Defer to v3+:**
+- Materialized views (only if live queries exceed 200ms under real load)
+- Analytics webhooks, cohort analysis, CSV/PDF export, real-time WebSockets
+
+**Anti-features explicitly rejected:** Real-time streaming analytics, Celery/Redis background jobs, pre-moderation review queue, AI review moderation, user cohort analysis, revenue forecasting.
 
 ### Architecture Approach
 
-The `app/reviews/` module follows the identical five-file pattern established across all existing domains. Integration is additive: five new files plus one migration, with targeted modifications to exactly four existing locations (`OrderRepository`, `BookDetailResponse`, the book detail router endpoint, and `main.py` for router registration). Cross-domain concerns are resolved at the service layer through constructor injection — `ReviewService` accepts `OrderRepository` for the verified-purchase check, mirroring the `BookService`/`PreBookRepository` pattern in v1.1. Aggregate data (`avg_rating`, `review_count`) is computed via SQL `AVG()`/`COUNT()` at read time, fetched by `ReviewRepository.get_avg_and_count()` and passed explicitly to `BookDetailResponse` alongside `model_validate(book)` — never stored as denormalized columns.
+v2.1 is an integration problem, not a greenfield build. The established 5-file module pattern is locked. All new analytics code lives in `app/admin/` as four new files (`analytics_repository.py`, `analytics_service.py`, `analytics_router.py`, `analytics_schemas.py`). The existing `ReviewRepository` gains two new methods (`list_all_admin()` and `bulk_delete()`). No existing files are structurally changed except `app/main.py` (one `include_router` line) and `app/reviews/repository.py` (two new method additions). No new database tables or Alembic migrations are required.
 
 **Major components:**
-1. **`app/reviews/models.py`** — `Review` ORM model: `UniqueConstraint("user_id", "book_id")`, `CheckConstraint("rating >= 1 AND rating <= 5")`, `CASCADE` on both FKs (not `SET NULL`)
-2. **`app/reviews/repository.py`** — CRUD operations: `create`, `get_by_id`, `get_by_user_and_book`, `update`, `delete`, `list_for_book` (paginated), `get_avg_and_count`
-3. **`app/reviews/service.py`** — Business rules: verified-purchase check (via injected `OrderRepository`), duplicate review guard, ownership check for edit/delete, admin bypass for delete
-4. **`app/reviews/router.py`** — Endpoints: `POST /books/{id}/reviews`, `GET /books/{id}/reviews`, `PATCH /reviews/{id}`, `DELETE /books/{id}/reviews/{id}` — all using `ActiveUser` with role branching in service
-5. **`app/orders/repository.py` (modified)** — One new method: `has_user_purchased_book(user_id, book_id) -> bool` using `EXISTS` subquery
-6. **`app/books/schemas.py` (modified)** — Two new fields on `BookDetailResponse`: `avg_rating: float | None`, `review_count: int`
-7. **`app/books/router.py` (modified)** — `GET /books/{id}` instantiates `ReviewRepository(db)` and calls `get_avg_and_count(book_id)`, passing result explicitly to response constructor
+1. **AnalyticsRepository (NEW):** All cross-domain aggregate SQL — reads `Order`, `OrderItem`, `Book`, `PreBooking` models directly; does NOT extend or wrap any existing domain repository; owned by `app/admin/analytics_repository.py`
+2. **AdminAnalyticsService (NEW):** Orchestrates multi-query results; owns period-bound computation using `datetime.now(timezone.utc)` and period-over-period delta calculation; passes concrete `datetime` objects to the repository (not string period names); owned by `app/admin/analytics_service.py`
+3. **Analytics Router (NEW):** All GET endpoints under `/admin/analytics/` plus admin review endpoints; `AdminUser` dependency set at the router level — no individual endpoint can be accidentally unprotected; owned by `app/admin/analytics_router.py`
+4. **Analytics Schemas (NEW):** `RevenueSummaryResponse`, `TopSellersResponse`, `LowStockResponse`, `TurnoverResponse`, `PreBookDemandResponse`, `AdminReviewListResponse`, `BulkDeleteResponse`; `Decimal` fields serialized as `float`; owned by `app/admin/analytics_schemas.py`
+5. **ReviewRepository (MODIFIED):** Gains `list_all_admin()` (paginated, sorted, filtered, always includes `Review.deleted_at.is_(None)`) and `bulk_delete()` (single `UPDATE ... WHERE id IN (...)` statement with `synchronize_session="fetch"`)
+
+**Key patterns:** Period-bound computation belongs in the service layer, not the repository. The repository receives only concrete `datetime` parameters. Analytics queries use PostgreSQL-level `GROUP BY` and `SUM` — never load ORM objects into Python for arithmetic. Bulk operations use set-based SQL (`WHERE id IN (...)`), not per-row ORM loops.
 
 ### Critical Pitfalls
 
-1. **Verified-purchase query missing `order_items` join or `status = 'confirmed'` filter** — Always join `order_items → orders` and filter `orders.status = OrderStatus.CONFIRMED` (import the enum, never hardcode the string). Test: user with `payment_failed` order must get 403, not 201.
-
-2. **Review model not imported in `app/db/base.py`** — Add `from app.reviews.models import Review  # noqa: F401` as the first step after creating the model file. Verify with `pytest tests/test_health.py` before writing any service code. Missing this causes `UndefinedTableError` mid-suite and `alembic --autogenerate` produces an empty migration.
-
-3. **No `UniqueConstraint` in migration — duplicate reviews under concurrent requests** — Always define `UniqueConstraint("user_id", "book_id")` in the migration; catch `IntegrityError` wrapping `UniqueViolationError` and re-raise as `AppError(409)`. Application pre-check alone is not race-condition safe.
-
-4. **`Review.book_id` FK uses `SET NULL` (copied from `OrderItem` pattern) instead of `CASCADE`** — Reviews without a book are meaningless; use `ondelete="CASCADE"` and `nullable=False`. Test: delete a book and verify its reviews are deleted and no `NULL book_id` rows remain.
-
-5. **`BookDetailResponse` aggregate fields silent-default to `None`/`0` because router still calls `model_validate(book)` alone** — Never rely on `model_validate(orm_object)` for computed aggregate fields. Fetch aggregates separately and pass explicitly: `BookDetailResponse(**model_validate(book).model_dump(), avg_rating=avg, review_count=count)`. Test: create a review, call `GET /books/{id}`, assert `avg_rating` is not null.
-
-6. **No index on `reviews(book_id)` — full table scan on every book detail request** — Add `Index("ix_reviews_book_id", "book_id")` in the initial migration alongside table creation; a covering index `("book_id", "rating")` is even better.
-
-7. **Admin delete endpoint uses `ActiveUser` instead of `AdminUser`** — Use `AdminUser` dependency on the admin delete route. Test: call admin delete with a regular-user JWT and assert 403.
+1. **PAYMENT_FAILED orders included in revenue** — every revenue/sales query must filter `Order.status == OrderStatus.CONFIRMED`; missing this silently overstates revenue; verify by creating a PAYMENT_FAILED order and asserting it does not appear in the summary
+2. **NULL book_id dropped by INNER JOIN** — when a book is deleted, `OrderItem.book_id` becomes `NULL` via `SET NULL`; using `INNER JOIN books ON order_items.book_id = books.id` silently drops those sales from revenue totals; use `LEFT JOIN` and handle `NULL` title with a `"[Deleted Book]"` fallback
+3. **Naive datetime for period bounds** — `datetime.now()` without timezone returns a naive datetime; always use `datetime.now(timezone.utc)`; "today's revenue" silently returns 0 after 8pm EST in production if UTC is not used consistently
+4. **Soft-delete filter missing from admin review list** — the new `list_all_admin()` method must include `Review.deleted_at.is_(None)` matching all 4 existing `ReviewRepository` methods; missing it causes deleted reviews to reappear in the moderation dashboard
+5. **N+1 bulk soft-delete** — bulk review delete must use a single `UPDATE reviews SET deleted_at = NOW() WHERE id IN (:ids) AND deleted_at IS NULL` with `synchronize_session="fetch"`; per-row `session.delete()` loop requires 2N database round-trips
+6. **Pre-booking demand counts all statuses** — must filter `PreBooking.status == PreBookStatus.WAITING`; counting `NOTIFIED` and `CANCELLED` pre-bookings overstates current demand and produces incorrect restocking signals
+7. **Stock turnover division by zero** — `units_sold / current_stock_quantity` crashes when `stock_quantity = 0`; express turnover as raw sales velocity (units sold in period) not a ratio; use `NULLIF(stock_quantity, 0)` if a ratio is required
+8. **Admin analytics router missing `AdminUser` dependency** — set `dependencies=[Depends(get_admin_user)]` at the `APIRouter(prefix="/admin")` constructor level; any endpoint accidentally created without a per-endpoint dependency is still protected
 
 ---
 
 ## Implications for Roadmap
 
-Based on research, the build order has clear technical dependencies: DB schema before repository, repository before service, service before router, book detail integration last. Research converges on three natural phases matching the architecture's own dependency graph.
+Based on research, the natural phase structure follows the architectural build order defined in ARCHITECTURE.md. Three phases are warranted, each independently shippable.
 
-### Phase 1: Data Layer — Review Model, Migration, and Repository
+### Phase 1: Sales Analytics
 
-**Rationale:** All service and router logic depends on the repository; the repository depends on the schema; the schema migration must run before any query can succeed. The `OrderRepository` purchase-check method belongs here because `ReviewService` depends on it at service construction time. This is also the phase where the most irreversible decisions are made (FK behavior, constraints, indexes) — getting these right from the start prevents expensive data migrations later.
+**Rationale:** Establishes the `AnalyticsRepository` + `AdminAnalyticsService` + `analytics_router` + `analytics_schemas` infrastructure that Phase 2 extends. Sales analytics are the highest-value features (revenue, top sellers, AOV) and the most straightforward — `orders` and `order_items` are well-understood. The period-comparison and admin auth patterns established here are reused in all subsequent phases.
 
-**Delivers:** Working `reviews` table in PostgreSQL with correct constraints and indexes; `ReviewRepository` with all CRUD + aggregate methods; `OrderRepository.has_user_purchased_book()`; model registered in `app/db/base.py`; Alembic migration verified with `alembic upgrade head`
+**Delivers:** Revenue summary with period-over-period comparison, top sellers by revenue and volume, average order value. Admin can answer "how is the store performing?" for the first time.
 
-**Addresses features:** Foundation for all review CRUD, verified-purchase gate, one-per-user enforcement, aggregate rating
+**Addresses features from FEATURES.md:** `GET /admin/analytics/sales/summary`, `GET /admin/analytics/sales/top-books`, `GET /admin/analytics/sales/aov-trend`
 
-**Avoids pitfalls:** Missing model registry (#2), missing `UniqueConstraint` (#3), wrong FK `SET NULL` (#4), missing `book_id` index (#6)
+**Avoids pitfalls from PITFALLS.md:**
+- Establish `Order.status == OrderStatus.CONFIRMED` filter as the baseline for all queries (Pitfall 1)
+- Use `LEFT JOIN books` pattern with NULL title fallback for deleted-book items (Pitfall 1, Bug A)
+- Compute period bounds with `datetime.now(timezone.utc)` in `AdminAnalyticsService` (Pitfall 2)
+- Set `AdminUser` dependency at router constructor level (Pitfall 8)
+- Serialize `Decimal` aggregates as `float` in all response schemas
 
-### Phase 2: Core Review CRUD — Service, Router, and Full Test Coverage
+### Phase 2: Inventory Analytics
 
-**Rationale:** Service and router depend on the repository from Phase 1. All user-facing and admin review endpoints are developed and tested together because they share the same authorization model (ownership check vs. admin bypass). Testing the full CRUD cycle here validates the verified-purchase gate, duplicate constraint handling, and confirms the 179 existing tests still pass before book detail integration begins.
+**Rationale:** Extends the analytics infrastructure from Phase 1 with additional model imports (`Book`, `PreBooking`). The query patterns are the same as Phase 1 but involve more join complexity. Low-stock alerts integrate pre-booking demand counts, making the combined view more useful than either feature alone. Can be developed in parallel with Phase 3 after Phase 1 is complete.
 
-**Delivers:** All review endpoints operational: `POST` (create with verified-purchase gate), `GET` (list, paginated, `created_at DESC`), `PATCH` (edit own), `DELETE` (user + admin via service role check); complete auth model; `user_has_reviewed` flag; full regression suite passing
+**Delivers:** Low-stock alerts with waitlist count integration, stock turnover velocity (units sold per N days), pre-booking demand ranking. Admin can answer "what do I need to restock?" for the first time.
 
-**Addresses features:** Submit review, edit own review, delete own review, admin delete, paginated review list, `user_has_reviewed` flag
+**Addresses features from FEATURES.md:** `GET /admin/analytics/inventory/low-stock`, `GET /admin/analytics/inventory/turnover`, `GET /admin/analytics/inventory/prebook-demand`
 
-**Avoids pitfalls:** Wrong verified-purchase query (#1), admin endpoint uses wrong auth dep (#7), `user_id` from request body (security), no pagination from day one
+**Avoids pitfalls from PITFALLS.md:**
+- Express turnover as units sold (velocity), not a ratio to current stock — avoids division by zero when `stock_quantity = 0` (Pitfall 6)
+- Filter `PreBooking.status == PreBookStatus.WAITING` — avoids overstating demand with resolved pre-bookings (Pitfall 7)
+- Use `LEFT JOIN` for turnover query to include all confirmed-order books (Pitfall 1)
+- Cap the `limit` query parameter at `le=100` to prevent unbounded aggregation
 
-### Phase 3: Book Detail Integration — Aggregate Surface
+### Phase 3: Review Moderation Dashboard
 
-**Rationale:** This phase is intentionally last because it is a read-only extension of existing functionality — it does not block the core review system and can be shipped independently. It is the smallest phase (two file modifications) but carries the most common silent-failure mistake: `model_validate(book)` not passing computed aggregate values. Testing this phase requires real review data from Phase 2.
+**Rationale:** Isolated change — modifies the existing `ReviewRepository` rather than the analytics repository, making it independently deployable and independently testable. Review moderation is a separate operational concern from analytics. The admin list endpoint requires a new `AdminReviewResponse` schema to avoid inheriting the N+1 `verified_purchase` behavior from the user-facing review list.
 
-**Delivers:** `GET /books/{id}` returns correct `avg_rating` and `review_count` that reflect the live state of the reviews table; `BookDetailResponse` schema updated; values are `None`/`0` (not absent) when no reviews exist
+**Delivers:** Paginated, sortable, filterable admin review listing with reviewer context; bulk soft-delete for spam response. Admin can answer "are there problematic reviews?" and act on them efficiently.
 
-**Addresses features:** Average rating on book detail, review count on book detail
+**Addresses features from FEATURES.md:** `GET /admin/reviews` with sort/filter/paginate, `DELETE /admin/reviews/bulk`
 
-**Avoids pitfalls:** `BookDetailResponse` silent null defaults (#5)
+**Avoids pitfalls from PITFALLS.md:**
+- `list_all_admin()` must include `Review.deleted_at.is_(None)` — soft-delete filter mandatory (Pitfall 3)
+- `bulk_delete()` must use single `UPDATE ... WHERE id IN (...)` with `synchronize_session="fetch"` — no per-row ORM loop (Pitfall 4)
+- Use a new `AdminReviewResponse` schema (not `ReviewResponse`) to omit `verified_purchase` and eliminate N+1 (Pitfall 8)
+- Implement as soft-delete (`UPDATE SET deleted_at`) not hard DELETE — preserves audit trail
 
 ### Phase Ordering Rationale
 
-- Phase 1 must come first: every layer above it depends on it; migration must run before any query; `app/db/base.py` import must exist before `alembic --autogenerate` produces a non-empty migration.
-- Phase 2 before Phase 3: (a) core review CRUD is the primary deliverable; (b) book detail aggregate integration requires actual review data to test correctly; (c) separating phases limits blast radius — a bug in review submission does not block testing the aggregate display.
-- Phase 3 last: non-blocking read-only enhancement; the book detail endpoint continues to work without ratings while Phase 2 is being built and tested.
+- **Phase 1 first** because it creates the four new files (`analytics_repository`, `analytics_service`, `analytics_router`, `analytics_schemas`) that Phase 2 extends by adding methods and schemas to the same files. Phase 2 cannot start until Phase 1 establishes the file and infrastructure structure.
+- **Phase 2 second** because it uses the same repository/router/schema pattern from Phase 1, adding different model imports and join logic. No new architectural decisions are needed.
+- **Phase 3 last (or parallel to Phase 2)** because it touches a different module (`app/reviews/repository.py`) and has no dependency on Phase 1 or 2 infrastructure beyond the shared `AdminUser` auth dependency.
+- **No new migrations** across all three phases — all queries are read-only against existing tables (the `bulk_delete` UPDATE writes to an existing `deleted_at` column introduced in v2.0).
 
 ### Research Flags
 
-Phases with well-documented patterns — skip additional research during planning:
-- **Phase 1:** All patterns (UniqueConstraint, CheckConstraint, FK CASCADE, Index) are standard SQLAlchemy 2.0 declarative ORM — HIGH confidence, official docs verified, patterns used elsewhere in the codebase (`ck_books_price_positive`, wishlist `UniqueConstraint`).
-- **Phase 2:** Auth patterns (ActiveUser, AdminUser, AppError), service/repository constructor injection, IntegrityError handling — all established in existing codebase at HIGH confidence.
-- **Phase 3:** `model_validate` + explicit aggregate passing — explicitly documented in PITFALLS.md with code example; no additional research needed.
+Phases with standard patterns (skip `/gsd:research-phase`):
+- **Phase 1 (Sales Analytics):** SQLAlchemy aggregate query patterns are extensively documented; period-comparison is straightforward Python arithmetic; all patterns are provided with concrete code examples in STACK.md and ARCHITECTURE.md.
+- **Phase 2 (Inventory Analytics):** Extends Phase 1 patterns with `LEFT JOIN` and `NULLIF`; no novel patterns required.
+- **Phase 3 (Review Moderation):** SQLAlchemy bulk UPDATE pattern is documented with exact code in ARCHITECTURE.md and PITFALLS.md; straightforward extension of existing `ReviewRepository`.
 
-Phases that may benefit from one targeted validation during implementation (not blocking):
-- **Phase 1 / Phase 3 (minor):** The `func.avg().cast(Numeric)` pattern for two-argument `ROUND` — MEDIUM confidence (verified in PostgreSQL docs but not yet exercised in this codebase's asyncpg version). Validate with a quick integration test when the aggregate query is first written. Fallback: Python-side rounding `round(float(avg), 1) if avg else None`.
-- **Phase 2 (minor):** `asyncpg.exceptions.UniqueViolationError` as `exc.orig` — confirm the exact import path during implementation; existing codebase uses asyncpg as the driver so `from asyncpg.exceptions import UniqueViolationError` is expected correct.
+No phases require a `/gsd:research-phase` call — the existing research provides sufficient implementation detail including concrete code patterns for every endpoint.
 
 ---
 
@@ -146,46 +153,51 @@ Phases that may benefit from one targeted validation during implementation (not 
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All technologies locked and validated in v1.1; no new libraries; every pattern mapped to existing codebase usage. One MEDIUM point: `func.avg().cast(Numeric)` for ROUND not yet exercised in this specific stack combination. |
-| Features | HIGH | Core CRUD, verified-purchase gate, and one-per-user constraint are well-established e-commerce patterns; confirmed against Goodreads guidelines, commercetools API docs, FTC rules. Helpfulness voting and distribution breakdown (deferred features) are MEDIUM. |
-| Architecture | HIGH | Direct codebase inspection; all integration points derived from actual source files (`app/orders/models.py`, `app/core/deps.py`, `app/books/schemas.py`, etc.). Module pattern is locked and consistent across all 7 existing domains. |
-| Pitfalls | HIGH | Pitfalls derived from codebase inspection, not assumptions. Specific model paths, column names, status enum values, and FK patterns verified against actual source. Recovery strategies provided for all critical pitfalls. |
+| Stack | HIGH | All claims verified against official SQLAlchemy 2.0 docs and PyPI; version compatibility confirmed; asyncache incompatibility with Python 3.13 verified directly from PyPI |
+| Features | HIGH (table stakes), MEDIUM (complexity estimates) | Feature set based on Shopify/WooCommerce/commercetools analysis; complexity estimates depend on index coverage; whether caching is necessary depends on actual data volume (currently LOW confidence) |
+| Architecture | HIGH | Derived from direct codebase inspection of all relevant source files; module pattern, dependency injection, soft-delete convention all confirmed from actual code |
+| Pitfalls | HIGH | All 8 critical pitfalls verified against actual model definitions — `OrderStatus`, `OrderItem.book_id SET NULL`, `Review.deleted_at`, `PreBookStatus.WAITING`; SQLAlchemy async DML `synchronize_session` issue cross-referenced with official SQLAlchemy GitHub discussion |
 
-**Overall confidence: HIGH**
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`func.avg().cast(Numeric)` for 2-arg ROUND:** MEDIUM confidence — documented in PostgreSQL docs and SQLAlchemy docs but not exercised in this codebase's asyncpg version. Validate with an integration test when the aggregate query is first written in Phase 1 or 3. Fallback: `round(float(avg), 1) if avg else None` in Python.
-- **`asyncpg.exceptions.UniqueViolationError` import path:** Confirm the exact import path during Phase 2 implementation. The codebase uses asyncpg as the driver — `from asyncpg.exceptions import UniqueViolationError` is expected correct, but verify against the `asyncpg 0.31.0` API.
-- **`GET /books` (list view) per-book aggregates:** Research covers `GET /books/{id}` aggregate integration only. If the book list endpoint also needs `avg_rating` per book (identified as a UX improvement in PITFALLS.md), this requires a single GROUP BY subquery — not N separate aggregate calls. This is a v2.x enhancement, not in v2.0 scope per FEATURES.md, but should be designed to allow easy addition later.
+- **Caching necessity:** Whether TTL caching is needed at all depends on admin access frequency and data volume — currently no production data exists to make this call. Recommendation: implement Phase 1 without caching; add a manual TTL dict only if admin dashboard response times exceed 200ms under real usage.
+- **`aov-trend` endpoint scope:** Grouping by time bucket with `date_trunc` is straightforward SQL, but the default number of buckets and the exact response shape (`{period, aov}` list) involve UX decisions not fully specified. Validate with stakeholders before committing to the schema; this is a P2 candidate if the decision is unclear.
+- **Genre data availability for revenue-by-genre (P2):** The genre breakdown feature depends on books having populated `genre_id` values. If genres are sparsely populated, the feature will show mostly NULL/"Uncategorized" results. Assess genre data coverage before scheduling this endpoint.
+- **Admin review list `verified_purchase` field:** PITFALLS.md identifies N+1 risk at page_size >= 50. The recommended schema omits `verified_purchase`, which removes the N+1 entirely. Confirm with stakeholders that `verified_purchase` is not needed in the admin moderation view — if it is required, a batch EXISTS query must be designed before Phase 3 implementation begins.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Existing codebase — `app/orders/models.py`, `app/books/schemas.py`, `app/core/deps.py`, `app/books/router.py`, `app/wishlist/models.py`, `app/db/base.py`, `app/main.py` — direct source verification
-- [SQLAlchemy 2.0 Constraints and Indexes](https://docs.sqlalchemy.org/en/20/core/constraints.html) — UniqueConstraint, CheckConstraint
-- [SQLAlchemy 2.0 SELECT / scalar_subquery](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html) — aggregate query patterns
-- [SQLAlchemy 2.0 SQL Functions](https://docs.sqlalchemy.org/en/20/core/functions.html) — func.avg, func.count, func.round
-- [Pydantic v2 Fields](https://docs.pydantic.dev/latest/concepts/fields/) — `ge`/`le` integer constraints
-- [PostgreSQL Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html) — CheckConstraint syntax
-- [Goodreads Review Guidelines](https://www.goodreads.com/review/guidelines) — book-specific review platform policy decisions
-- [FTC Fake Reviews Rule 2024](https://www.ftc.gov/news-events/news/press-releases/2024/08/federal-trade-commission-announces-final-rule-banning-fake-reviews-testimonials) — legal constraints on incentivized reviews
-- [commercetools Reviews API](https://docs.commercetools.com/api/projects/reviews) — production review API design patterns
-- [FastAPI Dependency Injection](https://fastapi.tiangolo.com/tutorial/dependencies/) — DI patterns
+
+- SQLAlchemy 2.0 SQL Functions docs — `func.*`, FILTER clause on aggregates, `over()` for window functions
+- SQLAlchemy 2.0 ORM DML Guide — bulk DELETE/UPDATE patterns, `synchronize_session` strategies
+- SQLAlchemy 2.0 Column Elements — `case()`, `label()`, `FunctionFilter` construct
+- asyncpg 0.31.0 PyPI — version confirmed Feb 2026; PostgreSQL feature passthrough confirmed
+- cachetools 7.0.1 PyPI — Python 3.13 compatible; zero dependencies; manual TTL pattern documented
+- Direct codebase inspection — `app/admin/router.py`, `app/orders/models.py`, `app/reviews/repository.py`, `app/prebooks/models.py`, `app/core/deps.py`, `app/main.py`
+- Moesif: REST API Design (Filtering, Sorting, Pagination) — query parameter patterns for admin list endpoints
+- Microsoft Azure Architecture Center — bulk delete via request body with ID list is the established REST pattern
 
 ### Secondary (MEDIUM confidence)
-- [Smashing Magazine — Product Reviews and Ratings UX (2023)](https://www.smashingmagazine.com/2023/01/product-reviews-ratings-ux/) — UX patterns, verified-purchase credibility, anti-patterns
-- [PostgreSQL ROUND Function (Neon)](https://neon.com/postgresql/postgresql-math-functions/postgresql-round) — NUMERIC type requirement for two-argument ROUND
-- [Handling Race Conditions in PostgreSQL MVCC (Bufisa)](https://bufisa.com/2025/07/17/handling-race-conditions-in-postgresql-mvcc/) — TOCTOU and duplicate insert patterns
-- [SQLAlchemy UniqueViolation handling (Rollbar)](https://rollbar.com/blog/python-psycopg2-errors-uniqueviolation/) — IntegrityError catch pattern
-- [PostgreSQL Aggregation Best Practices (TigerData)](https://www.tigerdata.com/learn/postgresql-aggregation-best-practices) — index-driven aggregate queries
+
+- Shopify Admin API Orders resource — revenue and order analytics patterns; period filtering and status filtering patterns
+- DashThis: 15 Essential E-Commerce Metrics — canonical admin dashboard metric set; basis for P1 feature selection
+- ThoughtSpot: 15 Essential E-Commerce KPIs — period-over-period comparison as table stakes
+- NetSuite / Corporate Finance Institute: Inventory Turnover — basis for simplified sales velocity approach
+- Crunchy Data: Window Functions for Data Analysis with PostgreSQL — LAG, RANK, date_trunc patterns
+- Crunchy Data: 4 Ways to Create Date Bins in Postgres — date bucketing approaches
 
 ### Tertiary (LOW confidence)
-- [FastAPI SQLAlchemy 2.0 Async Patterns (Medium 2025)](https://dev-faizan.medium.com/fastapi-sqlalchemy-2-0-modern-async-database-patterns-7879d39b6843) — async aggregate update patterns; unverified blog post, treat as illustrative only
+
+- asyncache PyPI — version 0.3.1, last released Nov 2022; Python <=3.10 only — verified as incompatible (this is a negative finding; confidence in the rejection is HIGH)
+- Moderation API blog (Nov 2025) — reactive admin-delete as standard moderation pattern at this scale (single vendor source)
+- commercetools Reports and Analytics API — composable commerce analytics design patterns (partial scope overlap)
 
 ---
 
-*Research completed: 2026-02-26*
+*Research completed: 2026-02-27*
 *Ready for roadmap: yes*

@@ -1,211 +1,226 @@
 # Feature Research
 
-**Domain:** Bookstore E-Commerce — v2.0 Milestone (Reviews & Ratings)
-**Researched:** 2026-02-26
-**Confidence:** HIGH for core review CRUD and verified-purchase constraint (well-established patterns); MEDIUM for aggregate rating storage strategy (tradeoffs require validation against query volume); LOW for helpfulness voting and moderation complexity estimates
+**Domain:** Bookstore E-Commerce — v2.1 Milestone (Admin Dashboard & Analytics)
+**Researched:** 2026-02-27
+**Confidence:** HIGH for table stakes analytics patterns (well-established across Shopify, WooCommerce, commercetools); MEDIUM for exact complexity estimates on SQL aggregates (depend on query plan and index coverage); LOW for caching necessity (depends on actual data volume)
 
-> **Scope note:** v1.0 and v1.1 built auth, catalog, FTS, cart, checkout, orders, wishlist,
-> pre-booking, email notifications, and admin user management.
-> This file focuses exclusively on the new features for v2.0:
-> Reviews and ratings — create, read, edit, delete, aggregate display, admin moderation.
+> **Scope note:** v1.0, v1.1, and v2.0 built auth, catalog, FTS, cart, checkout, orders,
+> wishlist, pre-booking, email notifications, admin user management, reviews with
+> verified-purchase gate, and live rating aggregates.
+> This file focuses exclusively on the new features for v2.1:
+> Sales analytics, inventory analytics, and review moderation dashboard.
+> All rely on querying existing tables — no new domain models required.
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (Admins Expect These)
 
-Features users assume exist. Missing these makes the review system feel broken or untrustworthy.
+Features admins assume exist in any operational e-commerce backend. Missing these makes the admin experience feel blind.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Submit a star rating (1-5) with optional text | Every bookstore from Amazon to Goodreads offers this; absence makes the system feel unfinished | LOW | Integer field constrained to [1, 5]. Text field nullable. Single endpoint: `POST /books/{id}/reviews`. |
-| One review per user per book | Users expect a single authoritative opinion per person; duplicates erode trust and pollute aggregates | LOW | Unique DB constraint on `(book_id, user_id)`. Service layer returns 409 on duplicate. Enforce at both DB and service layer. |
-| Verified-purchase gate | Users trust "Verified Purchase" badges on Amazon; reviews from non-buyers feel suspicious | MEDIUM | Query `orders` and `order_items` tables to confirm user has a completed order containing the book. No new table needed, join existing data. |
-| Edit your own review | Users expect to correct typos or update opinion after re-reading | LOW | `PATCH /books/{book_id}/reviews/{review_id}` or `PUT /reviews/{review_id}`. Only owner can edit. Update `updated_at` timestamp. |
-| Delete your own review | Users expect the right to withdraw their opinion | LOW | `DELETE /reviews/{review_id}`. Soft-delete (set `is_deleted = True`) preserves aggregate history between recomputation vs hard-delete. Either works; hard-delete is simpler for this scale. |
-| Admin can delete any review | Admins need moderation authority to remove abusive, spam, or policy-violating content | LOW | Same delete endpoint with admin-role override, or a dedicated `DELETE /admin/reviews/{review_id}`. Role check in route dependency. |
-| Average rating displayed on book detail | Users scan aggregate scores to triage purchase decisions before reading individual reviews | LOW | Computed field on book detail response: `average_rating` (float, 1 decimal) + `review_count` (int). See Architecture section on storage strategy. |
-| List reviews for a book (paginated) | Users expect to read other opinions before buying; infinite scroll or paginated list is standard | LOW | `GET /books/{book_id}/reviews?page=1&page_size=20`. Default sort: most recent first. |
-| Review count alongside average | "4.7 stars" from 2 reviews vs 2,000 reviews carries very different weight; both numbers are required | LOW | Return both `average_rating` and `review_count` together — never one without the other. |
+| Revenue summary (total today / week / month) | Every e-commerce admin dashboard leads with revenue — it is the primary operational signal. Shopify, WooCommerce, and commercetools all surface it as the first metric. | LOW | `SUM(order_items.quantity * order_items.unit_price)` on `orders` filtered by `created_at` range and `status = 'confirmed'`. Three parallel queries or one query with CASE expressions. |
+| Period-over-period comparison | Raw revenue numbers are meaningless without context. "+12% vs last week" is the standard pattern across every analytics tool from Google Analytics to Shopify admin. Admins expect this automatically alongside the revenue figure. | MEDIUM | Run same SUM query for both current period and prior period. Compute delta as `(current - prior) / prior * 100`. Handle division-by-zero when prior period = 0. No external library needed — pure SQL arithmetic. |
+| Top-selling books by revenue | Standard inventory intelligence. Amazon Seller Central, Shopify, and WooCommerce all provide it. Admins use it to decide restocking priorities and promotions. | LOW | `SELECT book_id, SUM(quantity * unit_price) AS revenue FROM order_items JOIN orders ... GROUP BY book_id ORDER BY revenue DESC LIMIT N`. `book_id` may be NULL (book deleted); filter or handle gracefully. |
+| Top-selling books by volume (units sold) | Revenue ranking can be skewed by a single expensive book. Unit-volume ranking shows true demand breadth. Both views are expected simultaneously. | LOW | Same query but `SUM(quantity) AS units_sold`. Share the same join structure as the revenue query — can be combined or run separately. |
+| Average order value (AOV) | AOV is a canonical e-commerce KPI alongside revenue and order count. Standard formula: total revenue / confirmed order count. | LOW | `SELECT COUNT(*) AS order_count, SUM(...) AS total_revenue, SUM(...)/COUNT(*) AS aov FROM orders WHERE status = 'confirmed'`. Round to 2 decimal places. |
+| Low-stock alerts (books below threshold) | Admins need to know before stockouts happen. Every inventory system has a low-stock query. Without it, stockouts are discovered by customers, not admins. | LOW | `SELECT * FROM books WHERE stock_quantity <= :threshold ORDER BY stock_quantity ASC`. Threshold should be a query parameter (default 10), not a hardcoded constant. |
+| Admin review listing with sort and filter | Admin needs visibility into all reviews to find problematic content. Sorting by date and rating, filtering by book or user, are standard moderation-view requirements. | MEDIUM | `GET /admin/reviews?book_id=&user_id=&rating_min=&rating_max=&sort_by=created_at&order=desc&page=1&per_page=20`. Joins to `books` and `users` for display context. Use SQLAlchemy `select()` with dynamic `where()` clauses. |
+| Admin review delete (single) | Already delivered in v2.0 as a P1 feature (`DELETE /admin/reviews/{id}`). This is confirmed table stakes — admins need reactive moderation authority. | LOW | Already implemented. |
 
 ### Differentiators (Competitive Advantage)
 
-Features beyond bare minimum that add meaningful value. These are optional for v2.0 launch.
+Features beyond bare minimum that add meaningful operational value. Not universally expected at this project scale, but meaningfully useful.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Rating distribution breakdown | Showing "5-star: 60%, 4-star: 25%, 1-star: 10%" builds more trust than a single average; a J-shaped distribution (many positives, some negatives) converts better than a perfect 5.0 | MEDIUM | Store per-star counts in `books` table or compute via GROUP BY. Return as `rating_breakdown: {1: N, 2: N, ...}`. One extra aggregate query or stored counts. |
-| User's own review visible first | When a user views a book they have reviewed, showing their review prominently reduces confusion ("did I review this?") | LOW | In the review list response, include `my_review` as a separate field if the requesting user has reviewed the book. Simple lookup by user_id on the reviews list. |
-| `reviewed` flag on book detail | Boolean flag on book detail response indicating whether the current user has already reviewed this book; lets clients disable/hide the "Write a review" button | LOW | Add `user_has_reviewed: bool` to book detail response for authenticated users. Single extra query or join. |
-| Sort reviews by most helpful | Surfacing well-voted reviews first is standard on Amazon and Goodreads; most recent is easier but less useful at scale | HIGH | Requires "helpful vote" feature (see anti-features — this is a scope decision). Mark as DEFERRED unless helpfulness voting is in scope. |
-| Reviewer display name | Personalizes reviews, increases authenticity | LOW | Already available from the `User` model. Return `reviewer_name` (derived from user email prefix or a `display_name` field if added). No new table; display_name field optional addition to User model. |
+| Stock turnover rate per book | Tells admins which books are moving quickly vs. sitting idle. "Sold 50 units against 200 in stock = 25% turnover" is actionable intelligence that raw stock counts don't provide. Useful for reorder timing. | MEDIUM | Formula: `units_sold_in_period / avg_stock_quantity`. "Average stock" is not tracked historically in this schema — simplify to `units_sold / current_stock_quantity` as a velocity proxy. Frame it as "units sold per week" (a sales velocity figure) rather than a formal accounting turnover ratio, which requires COGS. |
+| Pre-booking demand ranking (most-waited-for books) | Out-of-stock books with many waiting pre-bookers are the highest-priority restock targets. Showing this ranking directly connects inventory decisions to demonstrated demand — qualitatively different from just showing low stock. | LOW | `SELECT book_id, COUNT(*) AS waitlist_count FROM pre_bookings WHERE status = 'waiting' GROUP BY book_id ORDER BY waitlist_count DESC LIMIT N`. Join to `books` for title/author. |
+| AOV trend over time | A single AOV number is less useful than seeing whether it is rising or falling. Trending it weekly or monthly reveals pricing and bundle effects. | MEDIUM | Group `orders` by time bucket (DATE_TRUNC('week', created_at)) and compute AOV per bucket. Returns an array of `{period, aov}` objects. Client renders as a line chart. |
+| Bulk review delete | When spam hits (a user posts identical reviews on many books, or a coordinated fake review campaign), admins need to remove N reviews without N sequential API calls. | MEDIUM | `DELETE FROM reviews WHERE id = ANY(:ids)`. Accept `ids: list[int]` in request body. Add admin-only guard. Return count of deleted records and list of IDs not found. PostgreSQL `= ANY()` is efficient with an indexed PK. |
+| Revenue breakdown by genre | Tells admins which categories drive the most revenue. Useful for catalog expansion decisions and promotional focus. Rare in small storefronts but appears in mid-tier tools. | MEDIUM | `JOIN order_items → books → genres`, `GROUP BY genre_id`. Requires genres to be populated; returns NULL genre as "Uncategorized". |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem natural but create significant problems for a v2.0 milestone.
+Features that seem natural for an analytics dashboard but create problems at this scale and scope.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Helpfulness voting ("Was this review helpful?") | Amazon-style; surfaces quality reviews above noise | Adds a new `review_votes` table, vote deduplication logic, a vote endpoint, and sort-by-helpful complexity. At this catalog scale, review volume is too low for votes to be statistically meaningful. Votes can be gamed. | Default sort by most-recent; no voting infrastructure in v2.0. Revisit if review volume grows. |
-| Anonymous (unregistered) reviews | Increases review volume and lowers friction | Breaks the verified-purchase requirement entirely. Anonymous reviews are the primary vector for fake review abuse. FTC 2024 rules penalize fake reviews up to $51,744 per violation. | Require JWT auth to submit; verified-purchase gate provides authenticity signal. |
-| Review photos / media uploads | Richer review content, higher trust | Requires file upload handling, image storage (S3 or equivalent), CDN, thumbnail generation. Completely out of scope for a text+rating system. Adds significant infra complexity. | Text-only reviews in v2.0. Media uploads are a separate infrastructure milestone. |
-| Review approval queue (pre-moderation) | Appears to prevent spam before it goes live | Creates latency between submission and display; users don't see their own review immediately and assume it was lost; queue needs staffing. Over-moderation hides negative reviews, which decreases conversion (products with only 5-star reviews are trusted less). | Publish immediately; admin reactive-delete is sufficient moderation at this scale. |
-| Weighted average (newer reviews count more) | Recency-weighted ratings reflect current product state | Complex algorithm, harder to explain to users, harder to audit. At this scale, recency weighting offers no practical benefit. | Simple arithmetic mean. Transparent and correct. |
-| Incentivized reviews (reward for leaving review) | Increases review count quickly | FTC 2024 rules prohibit incentivized reviews unless clearly disclosed. Creates legal liability. Distorts rating upward. | Organic reviews only; email prompts after order delivery (if email is in scope) are acceptable. |
-| Review flagging by users | Community self-moderation | Requires a `review_flags` table, flag resolution workflow, threshold-based auto-hide logic. Adds significant backend complexity with limited value at low review volume. | Admin-only delete is sufficient moderation for v2.0. |
-| Soft-delete with "deleted review" placeholder | Preserves the thread feel for replies | This project has no replies/comment threads. Soft-delete is unnecessary complexity without that use case. | Hard-delete. Recalculate aggregate after deletion. |
+| Real-time streaming analytics / WebSockets | "Live" dashboards feel modern; admins want to see numbers update without refreshing | WebSockets add connection management complexity, require ASGI broadcast infrastructure, and provide no real value for business metrics that are meaningful over hours not seconds. Admin analytics are not a trading floor. | Simple REST endpoints with explicit refresh. A page that reloads data on demand is correct for this use case. |
+| Materialized views / analytics tables | At scale, pre-aggregating data is the right answer; reads from a summary table are faster than full-table scans | This project has at most thousands of orders. Live SQL aggregates on indexed columns are trivially fast. Materialized views add a refresh job (cron/Celery), stale-data risk, and migration complexity that is entirely unjustified at this volume. | Run live SQL aggregates. Add materialized views only when query time exceeds 200ms under real load. |
+| Celery/Redis background jobs for analytics | "Offload expensive aggregations to a background worker" | The existing stack explicitly excludes Celery/Redis (PROJECT.md constraint). BackgroundTasks is in scope. Analytics queries at this scale do not require async processing. | Run synchronously in FastAPI route. If a query takes >500ms, optimize it with an index rather than offloading it. |
+| User cohort analysis | "See revenue from users acquired in different months" | Cohort analysis requires `user_created_at` retention calculations and a substantially more complex query surface. It is a BI tool feature, not an operational admin panel feature. No user acquisition date → cohort mapping exists in the current schema. | Export raw order/user data to a BI tool (even a spreadsheet) for cohort analysis. Not an API concern. |
+| Revenue forecasting / demand prediction | "Predict how much stock we'll need next month" | Forecasting requires historical volume sufficient for statistical signal (minimum 12-24 months of data), a prediction algorithm, and a confidence interval model. This system has insufficient data history and the PROJECT.md out-of-scope list includes recommendation engines. | Use turnover velocity + pre-booking demand as leading indicators. Manual judgment with these signals is correct at this stage. |
+| Pre-moderation review queue | "Review every review before it goes live" | Already analyzed and rejected in v2.0 research. Creates latency, queue-management UI complexity, and suppresses authentic negative reviews. Reactive admin-delete is the correct moderation pattern at this scale. | Admin review listing with filter/sort enables reactive moderation efficiently. |
+| Automated review flagging / AI moderation | "Auto-flag suspicious reviews before admin sees them" | Requires external API (OpenAI, ModerAPI, etc.), adds a network call on every review creation, costs money per review, introduces false-positive rate management. At this review volume, an admin scanning the list directly is faster and cheaper. | Admin review list sorted by recent; manual inspection. |
+| Export to CSV / PDF | "I want to download my revenue report" | File generation in-process blocks the request thread for large datasets. Streaming CSV is doable but non-trivial. PDF generation requires a library (reportlab, weasyprint) with system dependencies. Out of scope for an API-first project where the consumer can format data themselves. | Return JSON from analytics endpoints; the client (curl, Postman, a spreadsheet plugin, or a frontend) handles formatting and export. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Existing: User Auth (JWT)]
-    └──required by──> [Submit review] (must be authenticated)
-    └──required by──> [Edit/delete own review] (must own the review)
-    └──required by──> [Admin: delete any review] (must have admin role)
+[Existing: orders table (confirmed orders, created_at)]
+    └──required by──> [Revenue summary] (SUM on filtered orders)
+    └──required by──> [AOV calculation] (SUM / COUNT on confirmed orders)
+    └──required by──> [AOV trend over time] (GROUP BY time bucket)
 
-[Existing: Orders + Order Items tables]
-    └──required by──> [Verified-purchase gate] (JOIN to confirm purchase)
+[Existing: order_items table (book_id, quantity, unit_price)]
+    └──required by──> [Revenue summary] (line-item revenue calculation)
+    └──required by──> [Top sellers by revenue] (GROUP BY book_id, SUM revenue)
+    └──required by──> [Top sellers by volume] (GROUP BY book_id, SUM quantity)
+    └──required by──> [Stock turnover velocity] (units_sold for velocity calculation)
 
-[Existing: Books table]
-    └──stores──> [average_rating, review_count] (cached aggregate fields)
-    └──required by──> [Submit review] (book must exist)
+[orders + order_items JOIN]
+    └──required by──> [All sales analytics] (join required to correlate items with order status/date)
 
-[Review record]
-    └──requires──> [Book exists in catalog]
-    └──requires──> [User is authenticated]
-    └──requires──> [User has purchased this book] (verified-purchase gate)
-    └──unique constraint on──> [(book_id, user_id)]
+[Existing: books table (stock_quantity, genre_id)]
+    └──required by──> [Low-stock alerts] (WHERE stock_quantity <= threshold)
+    └──required by──> [Stock turnover velocity] (current_stock_quantity as denominator)
+    └──required by──> [Top sellers] (JOIN to get book title/author for display)
+    └──required by──> [Revenue by genre] (JOIN to genres via genre_id)
 
-[Average rating on book detail]
-    └──derived from──> [Review records] (via stored fields or live aggregate)
-    └──updated by──> [Submit review] (increment review_count, recalculate average)
-    └──updated by──> [Delete review] (decrement review_count, recalculate average)
-    └──updated by──> [Edit review] (recalculate average if star rating changed)
+[Existing: pre_bookings table (book_id, status = 'waiting')]
+    └──required by──> [Pre-booking demand ranking] (COUNT waiting pre_bookings per book)
 
-[Admin: delete review]
-    └──requires──> [Admin role on JWT]
-    └──triggers──> [Aggregate recalculation] (same as user delete)
+[Pre-booking demand ranking]
+    └──enhances──> [Low-stock alerts] (together reveal which low-stock books have active demand)
+
+[Existing: reviews table + users table + books table]
+    └──required by──> [Admin review listing] (JOIN all three for display context)
+    └──required by──> [Bulk review delete] (DELETE WHERE id = ANY(:ids))
+
+[Admin review listing]
+    └──prerequisite for──> [Bulk review delete] (admin discovers IDs to bulk-delete from the listing)
+
+[Existing: admin auth dependency (AdminUser)]
+    └──required by──> [All analytics endpoints] (admin-only gate)
+    └──required by──> [Admin review listing] (admin-only)
+    └──required by──> [Bulk review delete] (admin-only)
 ```
 
 ### Dependency Notes
 
-- **Verified-purchase gate requires the existing orders + order_items tables:** No new data is needed. A JOIN from `order_items` to `orders` to `books` filtered by `orders.user_id = current_user.id` is sufficient. This is a read-only check.
-- **Average rating depends on the recalculation strategy:** Two valid approaches: (A) store `average_rating` and `review_count` directly on the `books` table, update on every review mutation — fast reads, requires careful update logic; (B) compute `AVG(rating)` and `COUNT(*)` live from the `reviews` table — always accurate, slightly slower at high volume. At this bookstore scale, option A is recommended (see ARCHITECTURE.md).
-- **Edit review must trigger aggregate recalculation only when star rating changes:** If the user edits only the text body, no recalculation is needed. Check `old_rating != new_rating` before updating aggregate.
-- **One-review-per-user-per-book constraint must be enforced at both database level (unique index) and service layer (409 response).** Database constraint catches race conditions; service layer provides a human-readable error message.
+- **All sales analytics require `status = 'confirmed'` filter on orders:** `payment_failed` orders must be excluded from all revenue calculations. This constraint applies everywhere — revenue summary, top sellers, AOV, and turnover velocity all need this WHERE clause.
+- **`order_items.book_id` is nullable (SET NULL on book delete):** Top-seller and turnover queries must handle NULL book_id gracefully. Rows with NULL book_id represent deleted books and should be excluded or aggregated as "Deleted book" in the response.
+- **`order_items.unit_price` is a snapshot, not a live price:** This is correct — analytics must use the price-at-purchase, not the current book price. Do not JOIN to `books.price` for revenue calculations. The snapshot in `order_items.unit_price` is the authoritative source.
+- **Pre-booking demand ranking only shows `status = 'waiting'` pre-bookings:** `NOTIFIED` and `CANCELLED` pre-bookings represent resolved demand and should be excluded from the demand ranking — they are no longer actionable.
+- **Bulk review delete operates on the soft-deleted reviews model:** The `reviews` table has a `deleted_at` field. Bulk delete should set `deleted_at = NOW()` (soft-delete), consistent with existing admin delete behavior. Confirm the v2.0 implementation is soft-delete before applying this.
+- **Low-stock threshold is a query parameter, not a system setting:** Do not store the threshold in the database. A query parameter `?threshold=10` with a sensible default is correct. Different admins may want different thresholds in the same session.
 
 ---
 
 ## MVP Definition
 
-### This Milestone (v2.0) — Launch With
+### This Milestone (v2.1) — Launch With
 
 All of the following must ship together. They constitute the milestone deliverables.
 
-- [ ] `Review` model + Alembic migration (`id`, `book_id`, `user_id`, `rating` [1-5], `body` [nullable text], `created_at`, `updated_at`)
-- [ ] Unique DB index on `(book_id, user_id)` — enforces one review per user per book
-- [ ] `average_rating` (Float, nullable) and `review_count` (Integer, default 0) columns on `Book` model via Alembic migration
-- [ ] Verified-purchase check service: confirms `user_id` has a completed order containing `book_id`
-- [ ] Submit review: `POST /books/{book_id}/reviews` — auth required, verified-purchase gate, one-per-user check, updates book aggregate
-- [ ] List reviews for a book: `GET /books/{book_id}/reviews` — public, paginated, sorted by `created_at DESC`
-- [ ] Edit own review: `PATCH /reviews/{review_id}` — owner only, updates aggregate if rating changed
-- [ ] Delete own review: `DELETE /reviews/{review_id}` — owner only, updates aggregate
-- [ ] Admin delete any review: `DELETE /admin/reviews/{review_id}` — admin role, updates aggregate
-- [ ] Book detail response updated: include `average_rating` and `review_count` fields
-- [ ] Book detail response: include `user_has_reviewed: bool` for authenticated users (optional but LOW complexity, high UX value)
+**Sales Analytics:**
+- [ ] `GET /admin/analytics/sales/summary?period=today|week|month` — revenue total, order count, AOV, and period-over-period delta for the selected period
+- [ ] `GET /admin/analytics/sales/top-books?limit=10&sort_by=revenue|volume` — top-N books by revenue or unit volume with book title, author, units sold, and revenue total
+- [ ] `GET /admin/analytics/sales/aov-trend?period=week|month&buckets=N` — AOV per time bucket (N weeks or months) for trend visualization
+
+**Inventory Analytics:**
+- [ ] `GET /admin/analytics/inventory/low-stock?threshold=10` — books with stock at or below threshold, ordered by stock ascending; include book title, author, current stock, and waitlist count (pre-booking demand integrated here)
+- [ ] `GET /admin/analytics/inventory/turnover?limit=10&days=30` — top-N books by sales velocity (units sold in last N days / current stock), ordered by velocity descending
+- [ ] `GET /admin/analytics/inventory/prebook-demand?limit=10` — books with most active pre-bookings (`status = 'waiting'`), ordered by waitlist count descending
+
+**Review Moderation Dashboard:**
+- [ ] `GET /admin/reviews?book_id=&user_id=&rating_min=&rating_max=&sort_by=created_at|rating&order=asc|desc&page=1&per_page=20` — paginated admin review listing with filter support; includes reviewer email (or username), book title, rating, text, created_at
+- [ ] `DELETE /admin/reviews/bulk` with body `{"ids": [1, 2, 3]}` — bulk delete reviews by ID list; return count deleted and any IDs not found
 
 ### Add After Validation (v2.x)
 
-- [ ] Rating distribution breakdown (`rating_breakdown: {1: N, 2: N, ...}`) — low complexity, high trust signal; hold until v2.0 is stable
-- [ ] Reviewer display name in review list response — requires `display_name` field on User model, minor schema addition
-- [ ] Helpfulness voting — only add if review volume justifies it; evaluate after 90 days
+- [ ] Revenue breakdown by genre — `GET /admin/analytics/sales/by-genre` — useful once genre data is populated; depends on admin adding genres to books
+- [ ] AOV trend — if v2.1 launches without this, add here; it is a differentiator not a table stake
+- [ ] Review export (JSON download) — if an admin consumer requests it; the API response already provides the data, this is just a `Content-Disposition: attachment` header
 
 ### Future Consideration (v3+)
 
-- [ ] Sort reviews by helpfulness — requires helpfulness voting first
-- [ ] Review photos / media upload — requires object storage infrastructure (S3, etc.)
-- [ ] Email prompt to leave review after order delivery — requires review system stable + email template work
-- [ ] Review import from Goodreads or other platforms — complex data normalization, legal/IP questions
+- [ ] Materialized view caching for analytics — only if live queries exceed 200ms under real production load; evaluate after 6 months of data
+- [ ] Analytics webhooks — notify external systems when thresholds are crossed (e.g., stock drops below threshold)
+- [ ] Cohort analysis or user lifetime value — requires external BI tool or substantially more complex query surface
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Submit review (star + text) | HIGH | LOW | P1 |
-| List reviews for a book | HIGH | LOW | P1 |
-| Average rating on book detail | HIGH | LOW | P1 |
-| Review count on book detail | HIGH | LOW | P1 |
-| Edit own review | MEDIUM | LOW | P1 |
-| Delete own review | MEDIUM | LOW | P1 |
-| Admin delete any review | MEDIUM | LOW | P1 |
-| Verified-purchase gate | HIGH | MEDIUM | P1 (core trust feature) |
-| One-review-per-user constraint | HIGH | LOW | P1 (data integrity) |
-| `user_has_reviewed` flag on book detail | MEDIUM | LOW | P1 (cheap, prevents double-submit confusion) |
-| Rating distribution breakdown | MEDIUM | LOW | P2 |
-| Reviewer display name | LOW | LOW | P2 |
-| Helpfulness voting | LOW | HIGH | P3 (defer) |
-| Review photos | LOW | HIGH | P3 (defer) |
+| Feature | Admin Value | Implementation Cost | Priority |
+|---------|-------------|---------------------|----------|
+| Revenue summary (today/week/month) | HIGH | LOW | P1 |
+| Period-over-period comparison | HIGH | LOW | P1 (comes free with summary query) |
+| Top sellers by revenue | HIGH | LOW | P1 |
+| Top sellers by volume | HIGH | LOW | P1 (same query, different ORDER) |
+| Average order value | HIGH | LOW | P1 |
+| Low-stock alerts | HIGH | LOW | P1 |
+| Admin review listing with filter/sort | HIGH | MEDIUM | P1 |
+| Pre-booking demand ranking | MEDIUM | LOW | P1 (integrates into low-stock response) |
+| Bulk review delete | MEDIUM | MEDIUM | P1 (spam response capability) |
+| Stock turnover velocity | MEDIUM | MEDIUM | P1 (key inventory intelligence) |
+| AOV trend over time | MEDIUM | MEDIUM | P2 |
+| Revenue by genre | LOW | MEDIUM | P2 |
+| Review export | LOW | LOW | P3 |
+| Materialized views | LOW | HIGH | P3 (premature optimization) |
 
 **Priority key:**
-- P1: Must have for this milestone
-- P2: Should have, add when possible
+- P1: Must have for v2.1 milestone
+- P2: Should have, add after P1 is stable
 - P3: Nice to have, future consideration
 
 ---
 
 ## Competitor Feature Analysis
 
-Based on the established patterns of Amazon, Goodreads, and standard e-commerce review platforms:
+Reference implementations from established e-commerce platforms and their admin analytics approaches:
 
-| Feature | Amazon | Goodreads | Our v2.0 Approach |
-|---------|--------|-----------|-------------------|
-| Star rating scale | 1-5 stars | 1-5 stars | 1-5 stars (universal expectation) |
-| Verified purchase badge | Yes (prominent) | No (no purchase gate) | Yes — verified purchase required to submit, not just badged |
-| One review per user | Yes | Yes | Yes — unique DB constraint |
-| Text body required | No | No | No — rating only is valid; body is optional |
-| Edit own review | Yes | Yes | Yes |
-| Delete own review | Yes | Yes | Yes |
-| Admin moderation | Yes | Yes | Yes — admin delete |
-| Rating distribution | Yes (bar chart) | Yes | Deferred to v2.x (data available, UI is frontend concern) |
-| Helpfulness voting | Yes ("helpful" button) | Yes | No — scope too large for v2.0 |
-| Photo uploads | Yes | No | No — out of scope |
-| Pre-moderation queue | No (post-moderation) | No (post-moderation) | No — reactive admin delete |
-| Sort options | Helpful, Recent, Critical | Date, Recommended | Recent-first only in v2.0 |
+| Feature | Shopify Admin | WooCommerce | Our v2.1 Approach |
+|---------|---------------|-------------|-------------------|
+| Revenue summary | Today / week / month / year, selectable | Custom date range | Today / week / month with period-over-period delta |
+| Period comparison | Built-in "vs. prior period" toggle | Plugin-dependent | Built-in as part of summary response |
+| Top sellers | By revenue, quantity, sell-through rate | By revenue or quantity | Both in single endpoint with `sort_by` param |
+| AOV | Displayed on overview page | Displayed in reports | Included in summary response |
+| Low stock alerts | Threshold per product, configurable | Global threshold setting | Query parameter threshold, default 10 |
+| Turnover / velocity | "Sell-through rate" in inventory reports | Via plugin | Units sold per N days / current stock |
+| Pre-booking demand | No native equivalent (backorder queue) | Backorder reports | Waitlist count per book from `pre_bookings` |
+| Review listing for admin | All reviews with sort/filter | Via WooCommerce admin | Paginated listing with book/user/rating filters |
+| Bulk review actions | Bulk approve/spam/trash | Bulk mark spam/trash | Bulk delete (reactive moderation only) |
 
 ---
 
 ## Existing System Integration Points
 
-These are the specific hooks where new v2.0 features attach to existing code.
+The complete mapping of where new v2.1 features attach to the existing codebase.
 
-| New Feature | Attaches To | How |
-|-------------|-------------|-----|
-| Verified-purchase check | `Order` + `OrderItem` models | Read-only JOIN: `order_items.book_id = ? AND orders.user_id = ? AND orders.status = 'completed'` |
-| Average rating on book detail | `Book` model | Add `average_rating` (Float) and `review_count` (Integer) columns via Alembic migration |
-| Review submit | `BookService` or new `ReviewService` | After writing review, update `books.average_rating` and `books.review_count` in same transaction |
-| Book detail response | `BookSchema` / book detail serializer | Add `average_rating`, `review_count`, `user_has_reviewed` to existing response schema |
-| Admin review delete | Existing admin router pattern | Add `DELETE /admin/reviews/{id}` alongside existing `/admin/users` routes |
+| New Feature | Queries | Integration Point |
+|-------------|---------|-------------------|
+| Revenue summary | `orders` (status, created_at), `order_items` (quantity, unit_price) | New `AnalyticsRepository` or `SalesRepository`; new router at `/admin/analytics/` |
+| Top sellers | `order_items` (book_id, quantity, unit_price) JOIN `books` (title, author) JOIN `orders` (status filter) | Same `SalesRepository` |
+| AOV / AOV trend | `orders` (created_at, status) + `order_items` aggregates | Same `SalesRepository` |
+| Low-stock alerts | `books` (stock_quantity) LEFT JOIN `pre_bookings` (waitlist count) | New `InventoryRepository` |
+| Turnover velocity | `order_items` + `orders` (date-windowed) JOIN `books` (current stock) | Same `InventoryRepository` |
+| Pre-booking demand | `pre_bookings` (status = 'waiting') JOIN `books` | Same `InventoryRepository` |
+| Admin review listing | `reviews` JOIN `books` JOIN `users` | New methods on existing `ReviewRepository` (already exists in v2.0) |
+| Bulk review delete | `reviews` WHERE `id = ANY(:ids)` | New method on existing `ReviewRepository`; new route under `/admin/reviews/bulk` |
+| Auth guard | Existing `AdminUser` dependency | Inject `_admin: AdminUser` on every new analytics route — same pattern as `/admin/users` |
 
 ---
 
 ## Sources
 
-- [Product Reviews and Ratings UX — Smashing Magazine](https://www.smashingmagazine.com/2023/01/product-reviews-ratings-ux/) — comprehensive UX patterns for review systems; verified-purchase credibility, distribution displays, anti-patterns (MEDIUM confidence — industry-recognized publication, 2023)
-- [Reviews and Ratings UX — Smart Interface Design Patterns](https://smart-interface-design-patterns.com/articles/reviews-and-ratings-ux/) — table stakes and differentiators for e-commerce review UX (MEDIUM confidence — UX reference site)
-- [Goodreads Rating and Review Guidelines](https://www.goodreads.com/review/guidelines) — real-world policy decisions for a book-specific review platform (HIGH confidence — official platform guidelines)
-- [Bazaarvoice: Ratings and Reviews Platform](https://www.bazaarvoice.com/products/ratings-and-reviews/) — enterprise review platform patterns; moderation and authenticity approaches (MEDIUM confidence — vendor documentation)
-- [Bazaarvoice: Authenticity Rules to Combat Fake Reviews](https://www.bazaarvoice.com/blog/authenticity-rules-combat-fake-reviews/) — fake review vectors and moderation patterns (MEDIUM confidence)
-- [FTC Fake Reviews Rule 2024](https://www.ftc.gov/news-events/news/press-releases/2024/08/federal-trade-commission-announces-final-rule-banning-fake-reviews-testimonials) — legal constraints on incentivized reviews; civil penalties up to $51,744 per violation (HIGH confidence — official government source)
-- [Implementing Event Average Rating with SQLAlchemy — FOSSASIA](https://blog.fossasia.org/implementing-event-average-rating-with-sqlalchemy/) — stored aggregate vs. live compute pattern in SQLAlchemy context (MEDIUM confidence)
-- [FastAPI SQLAlchemy 2.0 Async Patterns — Medium 2025](https://dev-faizan.medium.com/fastapi-sqlalchemy-2-0-modern-async-database-patterns-7879d39b6843) — modern async patterns for aggregate update queries (LOW confidence — blog post, unverified claims)
-- [commercetools Reviews API](https://docs.commercetools.com/api/projects/reviews) — production review API design patterns (HIGH confidence — official API documentation)
+- [Shopify Admin API — Orders resource](https://shopify.dev/docs/api/admin-rest/2025-01/resources/order) — revenue and order analytics patterns from the leading e-commerce platform; period filtering, status filtering (HIGH confidence — official documentation)
+- [commercetools Reports and Analytics](https://docs.commercetools.com/api/) — composable commerce analytics API design patterns (MEDIUM confidence — official documentation, scope partially overlaps)
+- [DashThis: 15 Essential E-Commerce Metrics](https://dashthis.com/blog/10-essential-ecommerce-metrics-for-your-reporting-dashboard/) — canonical list of dashboard metrics that admins expect; revenue, AOV, top sellers (MEDIUM confidence — analytics industry reference)
+- [ThoughtSpot: 15 Essential E-Commerce KPIs](https://www.thoughtspot.com/data-trends/ecommerce-kpis-metrics) — KPI taxonomy including period-over-period comparison as table stakes (MEDIUM confidence)
+- [Moesif: REST API Design — Filtering, Sorting, and Pagination](https://www.moesif.com/blog/technical/api-design/REST-API-Design-Filtering-Sorting-and-Pagination/) — standard query parameter patterns for admin list endpoints (HIGH confidence — widely cited API design reference)
+- [NetSuite: Inventory Turnover Ratio](https://www.netsuite.com/portal/resource/articles/inventory-management/inventory-turnover-ratio.shtml) — inventory turnover formula and its variants; basis for sales velocity adaptation (HIGH confidence — ERP vendor official documentation)
+- [Corporate Finance Institute: Inventory Turnover](https://corporatefinanceinstitute.com/resources/accounting/inventory-turnover/) — COGS-based turnover formula and why a simplified velocity proxy is appropriate without COGS tracking (HIGH confidence — financial education reference)
+- [REST API Bulk Operations Patterns — Microsoft Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design) — bulk delete via request body with ID list is the established REST pattern (HIGH confidence — official architecture documentation)
+- [Moderation API — November 2025 Updates](https://blog.moderationapi.com/blog/product-updates-november-2025/) — current state of review moderation tooling; confirms reactive admin-delete with admin listing is the standard pattern at this scale (LOW confidence — vendor blog, single source)
 
 ---
 
-*Feature research for: BookStore v2.0 — Reviews & Ratings*
-*Researched: 2026-02-26*
+*Feature research for: BookStore v2.1 — Admin Dashboard & Analytics*
+*Researched: 2026-02-27*

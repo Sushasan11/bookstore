@@ -1,265 +1,362 @@
 # Pitfalls Research
 
-**Domain:** FastAPI bookstore v2.0 — adding reviews & ratings to existing system with JWT auth, order history, and async SQLAlchemy
-**Researched:** 2026-02-26
-**Confidence:** HIGH (codebase verified against existing models, verified against official SQLAlchemy/FastAPI docs, multiple community sources)
+**Domain:** FastAPI bookstore v2.1 — adding admin analytics (sales, inventory) and review moderation dashboard to an existing system with Orders/OrderItems/Reviews/PreBookings tables, soft-deleted reviews, and established AdminUser auth dependency
+**Researched:** 2026-02-27
+**Confidence:** HIGH (codebase verified against actual models/repositories, cross-referenced with official SQLAlchemy 2.0 docs, PostgreSQL docs, and community post-mortems)
 
-> This file covers pitfalls specific to adding reviews & ratings (v2.0 milestone) to a system that already has: JWT auth with `ActiveUser`/`AdminUser` deps, `OrderItem` model with `book_id SET NULL on delete`, `Book` model with no review relationship yet, `BookDetailResponse` schema without aggregates, 179 passing tests, and SELECT FOR UPDATE stock locking. Pitfalls are ordered by severity and probability of occurrence.
+> This file covers pitfalls specific to adding analytics endpoints and admin review moderation (v2.1 milestone) to a system that already has: `Order`/`OrderItem` with `SET NULL book_id`, `Review` with soft-delete (`deleted_at`), `PreBooking` with `status` enum, `AdminUser` auth dependency, 240 passing tests, and the five-file module pattern. Pitfalls are ordered by severity.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Verified-Purchase Check Uses Wrong Query — Users Can Review Books They Never Bought
+### Pitfall 1: Revenue Analytics Include Soft-Deleted Reviews and NULL book_id Order Items — Revenue Is Overstated or Understated
 
 **What goes wrong:**
-The "verified purchase" gate is implemented by checking `orders` rather than `order_items`. A query like `SELECT * FROM orders WHERE user_id = :uid AND book_id = :bid` fails because `orders` has no `book_id` column — only `order_items` does. Alternatively, the check queries `order_items` correctly, but does not filter `WHERE orders.status = 'confirmed'` — meaning a user whose order has `status = 'payment_failed'` passes the verified-purchase check and can leave a review.
+Two separate NULL-poisoning bugs can affect revenue/sales analytics:
+
+**Bug A — NULL book_id in revenue queries.** When a book is deleted, `OrderItem.book_id` is set to `NULL` (the existing `SET NULL` FK pattern). A revenue query that joins `order_items` to `books` with an `INNER JOIN` silently drops all sales of deleted books. A query using `SUM(order_items.unit_price * order_items.quantity)` on a `LEFT JOIN` correctly includes deleted-book revenue — but the join to `books` for "top sellers by book title" will return `NULL` for the title, potentially crashing the response serializer or producing `None` values in the JSON.
+
+**Bug B — PAYMENT_FAILED orders counted.** Revenue queries that sum `order_items.unit_price * order_items.quantity` without filtering `orders.status = 'confirmed'` include failed payment orders. The `orders` table has `status: confirmed | payment_failed` — unfiltered `SUM` will overstate revenue significantly.
 
 **Why it happens:**
-Developers look at `Order` first (it has `user_id`) and add a `book_id` filter assuming it's on the parent row. The `OrderItem` model has `book_id` as `SET NULL` nullable — so `WHERE order_items.book_id = :bid` silently excludes rows where the book was deleted, which is correct, but developers may not join to `orders` to filter by status, leaving `payment_failed` orders as valid purchase evidence.
+Both bugs stem from the same root: analytics queries join across `orders` and `order_items` but don't fully replicate the purchase-gate filters that the review system already handles correctly. The existing `OrderRepository.has_user_purchased_book()` uses `Order.status == OrderStatus.CONFIRMED` — but developers writing new analytics queries start from scratch and forget this filter. The `SET NULL` FK on `order_items.book_id` is obvious in the model (`book_id: Mapped[int | None]`) but is easy to forget in aggregate queries.
 
-Looking at the actual models in this codebase:
-- `Order` has: `id`, `user_id`, `status` (`confirmed` | `payment_failed`), `created_at`
-- `OrderItem` has: `order_id`, `book_id` (nullable SET NULL), `quantity`, `unit_price`
+Specifically in this codebase:
+- `Order.status` is `OrderStatus.CONFIRMED | OrderStatus.PAYMENT_FAILED`
+- `OrderItem.book_id` is nullable (`int | None`) with `ondelete="SET NULL"` — deleted books leave `NULL` book_id rows
+- Revenue query WITHOUT `orders.status = 'confirmed'` filter includes failed orders
 
-The correct check is a JOIN across both tables filtering status:
+**How to avoid:**
+Every revenue/sales query MUST:
+1. Filter `Order.status == OrderStatus.CONFIRMED` (import from `app.orders.models`)
+2. Use `SUM(OrderItem.unit_price * OrderItem.quantity)` — this column is non-nullable, so NULL book_id rows are still counted correctly for revenue
+3. When joining to `books` for title/author, use `LEFT JOIN` (not INNER) — handle NULL book title in response schema with a fallback like `"[Deleted Book]"`
+
 ```python
-# CORRECT verified-purchase query
-result = await session.execute(
-    select(OrderItem)
+# CORRECT revenue query — always filter by CONFIRMED status
+from app.orders.models import Order, OrderItem, OrderStatus
+
+stmt = (
+    select(
+        func.sum(OrderItem.unit_price * OrderItem.quantity).label("revenue"),
+        func.count(Order.id.distinct()).label("order_count"),
+    )
     .join(Order, OrderItem.order_id == Order.id)
     .where(
-        Order.user_id == user_id,
-        Order.status == OrderStatus.CONFIRMED,
-        OrderItem.book_id == book_id,
+        Order.status == OrderStatus.CONFIRMED,  # MUST include
+        Order.created_at >= period_start,
+        Order.created_at < period_end,
     )
-    .limit(1)
 )
-has_purchased = result.scalar_one_or_none() is not None
-```
-
-**How to avoid:**
-Always join `order_items → orders` and filter `orders.status = 'confirmed'`. Import `OrderStatus.CONFIRMED` from `app.orders.models` — do not hardcode the string `"confirmed"`. Add a test that verifies a user with only `payment_failed` orders cannot post a review.
-
-**Warning signs:**
-- Verified-purchase check only queries `orders` table with no join
-- Check passes for users whose order has `status = 'payment_failed'`
-- No test that creates a `payment_failed` order and asserts the user is denied
-
-**Phase to address:** Review creation phase (first phase). The `can_review` gate must be correct before any other review logic is built. Wrong gate = wrong foundation for all downstream tests.
-
----
-
-### Pitfall 2: Race Condition on Duplicate Review Submission — Application-Level Check Is Not Enough
-
-**What goes wrong:**
-The "one review per user per book" constraint is enforced by an application-level existence check: `SELECT * FROM reviews WHERE user_id = :uid AND book_id = :bid` followed by `INSERT`. Under concurrent requests (browser double-click, client retry), two requests both pass the SELECT check simultaneously and both proceed to INSERT, creating two reviews for the same user-book pair. The application now has inconsistent state — one user has two reviews, the average rating calculation is wrong, and future edit/delete operations behave unpredictably.
-
-**Why it happens:**
-Developers trust the application-level check because it "always worked in tests." Tests are sequential; two concurrent requests expose the TOCTOU (time-of-check, time-of-use) window. Without a database-level UNIQUE constraint, no enforcement exists between the SELECT and INSERT.
-
-**How to avoid:**
-Two layers are required — the database constraint is mandatory, the application check is optional:
-
-1. **Database level (mandatory):** Add a UNIQUE constraint on `(user_id, book_id)` in the Alembic migration for the `reviews` table. This is the actual enforcement mechanism.
-
-2. **Application level (graceful UX):** Catch `sqlalchemy.exc.IntegrityError` with `asyncpg.exceptions.UniqueViolationError` as the cause and convert it to a clean 409 response — do NOT let it bubble as a 500:
-
-```python
-from sqlalchemy.exc import IntegrityError
-from asyncpg.exceptions import UniqueViolationError
-
-try:
-    session.add(review)
-    await session.flush()
-except IntegrityError as exc:
-    if isinstance(exc.orig, UniqueViolationError):
-        raise AppError(409, "You have already reviewed this book", "REVIEW_DUPLICATE")
-    raise
 ```
 
 **Warning signs:**
-- No `UniqueConstraint("user_id", "book_id")` in the `reviews` Alembic migration
-- The existence check is a SELECT followed by INSERT with no IntegrityError handler
-- Test suite has no concurrent-submission test (acceptable at this scale) but also no test that submits twice and expects 409 on the second
+- Analytics query joins `order_items` without `WHERE orders.status = 'confirmed'`
+- Analytics query uses `INNER JOIN books ON order_items.book_id = books.id` — this drops deleted-book revenue
+- `top_sellers` response has fewer entries than expected (deleted books silently excluded)
+- Revenue numbers are higher than checkout totals (PAYMENT_FAILED orders included)
 
-**Phase to address:** Review model/migration phase (first phase). The unique constraint must be in the migration, not added later. Adding it later requires a data migration to remove any existing duplicates first.
+**Phase to address:** Sales analytics phase (first analytics phase). The revenue query is the foundation — every downstream metric (top sellers, AOV, period comparison) is derived from it. Wrong filter = wrong foundation for all analytics.
 
 ---
 
-### Pitfall 3: Average Rating Is Computed Live on Every Book Detail Request — No Index, Full Scan
+### Pitfall 2: Period-over-Period Revenue Comparison Uses Server Timezone, Not UTC — Day Boundary Is Wrong
 
 **What goes wrong:**
-`GET /books/{book_id}` currently returns `BookDetailResponse` with no rating fields. Adding `average_rating` and `review_count` as live-computed aggregates via a subquery on every call is correct for data freshness, but without an index on `reviews(book_id)`, every book detail request does a full table scan of the `reviews` table. At 1k reviews this is unnoticed; at 10k reviews it adds 50-200ms per request.
+Revenue summaries for "today", "this week", "this month" are implemented with `date_trunc('day', orders.created_at)` or Python-side `datetime.now()` comparisons. The `orders.created_at` column is stored as `TIMESTAMPTZ` (UTC internally in PostgreSQL), but `date_trunc` uses the database session's timezone if not specified explicitly. In a local dev environment, the session timezone may match local time; in production, it is almost always UTC. The result: "today's revenue" for a business in New York at 10pm EST reports 0 because it's already "tomorrow" in UTC.
+
+Additionally, Python's `datetime.now()` returns a naive datetime (no timezone) in environments where `TZ` is not set. Comparing a naive Python datetime against a `TIMESTAMPTZ` PostgreSQL column raises `TypeError` or produces incorrect results depending on the asyncpg version.
 
 **Why it happens:**
-The aggregate is added as a subquery in the book detail query or as a Python-side `COUNT`/`AVG` call. No index is added because the migration "just adds the table" and the developer assumes PostgreSQL will handle it.
+This codebase stores `created_at` as `DateTime(timezone=True)` consistently across all models (`Order`, `Review`, `PreBooking`, `Book`). The pattern for filtering by date is correct in existing code (the pre-booking system filters by status, not date), so there is no established pattern for date-range filtering to copy from. Developers reach for `datetime.today()` or `datetime.now()` without thinking about timezone context, and the bug only surfaces when the production server runs in UTC while the business expects local-time day boundaries.
 
 **How to avoid:**
-Add a composite index on `(book_id)` at minimum — `(book_id, rating)` is even better since `AVG(rating)` reads the `rating` column:
+Always use timezone-aware datetimes in Python and explicit `AT TIME ZONE` in PostgreSQL queries when local-time boundaries matter. For an API that is timezone-agnostic (API-first, no defined locale), use UTC consistently and document that all period boundaries are UTC:
 
 ```python
-# In the reviews Alembic migration:
-Index("ix_reviews_book_id", "book_id")
-# Or composite for covering index:
-Index("ix_reviews_book_id_rating", "book_id", "rating")
+from datetime import datetime, timezone, timedelta
+
+# CORRECT — timezone-aware, UTC-based
+def get_period_bounds(period: str) -> tuple[datetime, datetime]:
+    now = datetime.now(timezone.utc)
+    if period == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "week":
+        start = now - timedelta(days=now.weekday())
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return start, now
 ```
 
-For this project's scale (bookstore, not Amazon), live-computed aggregates via a single indexed query are fine. Do NOT add denormalized `average_rating`/`review_count` columns to the `books` table for v2.0 — the synchronization complexity (trigger or application-level update on every review insert/update/delete) creates more pitfalls than it solves. Compute live with an index.
+Never use `datetime.now()` (naive). Always use `datetime.now(timezone.utc)` or `datetime.utcnow().replace(tzinfo=timezone.utc)`.
 
-The correct query pattern for live aggregates:
+**Warning signs:**
+- Period bounds computed with `datetime.now()` (no timezone argument)
+- `date_trunc('day', orders.created_at)` used without `AT TIME ZONE` clause
+- "Today's revenue" returns 0 after 8pm in any North American timezone
+- Python `datetime.today()` anywhere in the analytics service
+
+**Phase to address:** Sales analytics phase. Date boundary logic must be correct from the start — a wrong period boundary silently returns wrong data with no error, making it hard to detect.
+
+---
+
+### Pitfall 3: Admin Review Moderation List Includes Soft-Deleted Reviews — Deleted Reviews Reappear in Moderation Dashboard
+
+**What goes wrong:**
+The existing `ReviewRepository` methods all filter `Review.deleted_at.is_(None)` to exclude soft-deleted reviews. A new admin review listing endpoint built for v2.1 fetches reviews without this filter — soft-deleted reviews appear in the moderation list. Admins see "already deleted" reviews and attempting to bulk-delete them again raises a 404 (since the service checks `deleted_at.is_(None)` before returning the review) while the list shows the record. This creates a confusing UX where the dashboard shows reviews the admin cannot act on.
+
+More seriously: if the bulk-delete endpoint skips the soft-delete filter and calls `hard DELETE` directly on a list of IDs, it will hard-delete records that were previously soft-deleted — reviews that may have been soft-deleted by the user but are still referenced in analytics (e.g., review count). The audit trail is lost.
+
+**Why it happens:**
+Developers add a new admin list endpoint (different from the user-facing `GET /books/{id}/reviews`) and copy the query structure but forget to carry over `Review.deleted_at.is_(None)`. The soft-delete filter is applied across 4 methods in `ReviewRepository` — it's easy to miss on a fifth method written independently. The existing `get_by_id`, `get_by_user_and_book`, `list_for_book`, and `get_aggregates` all filter soft-deleted records; a new `list_all_for_admin` written without the existing repository as the reference will omit it.
+
+**How to avoid:**
+The admin review listing query MUST include `Review.deleted_at.is_(None)`. Follow the exact pattern from `list_for_book()`:
+
 ```python
-from sqlalchemy import func, select
+async def list_all_for_admin(
+    self,
+    *,
+    book_id: int | None = None,
+    user_id: int | None = None,
+    min_rating: int | None = None,
+    max_rating: int | None = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    page: int = 1,
+    size: int = 20,
+) -> tuple[list[Review], int]:
+    base_stmt = select(Review).where(
+        Review.deleted_at.is_(None),  # ALWAYS include — matches list_for_book pattern
+    )
+    # ... add optional filters ...
+```
 
-result = await session.execute(
+For bulk-delete (admin), implement as batch soft-delete (set `deleted_at = NOW()`) NOT a hard `DELETE`. This is consistent with the existing single-review soft-delete pattern and preserves the audit trail.
+
+**Warning signs:**
+- Admin review list query does not include `Review.deleted_at.is_(None)`
+- Admin dashboard shows reviews with non-null `deleted_at` timestamps
+- Bulk-delete endpoint uses `DELETE FROM reviews WHERE id IN (...)` instead of `UPDATE reviews SET deleted_at = NOW() WHERE id IN (...)`
+- No test that creates a soft-deleted review and asserts it does NOT appear in the admin list
+
+**Phase to address:** Review moderation phase. The soft-delete filter must be on the admin list query from day one — if missed, the admin will operate on phantom records.
+
+---
+
+### Pitfall 4: Bulk Delete Uses ORM session.delete() Per Row — N+1 Round-Trips for Large Batches
+
+**What goes wrong:**
+The admin bulk-delete endpoint receives a list of review IDs (e.g., 20-50 IDs) and implements deletion by:
+```python
+for review_id in review_ids:
+    review = await review_repo.get_by_id(review_id)  # SELECT per ID
+    await review_repo.soft_delete(review)             # UPDATE per ID
+```
+This is N+1 for both the SELECT phase and the UPDATE phase. A bulk-delete of 50 reviews requires 100 database round-trips (50 SELECTs + 50 UPDATEs). While 50 reviews is small, the test suite will be slow, and real-world admin abuse-moderation scenarios (flagged review spam) may delete hundreds at once.
+
+**Why it happens:**
+The existing `soft_delete()` method in `ReviewRepository` operates on a single ORM object — it's the natural pattern to call in a loop. Developers copying the single-delete pattern for bulk operations assume the session batches multiple flushes; it does not.
+
+**How to avoid:**
+Use a single `UPDATE` statement for bulk soft-delete using SQLAlchemy 2.0 DML:
+
+```python
+from datetime import UTC, datetime
+from sqlalchemy import update
+
+async def bulk_soft_delete(self, review_ids: list[int]) -> int:
+    """Soft-delete multiple reviews by ID. Returns count of affected rows.
+
+    Uses a single UPDATE statement — not a loop of single deletes.
+    synchronize_session="fetch" is required for AsyncSession to keep session state consistent.
+    """
+    if not review_ids:
+        return 0
+    stmt = (
+        update(Review)
+        .where(
+            Review.id.in_(review_ids),
+            Review.deleted_at.is_(None),  # Only affect non-deleted reviews
+        )
+        .values(deleted_at=datetime.now(UTC))
+        .returning(Review.id)
+    )
+    result = await self.session.execute(stmt, execution_options={"synchronize_session": "fetch"})
+    affected = len(result.scalars().all())
+    await self.session.flush()
+    return affected
+```
+
+The `synchronize_session="fetch"` execution option is required for `AsyncSession` when using bulk UPDATE/DELETE with the ORM — without it, the in-memory session state becomes inconsistent with the database (SQLAlchemy GitHub issue #6024).
+
+**Warning signs:**
+- Bulk-delete implemented as a `for review_id in review_ids: session.delete(...)` loop
+- Bulk-delete takes measurable time for batches of 20+ reviews (log shows sequential queries)
+- `synchronize_session` not specified on `session.execute(update(...))` calls
+- No test that bulk-deletes 10+ reviews in one request and verifies all are soft-deleted
+
+**Phase to address:** Review moderation phase. The bulk-delete implementation must use set-based SQL from the start — the ORM loop pattern is not an acceptable foundation to optimize later.
+
+---
+
+### Pitfall 5: Top-Sellers Query Uses SUM(quantity) But Not SUM(unit_price * quantity) — Volume vs. Revenue Confusion
+
+**What goes wrong:**
+The requirements specify two top-seller metrics: "top-selling books by revenue" (highest total revenue) and "top-selling books by volume" (most units sold). A single query is written that uses either `SUM(quantity)` or `SUM(unit_price * quantity)` and reused for both — the two metrics return different book rankings. For example, a $0.99 ebook sold 1000 times ranks #1 by volume but may rank #5 by revenue. If the same query powers both endpoints, one metric is always wrong.
+
+Additionally, when books are deleted (`book_id IS NULL`), a `GROUP BY book_id` query will aggregate all deleted books into a single `NULL` group — a "ghost" entry appears in the top-sellers list with `book_id = NULL` and aggregated metrics from all deleted books combined. This `NULL` entry cannot be linked to a title and will cause a response serialization error if the schema expects a non-null `book_id`.
+
+**Why it happens:**
+The requirements look similar ("top-selling by revenue" and "top-selling by volume"), so developers write one query and try to parametrize it by the sort column. The `NULL book_id` issue is a consequence of the existing `SET NULL` FK pattern — it's correct for order history preservation but produces spurious `NULL` groups in analytics aggregations.
+
+**How to avoid:**
+Write separate labeled queries for revenue and volume metrics, or parametrize clearly with a `metric: Literal["revenue", "volume"]` enum. Always add `WHERE order_items.book_id IS NOT NULL` to top-sellers queries to exclude orphaned items:
+
+```python
+# Top sellers by revenue — SUM(unit_price * quantity)
+stmt_revenue = (
     select(
-        func.avg(Review.rating).label("average_rating"),
-        func.count(Review.id).label("review_count"),
-    ).where(Review.book_id == book_id)
-)
-row = result.one()
-avg = float(row.average_rating) if row.average_rating else None
-count = row.review_count
-```
-
-**Warning signs:**
-- No `Index` on `reviews.book_id` in the migration
-- `BookDetailResponse` aggregates are computed in Python after loading all reviews into memory via `selectinload`
-- EXPLAIN ANALYZE on book detail shows `Seq Scan` on `reviews` table
-
-**Phase to address:** Review model/migration phase. Index must be in the initial migration alongside the table creation.
-
----
-
-### Pitfall 4: Book Deletion Silences Reviews — SET NULL on book_id Creates Phantom Aggregate Data
-
-**What goes wrong:**
-The existing `OrderItem.book_id` uses `ondelete="SET NULL"` to preserve order history when a book is deleted. If `Review.book_id` also uses `SET NULL`, deleted-book reviews persist in the table with `book_id = NULL`. The aggregate query `WHERE book_id = :bid` correctly excludes these (NULL != any value), so ratings for the deleted book are silently dropped. But a different query — `WHERE book_id IS NULL` — could accidentally aggregate all orphaned reviews together, producing meaningless data.
-
-More critically: if `Review.book_id` uses `CASCADE DELETE`, all reviews are deleted when a book is deleted. This is the correct behavior for reviews (unlike orders, reviews have no independent value if the book no longer exists). But developers may copy the `OrderItem` FK pattern and use `SET NULL` without thinking through the review lifecycle.
-
-**Why it happens:**
-The existing codebase pattern for `book_id` FKs uses `SET NULL` (correct for order history). Developers copy this pattern without evaluating whether reviews have the same "preserve history" requirement.
-
-**How to avoid:**
-Use `ondelete="CASCADE"` on `Review.book_id`, NOT `SET NULL`. Reviews without a book are meaningless — cascade delete is correct:
-
-```python
-class Review(Base):
-    __tablename__ = "reviews"
-
-    book_id: Mapped[int] = mapped_column(
-        ForeignKey("books.id", ondelete="CASCADE"),  # CASCADE, not SET NULL
-        nullable=False,
-        index=True,
+        OrderItem.book_id,
+        func.sum(OrderItem.unit_price * OrderItem.quantity).label("total_revenue"),
+        func.sum(OrderItem.quantity).label("units_sold"),
     )
-```
-
-If admin deletes a book, its reviews should disappear with it. Document this decision explicitly — it differs from `OrderItem` intentionally.
-
-**Warning signs:**
-- `Review.book_id` FK uses `ondelete="SET NULL"` (copied from OrderItem pattern)
-- `book_id` column on `Review` model is `Mapped[int | None]` (nullable) — signals SET NULL intention
-- No test that deletes a book and verifies its reviews are also deleted
-
-**Phase to address:** Review model/migration phase. FK behavior is a schema decision — cannot be changed without a migration after the fact.
-
----
-
-### Pitfall 5: Admin Delete Uses Wrong Auth Dependency — Non-Admins Can Delete Any Review
-
-**What goes wrong:**
-The admin "delete any review" endpoint is decorated with `ActiveUser` instead of `AdminUser`, or the route handler checks `current_user.get("role") == "admin"` inline without using the existing `require_admin` dependency chain. The inline check is missed in a refactor, or the wrong dependency type alias is imported. Non-authenticated users or regular users can delete any review.
-
-**Why it happens:**
-The project has three auth dependency aliases: `CurrentUser` (JWT decode only, no DB check), `ActiveUser` (JWT + is_active DB check), and `AdminUser` (JWT + is_active + role check). Developers building review endpoints use `ActiveUser` for user-facing endpoints and forget to switch to `AdminUser` for the admin delete endpoint. The routes work in tests if tests authenticate as admin — the wrong dependency passes because the test user is active.
-
-Looking at `app/core/deps.py`:
-- `CurrentUser` = JWT decode only (no DB check) — wrong for any protected endpoint
-- `ActiveUser` = JWT + is_active DB check — correct for user-facing review endpoints
-- `AdminUser` = JWT + is_active + admin role check — required for admin review delete
-
-**How to avoid:**
-Use `AdminUser` on the admin delete endpoint. Never use `CurrentUser` for any endpoint that modifies data. The pattern from existing admin endpoints in `app/books/router.py` is correct — follow it exactly:
-
-```python
-# CORRECT — matches the pattern in books/router.py
-@router.delete("/admin/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def admin_delete_review(
-    review_id: int,
-    db: DbSession,
-    admin: AdminUser,  # AdminUser, not ActiveUser
-) -> None:
-    ...
-```
-
-**Warning signs:**
-- Admin delete endpoint imports `ActiveUser` instead of `AdminUser`
-- Test for admin delete passes when called with a regular user token
-- No test that calls admin delete with a regular-user JWT and asserts 403
-
-**Phase to address:** Review admin moderation phase. Auth dependency must be correct on initial implementation — auth bugs discovered late require re-examining all existing tests.
-
----
-
-### Pitfall 6: BookDetailResponse Schema Not Updated — Average Rating Fields Missing From Response
-
-**What goes wrong:**
-`GET /books/{book_id}` uses `BookDetailResponse` in `app/books/schemas.py`. This schema is validated with `model_config = {"from_attributes": True}` and validated via `BookDetailResponse.model_validate(book)`. Adding `average_rating` and `review_count` fields to the response requires either: (a) adding them to the `Book` ORM model (wrong — these are aggregates, not stored columns), or (b) adding them to the schema with data passed separately. Developers add the fields to the schema but forget to pass the computed values, resulting in `None` / `0` being returned silently because the Pydantic model defaults them.
-
-**Why it happens:**
-The existing pattern is `BookDetailResponse.model_validate(book)` — the ORM object is passed directly. For computed aggregates (not stored on the book row), `model_validate(book)` will not have the values. Pydantic defaults kick in silently: `average_rating: float | None = None` defaults to `None` without error.
-
-**How to avoid:**
-Do not extend `model_validate(book)` for aggregate fields. Instead, pass aggregates explicitly:
-
-```python
-# In the router — fetch book and aggregates separately
-book = await service.get_book_or_404(book_id)
-avg_rating, review_count = await review_repo.get_aggregates(book_id)
-
-return BookDetailResponse(
-    **BookDetailResponse.model_validate(book).model_dump(),
-    average_rating=avg_rating,
-    review_count=review_count,
+    .join(Order, OrderItem.order_id == Order.id)
+    .where(
+        Order.status == OrderStatus.CONFIRMED,
+        OrderItem.book_id.is_not(None),  # REQUIRED: exclude deleted-book items
+    )
+    .group_by(OrderItem.book_id)
+    .order_by(func.sum(OrderItem.unit_price * OrderItem.quantity).desc())
+    .limit(limit)
 )
 ```
 
-Or use a factory method pattern on the schema that accepts both the ORM object and computed fields. Either way, never rely on `model_validate(orm_object)` to populate fields that are not ORM attributes.
-
 **Warning signs:**
-- `BookDetailResponse` has `average_rating: float | None = None` with a default
-- The router still calls `BookDetailResponse.model_validate(book)` after adding aggregate fields
-- `GET /books/{book_id}` always returns `"average_rating": null` and `"review_count": 0`
-- No test asserts non-null values for `average_rating` after reviews are created
+- Top-sellers endpoint uses `ORDER BY SUM(quantity)` for the "by revenue" variant (should be `SUM(unit_price * quantity)`)
+- Top-sellers query lacks `WHERE order_items.book_id IS NOT NULL`
+- Top-sellers response includes an entry with `book_id: null` or `title: null`
+- "By volume" and "by revenue" return identical rankings (only one metric is actually being computed)
 
-**Phase to address:** Book detail aggregate phase. The schema change and the data-passing pattern must be implemented together — not separately by different commits.
+**Phase to address:** Sales analytics phase. The two metrics must be distinguished from initial implementation — confusing them produces silently wrong data.
 
 ---
 
-### Pitfall 7: Review Model Missing From Central Registry — Test Suite Creates Schema Without reviews Table
+### Pitfall 6: Inventory Analytics Uses Current `stock_quantity` for "Turnover Rate" — Snapshot vs. Live Confusion
 
 **What goes wrong:**
-The new `Review` model is created in `app/reviews/models.py` but is not imported in `app/db/base.py`. The test suite's `conftest.py` imports `Base` from `app/db/base` and calls `create_all`. The `reviews` table is absent from `Base.metadata`. All review tests fail with `asyncpg.exceptions.UndefinedTableError: relation "reviews" does not exist`. Worse: the error may not appear immediately — it appears when the first test that inserts a review runs, potentially mid-suite, confusing the failure location.
+Stock turnover rate (sales velocity per book) is calculated as `units_sold / current_stock_quantity`. If `current_stock_quantity` is 0 (out of stock), division by zero occurs either in Python or in SQL (`SUM(quantity) / books.stock_quantity` raises a `ZeroDivisionError` or PostgreSQL `division by zero` error). Even when stock > 0, using "current stock" to compute historical turnover is conceptually wrong: the current stock reflects post-sale inventory, not the initial stock level. The metric is better expressed as units sold per day/week (sales velocity) rather than as a ratio to current stock.
 
 **Why it happens:**
-This is the same pitfall as v1.1 Pitfall 6 (pre-booking model). It recurs with every new model. The `app/db/base.py` central registry is easy to forget, especially when a new `app/reviews/` module is created from scratch.
-
-Current registry in `app/db/base.py` must be extended. After adding the Review model:
-```python
-# app/db/base.py — ADD THIS LINE:
-from app.reviews.models import Review  # noqa: F401
-```
+"Turnover rate" has a standard retail definition (Cost of Goods Sold / Average Inventory), but implementing that correctly requires tracking historical inventory levels, which this system does not do. Developers reach for the available `books.stock_quantity` column and compute a ratio, producing a metric that is undefined when stock = 0 and misleading otherwise.
 
 **How to avoid:**
-Treat updating `app/db/base.py` as step 1 of model creation, not step 3. The first thing after creating `app/reviews/models.py` is adding the import to `app/db/base.py`. Immediately run `pytest tests/test_health.py` — if it passes, the schema was created correctly. If it fails with `UndefinedTableError`, the import is missing.
+Express stock turnover as "units sold over the period" (raw velocity) rather than a ratio to current stock. This avoids division-by-zero entirely and is meaningful with available data:
+
+```python
+# CORRECT: express as units sold (velocity), not ratio to current stock
+stmt = (
+    select(
+        OrderItem.book_id,
+        func.sum(OrderItem.quantity).label("units_sold"),
+        Book.stock_quantity.label("current_stock"),
+        Book.title.label("title"),
+    )
+    .join(Order, OrderItem.order_id == Order.id)
+    .join(Book, OrderItem.book_id == Book.id)  # INNER JOIN OK here — we want live books only
+    .where(
+        Order.status == OrderStatus.CONFIRMED,
+        OrderItem.book_id.is_not(None),
+    )
+    .group_by(OrderItem.book_id, Book.stock_quantity, Book.title)
+    .order_by(func.sum(OrderItem.quantity).desc())
+)
+```
+
+If a ratio is needed, use `NULLIF(books.stock_quantity, 0)` to avoid division by zero: `func.sum(OrderItem.quantity) / func.nullif(Book.stock_quantity, 0)`.
 
 **Warning signs:**
-- `app/reviews/models.py` exists but `app/db/base.py` has no import from it
-- `alembic revision --autogenerate -m "add reviews"` produces an empty migration (model not in metadata)
-- `pytest tests/test_health.py` passes but `pytest tests/reviews/` fails with `UndefinedTableError`
+- Any `SUM(quantity) / stock_quantity` calculation without `NULLIF`
+- Analytics endpoint returns 500 for books with `stock_quantity = 0`
+- "Turnover rate" field is `None` or `Infinity` for in-stock books
+- No test that runs turnover analytics when any book has `stock_quantity = 0`
 
-**Phase to address:** Review model/migration phase (first phase). This must be the first step — before writing any service or router code.
+**Phase to address:** Inventory analytics phase. Division-by-zero in analytics is a hard crash — it must be handled before the endpoint ships.
+
+---
+
+### Pitfall 7: Pre-Booking Demand Query Counts ALL Statuses, Not Just "Waiting" — Demand Is Overstated
+
+**What goes wrong:**
+The "pre-booking demand" metric (most-waited-for out-of-stock books) is implemented as `COUNT(pre_bookings) GROUP BY book_id`. This counts ALL pre-bookings including those with `status = 'notified'` or `status = 'cancelled'`. A book that was out of stock 6 months ago with 50 pre-bookings (all now `notified` — restocked and alerted) shows as having high current demand, when the actual current waitlist (`status = 'waiting'`) may be 0. Admins make restocking decisions based on inflated demand numbers.
+
+**Why it happens:**
+The `PreBooking` model has three statuses: `WAITING`, `NOTIFIED`, `CANCELLED`. Developers querying "how many people want this book" naturally write `COUNT(*)` without filtering status. The partial unique index (`uq_pre_bookings_user_book_waiting`) that enforces one-active-per-user only covers `status = 'waiting'` — it's a hint that WAITING is the "active" status, but developers writing analytics queries may not read the index definition.
+
+**How to avoid:**
+Filter `PreBooking.status == PreBookStatus.WAITING` to count only active demand:
+
+```python
+from app.prebooks.models import PreBooking, PreBookStatus
+
+stmt = (
+    select(
+        PreBooking.book_id,
+        func.count(PreBooking.id).label("waiting_count"),
+        Book.title.label("title"),
+        Book.stock_quantity.label("current_stock"),
+    )
+    .join(Book, PreBooking.book_id == Book.id)
+    .where(PreBooking.status == PreBookStatus.WAITING)  # MUST filter — only active demand
+    .group_by(PreBooking.book_id, Book.title, Book.stock_quantity)
+    .order_by(func.count(PreBooking.id).desc())
+    .limit(limit)
+)
+```
+
+**Warning signs:**
+- Pre-booking demand query lacks `WHERE pre_bookings.status = 'waiting'`
+- Demand count is much higher than expected for books that were recently restocked
+- No test that creates `NOTIFIED` and `CANCELLED` pre-bookings and asserts they are excluded from demand count
+- Import uses `PreBookStatus` but no `.WAITING` filter in the WHERE clause
+
+**Phase to address:** Inventory analytics phase. Wrong status filter produces misleading restocking signals — a silent data quality error that only becomes apparent after comparing with real-world inventory decisions.
+
+---
+
+### Pitfall 8: Admin Review Moderation List Calls N+1 `has_user_purchased_book()` Checks — Verified Purchase Flag Breaks at Scale
+
+**What goes wrong:**
+The existing v2.0 review list endpoint (`GET /books/{id}/reviews`) already has an accepted N+1 tech debt: `has_user_purchased_book()` is called once per review to compute the `verified_purchase` flag. For a page of 20 reviews, this is 20 EXISTS subqueries — accepted for user-facing lists with small page sizes.
+
+The v2.1 admin moderation list may default to larger page sizes (e.g., 50-100 reviews per page for admin efficiency), and the `verified_purchase` flag may not be needed at all for admin moderation purposes (admins moderate based on content quality, not purchase status). If the verified_purchase flag is included in the admin list response, and the page size is large, the N+1 behavior becomes a bottleneck.
+
+**Why it happens:**
+The admin review list reuses the same `ReviewResponse` schema as the user-facing list, which includes `verified_purchase`. Developers implementing the admin endpoint call the same service method (`list_for_book`) and get the N+1 for free.
+
+**How to avoid:**
+The admin review list should use a different, admin-specific response schema that omits `verified_purchase` or uses a separate schema that includes only moderation-relevant fields. If `verified_purchase` is required in the admin view, implement it as a batch query (single EXISTS JOIN) rather than N individual queries:
+
+```python
+# Batch verified-purchase check — one query for all user_ids in the page
+async def get_verified_purchase_batch(
+    self, user_book_pairs: list[tuple[int, int]]
+) -> set[tuple[int, int]]:
+    """Return set of (user_id, book_id) pairs that represent confirmed purchases."""
+    # Build OR conditions or use a VALUES subquery approach
+```
+
+For MVP, omitting `verified_purchase` from the admin moderation view is the correct call — admins moderate content, not purchase status.
+
+**Warning signs:**
+- Admin review list response schema includes `verified_purchase` field
+- `list_all_for_admin()` calls `has_user_purchased_book()` in a loop
+- Admin list endpoint responds significantly slower than user-facing list for same page size
+- No explicit decision documented about whether admin view needs `verified_purchase`
+
+**Phase to address:** Review moderation phase. Decide upfront whether the admin schema includes `verified_purchase` and, if so, implement a batch query — do not inherit the N+1 from the user-facing list.
 
 ---
 
@@ -269,31 +366,32 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Storing `average_rating` / `review_count` on `books` table | Faster reads (no aggregation query) | Must update on every review insert/edit/delete; if update fails, data is stale forever; adds complexity to 4 endpoints | Never for v2.0 — live aggregate with index is simpler and correct at this scale |
-| Application-level duplicate check only (no UNIQUE constraint) | Simpler migration | Race condition allows duplicate reviews under concurrent requests; data corruption is silent | Never — always pair with DB constraint |
-| Using `SET NULL` on `Review.book_id` (copied from OrderItem pattern) | Consistent with existing FK pattern | Orphaned reviews with `NULL book_id` pollute aggregate queries; reviews without books are meaningless | Never — use CASCADE for reviews |
-| Allowing review text as empty string (not NULL) | Simpler validation | Inconsistent empty-vs-null states; harder to query "reviews with text" | Acceptable only if you never need to distinguish "no text provided" from "user explicitly submitted empty" |
-| Verified-purchase check inside the route handler (not service layer) | Faster to implement | Authorization logic scattered across handlers; difficult to test in isolation | Acceptable for MVP if placed in a dedicated `_assert_can_review()` helper; not acceptable if duplicated across multiple endpoints |
-| No pagination on review list endpoint | Simpler implementation | Books with 500+ reviews return entire list as JSON; slow client parsing | Acceptable only if total review count per book is proven to stay under ~50; add pagination from day one otherwise |
-| Including `user_id` in review creation request body | Allows flexibility | Users can impersonate other users by passing any `user_id`; must always derive `user_id` from JWT token, not request body | Never — `user_id` must always come from `current_user["sub"]` |
+| Reusing `ReviewResponse` schema for admin moderation list | No new schema to write | N+1 verified_purchase check; admin concerns mixed with user concerns | Never — create an `AdminReviewResponse` schema that omits user-specific fields |
+| Hardcoding `"confirmed"` string in revenue queries instead of `OrderStatus.CONFIRMED` | Fewer imports | If `OrderStatus` enum values change (e.g., renamed), revenue queries silently include wrong orders | Never — always import and use the enum |
+| Computing period bounds in the router layer (not service) | Simple to add one-off period logic | Period logic tested only via HTTP tests; harder to unit-test; date boundaries duplicated across endpoints | Acceptable only if there is a single analytics endpoint; not acceptable for multiple period-parameterized endpoints |
+| Using `PAYMENT_FAILED` orders as a negative signal in analytics | Provides "failed conversion" insight | If included in revenue sums, overstates revenue; confusing to explain to admins | Never include in revenue sums; may include separately as a "failed orders" count if explicitly labeled |
+| Returning raw SQL aggregate results as floats without rounding | Simpler code | `average_order_value` returns `3.141592653589793` instead of `3.14`; poor UX | Never for money values — always round to 2 decimal places using Python `round(float(val), 2)` or SQL `ROUND(val::numeric, 2)` |
+| No upper bound on `limit` for top-sellers queries | Flexible for admin | Large limit values load entire `order_items` table for aggregation; unindexed aggregation on large tables | Never without `le=100` cap on the query parameter |
+| Omitting `WHERE deleted_at IS NULL` from admin review list | Simpler query | Deleted reviews appear in moderation; admins try to act on phantom records | Never — soft-delete filter is mandatory on all review queries |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting the new review system to existing components.
+Common mistakes when connecting analytics to existing components.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Verified purchase check | Querying `orders.book_id` (column does not exist) | Join `order_items` to `orders`: `WHERE order_items.book_id = :bid AND orders.user_id = :uid AND orders.status = 'confirmed'` |
-| Verified purchase check | Not filtering by `orders.status = 'confirmed'` | Import and use `OrderStatus.CONFIRMED` from `app.orders.models` — not the hardcoded string |
-| BookDetailResponse | Passing ORM `Book` object to `model_validate()` for aggregate fields | Fetch aggregates separately; construct response with explicit keyword arguments alongside `model_validate(book)` |
-| Auth dependency on admin delete | Using `ActiveUser` instead of `AdminUser` | Use `AdminUser` alias from `app.core.deps` — matches the pattern in `app/books/router.py` |
-| FK delete behavior | Copying `ondelete="SET NULL"` from `OrderItem.book_id` | Reviews use `ondelete="CASCADE"` — review without a book has no meaning (unlike order history) |
-| User identity in review create | Accepting `user_id` from request body | Always extract `user_id` from `int(current_user["sub"])` using `ActiveUser` dependency |
-| New model registration | Creating `app/reviews/models.py` without updating `app/db/base.py` | Add `from app.reviews.models import Review  # noqa: F401` to `app/db/base.py` immediately |
-| UNIQUE constraint handling | Letting `IntegrityError` bubble as HTTP 500 | Catch `IntegrityError`, check `exc.orig` is `UniqueViolationError`, raise `AppError(409, ...)` |
-| Existing 179 tests | New Review model breaks schema creation for existing tests | After adding model import to `app/db/base.py`, run full test suite — not just review tests |
+| Revenue from `order_items` | Not filtering `orders.status = 'confirmed'` | Always join `order_items → orders` and `WHERE orders.status = 'confirmed'`; import `OrderStatus.CONFIRMED` from `app.orders.models` |
+| Revenue from `order_items` | Using INNER JOIN to `books` — drops deleted-book items | Use `LEFT JOIN books ON order_items.book_id = books.id`; handle `NULL` title in schema with fallback string |
+| Top-sellers | Including `NULL book_id` rows in GROUP BY | Always add `WHERE order_items.book_id IS NOT NULL` to top-sellers aggregations |
+| Pre-booking demand | Counting all statuses | Filter `WHERE pre_bookings.status = 'waiting'`; import `PreBookStatus.WAITING` from `app.prebooks.models` |
+| Admin review list | Missing soft-delete filter | Always include `Review.deleted_at.is_(None)` — same as all 4 existing `ReviewRepository` methods |
+| Admin review list | Reusing user-facing `ReviewResponse` schema | Create `AdminReviewResponse` schema; decide explicitly whether `verified_purchase` is included |
+| Bulk soft-delete | Loop over `session.delete()` per review | Use `UPDATE reviews SET deleted_at = NOW() WHERE id IN (...)` with `synchronize_session="fetch"` for `AsyncSession` |
+| Period bounds | `datetime.now()` without timezone | Always use `datetime.now(timezone.utc)`; never pass naive datetimes to asyncpg TIMESTAMPTZ columns |
+| Average order value | `SUM(revenue) / COUNT(orders)` when COUNT is 0 | Use `NULLIF(COUNT(*), 0)` or check in Python before dividing; return `null` not `0` when no orders in period |
+| Admin auth on new analytics endpoints | Forgetting `AdminUser` dependency on new analytics router | Create analytics router with `AdminUser` as a router-level dependency — not per-endpoint — so no individual endpoint can be accidentally unprotected |
 
 ---
 
@@ -303,11 +401,12 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| No index on `reviews(book_id)` | Book detail response slows with review count; EXPLAIN shows Seq Scan | Add `Index("ix_reviews_book_id", "book_id")` in migration | At ~1k review rows (noticeable) / ~10k rows (problematic) |
-| Loading all reviews via `selectinload` to compute average in Python | High memory use; slow serialization on books with many reviews | Use `func.avg()` and `func.count()` SQL aggregates; never load all Review ORM objects to compute stats | At ~100 reviews per book |
-| No pagination on review list | Large JSON response for popular books; slow client parsing | Add `page`/`size` pagination from day one (same pattern as `GET /books`) | At ~50 reviews per book visible in API response |
-| Aggregate computed per-request without index | Every `GET /books/{book_id}` triggers full scan of reviews table | Index on `(book_id)` makes this a fast index scan; covering index `(book_id, rating)` eliminates heap fetch | At ~5k total review rows across all books |
-| Recalculating aggregates via UPDATE on `books` table | Complex update logic; write amplification on every review action | Compute live from indexed reviews table — simpler, correct, no synchronization needed at this scale | N/A — avoid this pattern entirely for v2.0 |
+| No index on `orders.created_at` for period-based revenue queries | Revenue summary takes 200ms+ at 10k orders | Add `Index("ix_orders_created_at", "created_at")` — not in existing migration; add in v2.1 migration if analytics queries need it | At ~10k orders (noticeable latency) / ~100k (problematic) |
+| Full table scan on `order_items` for top-sellers with no composite index | Top-sellers query reads all order_items rows; slow at 50k+ items | Composite index `(book_id, order_id)` on `order_items` — check if existing `ix_order_items_book_id` covers analytics queries | At ~50k order_items rows |
+| Loading all `Order` objects via `list_all()` then filtering in Python | High memory at 10k orders; analytics becomes a memory OOM | Use SQL-level `WHERE`, `GROUP BY`, and `ORDER BY` — never load ORM objects for analytics | At ~1k orders (memory grows linearly) |
+| N+1 `has_user_purchased_book()` in admin review list with large page sizes | Admin list request takes 5+ seconds for page of 100 | Omit `verified_purchase` from admin schema OR batch with a single IN-based EXISTS query | At page_size >= 50 reviews |
+| Unparameterized `LIMIT` on top-sellers | Admin requests `limit=10000` — aggregates entire order history | Add `le=100` cap to all analytics query parameters | Any time limit > 1000 is allowed |
+| Returning `Decimal` objects from SQLAlchemy aggregate columns as-is | `JSONResponse` serialization fails with `Object of type Decimal is not JSON serializable` | Always convert: `float(row.revenue)` or `round(float(row.aov), 2)` before adding to response schema | Every response with a Decimal aggregate column |
 
 ---
 
@@ -317,26 +416,25 @@ Domain-specific security issues beyond general web security.
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| `user_id` accepted from request body in review create | User can submit review as any user_id (impersonation) | Always derive `user_id = int(current_user["sub"])` from the `ActiveUser` JWT dependency; never from request body |
-| Review text not length-limited | Abusive/spam reviews with multi-MB text content; DB column size unbounded | Enforce `max_length` in Pydantic schema (e.g., 5000 chars) AND column size in DB (`Text` is fine but Pydantic validation is the gate) |
-| Admin delete endpoint uses `ActiveUser` instead of `AdminUser` | Any authenticated user can delete any review by calling admin endpoint | Use `AdminUser` dependency; add test asserting regular user gets 403 on admin delete |
-| User can delete other users' reviews via `DELETE /reviews/{id}` | Horizontal privilege escalation | Repository query must filter `WHERE id = :review_id AND user_id = :user_id`; return 404 (not 403) if not found to avoid ID enumeration |
-| Verified-purchase check bypassed by submitting review for `book_id` of a book in a failed order | Unverified reviews inflate ratings | Filter `orders.status = 'confirmed'` in the purchase verification query — not just `orders.user_id = :uid` |
-| Exposing reviewer's full name or email in review response | PII disclosure | Only include `user_id` or a display name in review response; never email address or hashed password |
+| Analytics router missing `AdminUser` dependency | Any authenticated user can view revenue, inventory, and user activity data — business intelligence leak | Create `analytics_router = APIRouter(prefix="/admin", dependencies=[Depends(get_admin_user)])` — dependency at router level, not per-endpoint |
+| Bulk-delete endpoint missing ID validation — accepts any list of IDs | Admin can accidentally (or intentionally) delete any review including those they shouldn't access | Validate that IDs in the bulk-delete list belong to soft-deletable reviews; return count of actually-affected rows (not input count) so admin knows partial failures |
+| Admin review list exposes full user email addresses in response | PII disclosure — email addresses visible to admin via API response | Include `display_name` (derived from email) only, not raw email field; match the existing `ReviewResponse.display_name` pattern from v2.0 |
+| Analytics endpoint accepts unbounded date ranges | Request for `start_date=2000-01-01&end_date=2099-01-01` triggers a full table scan aggregation, causing a DB spike | Cap date ranges to max 1 year or add explicit `ge`/`le` Query validators; return 422 for invalid ranges |
+| `PAYMENT_FAILED` order data exposed in analytics | Revenue figures include failed orders — misleading and potentially sensitive | Always filter `Order.status == OrderStatus.CONFIRMED`; never expose PAYMENT_FAILED counts without explicit admin context |
 
 ---
 
 ## UX Pitfalls
 
-Common user experience mistakes in this domain.
+Common user experience mistakes in admin analytics API design.
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No `average_rating` / `review_count` on book list (`GET /books`) | Catalog browsing shows no ratings; users must open each book to see rating | Add aggregates to `GET /books` response as well, not just `GET /books/{book_id}` (requires efficient subquery or JOIN) |
-| Review edit silently ignores fields not provided | User sends `{"rating": 5}` expecting to keep existing text; text is reset to null | Use explicit partial update: only update fields present in the request body; treat omitted fields as "keep existing" |
-| `404` returned when user tries to review a book they own but it was deleted | Confusing — user is certain they bought it | If book was deleted (`book_id SET NULL` on order_items), the purchase verification JOIN on `book_id IS NOT NULL` also fails; return a clear error explaining the book is no longer available |
-| No indication whether authenticated user has already reviewed a book | User revisits book page and cannot tell if they already reviewed it | Include `user_review: ReviewResponse | null` in `GET /books/{book_id}` response for authenticated users (requires auth-conditional logic in the endpoint) |
-| Review created successfully but returns 200 instead of 201 | Minor but inconsistent with REST conventions and existing endpoints | Return 201 on POST `/reviews`; existing `POST /books` uses `status.HTTP_201_CREATED` — follow same pattern |
+| Revenue summary returns `null` for periods with no orders | Admin interprets `null` as missing data, not as zero revenue | Return `0.00` (not `null`) for revenue/count when no orders exist in period; use `COALESCE(SUM(...), 0)` in SQL |
+| Period-over-period comparison returns only current period | Admin cannot assess whether performance improved or declined | Always include `current_period` and `previous_period` in revenue summary response; compute change as `(current - previous) / previous * 100` (with division-by-zero guard) |
+| Top-sellers list has no `total_results` field | Admin cannot tell how many books have sales data (e.g., top-10 of 150 vs. top-10 of 12) | Include `total_books_with_sales` count in top-sellers response |
+| Low-stock threshold is hardcoded in the query | Admin cannot adjust what "low stock" means for their inventory profile | Accept `threshold` as a Query parameter with a sensible default (`default=10, ge=1`) — same pattern as `per_page` on admin user list |
+| Admin review list sort by `rating` with no secondary sort | Reviews with the same rating appear in random order across pages | Always add a secondary sort on `id` or `created_at` for deterministic pagination — same pattern as `list_for_book()` secondary sort by `id.desc()` |
 
 ---
 
@@ -344,16 +442,17 @@ Common user experience mistakes in this domain.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Review creation:** POST returns 201 — verify `UNIQUE (user_id, book_id)` constraint exists in migration; submit same review twice and confirm 409, not 500
-- [ ] **Verified purchase gate:** Review creation succeeds for confirmed-order user — verify user with only `payment_failed` order gets 422/403; verify user with no orders at all gets 403
-- [ ] **Average rating on book detail:** `GET /books/{id}` returns `average_rating` — verify value is `null` (not `0.0`) when no reviews exist; verify it updates correctly after a review is added
-- [ ] **Review count:** `review_count` is correct — verify it decrements when a review is deleted (user or admin delete); verify it does not double-count on review edit
-- [ ] **User review delete:** DELETE succeeds for own review — verify 404 (not 403) when trying to delete another user's review; verify aggregate on book updates after delete
-- [ ] **Admin review delete:** DELETE `/admin/reviews/{id}` works for admin — verify regular user JWT gets 403; verify `review_count` on book updates after admin delete
-- [ ] **Review edit:** PATCH updates review — verify only provided fields are updated; verify `updated_at` timestamp changes; verify user cannot edit another user's review
-- [ ] **Book deletion cascade:** Admin deletes book — verify all reviews for that book are also deleted; verify no `NULL book_id` review rows remain in `reviews` table
-- [ ] **Model registry:** New `Review` model added — verify `alembic revision --autogenerate` produces a non-empty migration; run `pytest tests/test_health.py` immediately after adding model to `app/db/base.py`
-- [ ] **Full regression:** 179 existing tests still pass after new schema — run full suite before marking any review phase complete; failure in a non-review test signals missing import in registry
+- [ ] **Revenue summary:** Returns correct numbers — verify `PAYMENT_FAILED` orders are NOT included; verify period with no orders returns `0.00` not `null`; verify current vs. previous period both appear in response
+- [ ] **Top sellers by revenue vs. volume:** Two endpoints return different rankings — verify a $0.99 high-volume book ranks differently by revenue vs. by volume; verify deleted books (NULL book_id) are excluded from both
+- [ ] **Average order value:** Returns correctly rounded value — verify `0` orders in period returns `null` (not division-by-zero crash); verify rounding is 2 decimal places
+- [ ] **Low-stock query:** Returns books below threshold — verify `threshold` Query param is respected; verify books with `stock_quantity = 0` are included; verify in-stock books are excluded
+- [ ] **Pre-booking demand:** Counts only WAITING status — verify `NOTIFIED` and `CANCELLED` pre-bookings are excluded; verify a book with 10 WAITING and 20 NOTIFIED shows `waiting_count = 10`
+- [ ] **Stock turnover:** No division-by-zero — verify endpoint returns 200 when any book has `stock_quantity = 0`; verify metric is labeled as "units sold" not "turnover ratio"
+- [ ] **Admin review list:** Excludes soft-deleted reviews — verify soft-deleted reviews (non-null `deleted_at`) do NOT appear; verify sort and filter params work in combination
+- [ ] **Admin bulk-delete:** Correctly soft-deletes — verify `deleted_at` is set (not hard DELETE); verify re-listing after bulk-delete excludes the deleted reviews; verify return value is count of actually-deleted records
+- [ ] **Admin analytics auth:** All endpoints return 403 for non-admin — verify regular user JWT gets 403 on every analytics endpoint; verify unauthenticated request gets 401
+- [ ] **Decimal serialization:** All money fields serialize to JSON — verify `revenue`, `average_order_value` serialize as numbers (not as `"Decimal('3.14')"` strings)
+- [ ] **Full regression:** 240 existing tests still pass — run full suite before marking any analytics phase complete; no analytics phase should break review or order functionality
 
 ---
 
@@ -363,13 +462,15 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Duplicate reviews exist (no UNIQUE constraint shipped) | MEDIUM | Audit `reviews` for `(user_id, book_id)` duplicates; keep most recent per pair, delete others; add UNIQUE constraint via new Alembic migration with `CREATE UNIQUE INDEX CONCURRENTLY` to avoid table lock |
-| Unverified reviews accepted (payment_failed orders allowed) | MEDIUM | Audit `reviews` table: join to `orders`/`order_items` and flag reviews where no confirmed order exists; notify affected users; add status filter to verification query |
-| Average rating wrong (SET NULL left orphaned reviews) | LOW | Identify reviews with `book_id IS NULL`; delete them (they have no associated book); change FK to CASCADE in new migration |
-| Admin delete endpoint was `ActiveUser` in production | HIGH | Rotate credentials; audit `reviews` table for unauthorized deletions (look for reviews deleted by non-admin user IDs); fix dependency; add regression test |
-| `Book` deleted but reviews remain (SET NULL used instead of CASCADE) | LOW | `DELETE FROM reviews WHERE book_id IS NULL`; add CASCADE FK in migration |
-| `BookDetailResponse` returns `null` for `average_rating` (wrong pattern) | LOW | Fix the router to pass computed aggregates alongside `model_validate(book)`; no data corruption, only missing data in API response |
-| Review model not in test schema (missing registry import) | LOW | Add `from app.reviews.models import Review` to `app/db/base.py`; re-run full test suite; add CI lint step checking all `app/*/models.py` files are imported in `app/db/base.py` |
+| Revenue overstated (PAYMENT_FAILED orders included) | LOW | Add `WHERE orders.status = 'confirmed'` filter; re-verify numbers against order history; no data corruption |
+| Revenue understated (INNER JOIN dropped deleted books) | LOW | Change to LEFT JOIN with NULL title fallback; no data corruption, only missing data in API response |
+| Pre-booking demand overstated (all statuses counted) | LOW | Add `WHERE pre_bookings.status = 'waiting'`; no data corruption |
+| Admin bulk-delete hard-deleted reviews (not soft) | HIGH | Reviews are permanently gone; if backup exists, restore affected rows; add audit log requirement; fix endpoint to use UPDATE; add regression test |
+| Division-by-zero on stock turnover (stock = 0) | LOW | Wrap denominator in NULLIF or add Python guard; add test with zero-stock book |
+| Soft-deleted reviews visible in admin list | LOW | Add `deleted_at.is_(None)` filter; no data corruption |
+| Period bounds use naive datetime (wrong timezone) | MEDIUM | Fix to `datetime.now(timezone.utc)`; existing historical data is not affected; only current reporting window changes |
+| Analytics router missing AdminUser dependency | HIGH | Rotate API keys if external clients accessed analytics data; fix dependency immediately; add integration test asserting 403 for regular user on every analytics endpoint |
+| Decimal serialization crash on revenue fields | LOW | Wrap aggregate results with `float(round(val, 2))` in repository; add schema validator `@validator` if needed |
 
 ---
 
@@ -379,27 +480,31 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Wrong verified-purchase query (no status filter) | Review creation phase | Test: user with `payment_failed` order cannot post review; test: user with `confirmed` order can |
-| Duplicate review race condition | Review model/migration phase | Test: POST same review twice; assert second returns 409, not 500; confirm UNIQUE constraint in `\d reviews` |
-| No index on `reviews(book_id)` | Review model/migration phase | Check migration for `Index("ix_reviews_book_id", ...)` before merging |
-| Wrong FK behavior (SET NULL instead of CASCADE) | Review model/migration phase | Test: delete book; assert reviews are gone; assert `SELECT COUNT(*) FROM reviews WHERE book_id IS NULL` = 0 |
-| Admin delete uses wrong auth dep | Review admin moderation phase | Test: call `DELETE /admin/reviews/{id}` with regular-user JWT; assert 403 |
-| BookDetailResponse not updated correctly | Book detail aggregate phase | Test: create review; call `GET /books/{id}`; assert `average_rating` is not null and equals submitted rating |
-| Review model missing from central registry | Review model/migration phase (step 1) | Run `pytest tests/test_health.py` immediately after model creation; run full 179-test suite after each phase |
-| User_id from request body | Review creation phase | Test: submit review with `user_id` of another user in body; assert review is attributed to authenticated user |
-| No pagination on review list | Review list phase | Verify `GET /books/{id}/reviews` has `page`/`size` params from day one |
+| PAYMENT_FAILED orders in revenue | Sales analytics phase | Test: create PAYMENT_FAILED order; run revenue summary; assert amount does not include failed order |
+| NULL book_id dropped from revenue (INNER JOIN) | Sales analytics phase | Test: delete a book; run revenue summary; assert revenue still includes sales of deleted book |
+| Wrong timezone in period bounds | Sales analytics phase | Test: create order at known UTC timestamp; run "today" summary; assert it appears with UTC-based boundary |
+| Volume vs. revenue metric confusion | Sales analytics phase | Test: submit two orders for same book (high qty, low price); assert "by revenue" and "by volume" rankings differ |
+| Division-by-zero on stock turnover | Inventory analytics phase | Test: set book stock_quantity = 0; run turnover analytics; assert 200 response (no crash) |
+| WAITING-only pre-booking demand | Inventory analytics phase | Test: create NOTIFIED and CANCELLED pre-bookings; run demand query; assert they are excluded from count |
+| Soft-delete filter missing from admin review list | Review moderation phase | Test: soft-delete a review; run admin list; assert soft-deleted review does not appear |
+| N+1 bulk soft-delete | Review moderation phase | Test: bulk-delete 20 reviews; assert exactly 1-2 DB queries in repository (not 40) |
+| Admin auth missing on analytics | Sales analytics phase (router setup) | Test: call every analytics endpoint with a regular user JWT; assert 403 on all of them |
+| Decimal serialization crash | Sales analytics phase | Test: GET revenue summary; assert response is valid JSON with numeric (not string) money fields |
+| Pre-booking demand NULL book_id | Inventory analytics phase | (N/A — pre_bookings.book_id uses CASCADE not SET NULL; no NULL risk here) |
 
 ---
 
 ## Sources
 
-- Existing codebase: `app/orders/models.py` (`OrderStatus`, `OrderItem.book_id SET NULL`), `app/books/schemas.py` (`BookDetailResponse`), `app/core/deps.py` (`CurrentUser`, `ActiveUser`, `AdminUser`), `app/books/router.py` (auth dep patterns)
-- SQLAlchemy UNIQUE constraint + IntegrityError handling: [Handling concurrent INSERT with SQLAlchemy](https://rachbelaid.com/handling-race-condition-insert-with-sqlalchemy/), [SQLAlchemy UniqueViolation handling](https://rollbar.com/blog/python-psycopg2-errors-uniqueviolation/)
-- PostgreSQL aggregate performance: [PostgreSQL Aggregation Best Practices (TigerData)](https://www.tigerdata.com/learn/postgresql-aggregation-best-practices), [Generated Columns vs Triggers in PostgreSQL](https://ongres.com/blog/generate_columns_vs_triggers/)
-- Race conditions in PostgreSQL MVCC: [Handling Race Conditions in PostgreSQL MVCC (Bufisa)](https://bufisa.com/2025/07/17/handling-race-conditions-in-postgresql-mvcc/), [SQLAlchemy and Race Conditions](https://skien.cc/blog/2014/01/15/sqlalchemy-and-race-conditions-implementing-get_one_or_create/)
-- Denormalization tradeoffs for ratings: [Denormalization: A Solution for Performance or a Long-Term Trap?](https://rafaelrampineli.medium.com/denormalization-a-solution-for-performance-or-a-long-term-trap-6b9af5b5b831)
-- CASCADE vs SET NULL design: [SQL ON DELETE CASCADE (DataCamp)](https://www.datacamp.com/tutorial/sql-on-delete-cascade), [SQLAlchemy Cascading Deletes](https://www.geeksforgeeks.org/python/sqlalchemy-cascading-deletes/)
+- Existing codebase: `app/orders/models.py` (`OrderStatus`, `OrderItem.book_id SET NULL`), `app/orders/repository.py` (`has_user_purchased_book` with `OrderStatus.CONFIRMED` filter, `list_all()` pattern), `app/reviews/repository.py` (soft-delete filter pattern, `list_for_book`, `get_aggregates`), `app/prebooks/models.py` (`PreBookStatus.WAITING`, partial unique index), `app/admin/router.py` (`AdminUser` dependency pattern), `app/core/deps.py`
+- SQLAlchemy 2.0 async bulk DML: [Using UPDATE and DELETE Statements — SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/tutorial/data_update.html), [ORM-Enabled INSERT, UPDATE, and DELETE — SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html)
+- SQLAlchemy async bulk delete `synchronize_session`: [DELETE... USING with the Async ORM — SQLAlchemy Discussion #6024](https://github.com/sqlalchemy/sqlalchemy/discussions/6024)
+- PostgreSQL date_trunc timezone pitfall: [Timezone-Aware date_trunc — w3tutorials.net](https://www.w3tutorials.net/blog/timezone-aware-date-trunc-function/), [PostgreSQL DATE_TRUNC — Neon Docs](https://neon.com/docs/functions/date_trunc)
+- NULL values in aggregate joins: [PostgreSQL NULL Values in Queries — Percona](https://www.percona.com/blog/handling-null-values-in-postgresql/)
+- PostgreSQL analytics performance: [Postgres Tuning & Performance for Analytics — Crunchy Data](https://www.crunchydata.com/blog/postgres-tuning-and-performance-for-analytics-data), [Understanding Postgres Performance Limits for Analytics — TigerData](https://www.tigerdata.com/blog/postgres-optimization-treadmill)
+- FastAPI router-level dependency for auth: [Enhancing Authentication: Middleware vs. Router-Level Dependencies — Medium](https://medium.com/@anto18671/efficiency-of-using-dependencies-on-router-in-fastapi-c3b288ac408b)
+- v2.0 tech debt carry-forward: `v2.0-MILESTONE-AUDIT.md` (N+1 `has_user_purchased_book()` in `list_for_book` — accepted at page_size ≤ 20)
 
 ---
-*Pitfalls research for: FastAPI bookstore v2.0 — adding reviews & ratings to existing system*
-*Researched: 2026-02-26*
+*Pitfalls research for: FastAPI bookstore v2.1 — admin analytics dashboard and review moderation*
+*Researched: 2026-02-27*
