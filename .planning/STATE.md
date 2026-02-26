@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
+milestone: v1.0
 milestone_name: Pre-booking, Notifications & Admin
-status: ready_to_plan
-last_updated: "2026-02-26"
+status: unknown
+last_updated: "2026-02-26T05:35:40.347Z"
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 9 — Email Infrastructure
+**Current focus:** Phase 10 — Admin User Management
 
 ## Current Position
 
-Phase: 9 of 12 (Email Infrastructure)
-Plan: 2 of 2 in current phase — COMPLETE
+Phase: 10 of 12 (Admin User Management)
+Plan: 1 of 1 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 09-02 Email infrastructure tests (10-test suite, EMAL-01/04/05/06 all passing) complete
+Last activity: 2026-02-26 — 10-01 Admin user management (admin /users endpoints, ActiveUser lockout, repo extensions) complete
 
-Progress: [████████░░░░░░░░░░░░] 45% (v1.0 complete — 8/12 phases done; Phase 9 complete)
+Progress: [█████████░░░░░░░░░░░] 50% (v1.0 complete — 8/12 phases done; Phases 9-10 plan 01 complete)
 
 ## Accumulated Context
 
@@ -58,6 +58,13 @@ From Phase 09 plan 02:
 - [Phase 09-02]: _strip_html() bug fixed — block-level closing tags replaced with space before stripping to prevent text concatenation
 - [Phase 09-02]: Integration email tests use an isolated FastAPI() with only AppError handler — no DB dependency for email-only tests
 
+From Phase 10 plan 01:
+- [Phase 10-01]: ActiveUser dependency does one DB round-trip per protected request for is_active check — accepted trade-off for immediate lockout (no JWT blacklisting needed)
+- [Phase 10-01]: is_active check in login() placed AFTER password verification — prevents timing-based account status enumeration attacks
+- [Phase 10-01]: get_active_user uses local import of UserRepository inside function body — avoids circular import since deps.py is a widely-imported shared module
+- [Phase 10-01]: Admin deactivation is blanket — ANY admin account (self or other) cannot be deactivated; returns 403 ADMN_CANNOT_DEACTIVATE_ADMIN
+- [Phase 10-01]: Deactivation atomically sets is_active=False AND revokes ALL refresh tokens via bulk UPDATE — refresh endpoint also checks is_active so existing tokens are invalidated
+
 ### Blockers/Concerns
 
 - [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
@@ -69,5 +76,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 09-02-PLAN.md complete — Email infrastructure tests (10-test suite). Phase 9 fully complete. Next: Phase 10 or next planned phase
+Stopped at: 10-01-PLAN.md complete — Admin user management endpoints, ActiveUser lockout enforcement, repository extensions. Phase 10 plan 01 complete. Next: Phase 10 plan 02 or next phase
 Resume file: None

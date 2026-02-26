@@ -27,11 +27,11 @@ Requirements for milestone v1.1: Pre-booking, Notifications & Admin. Each maps t
 
 ### Admin User Management
 
-- [ ] **ADMN-01**: Admin can view a paginated list of all users
-- [ ] **ADMN-02**: Admin can filter user list by role and active status
-- [ ] **ADMN-03**: Admin can deactivate a user account (sets is_active=false, revokes all refresh tokens)
-- [ ] **ADMN-04**: Admin can reactivate a previously deactivated user account
-- [ ] **ADMN-05**: Admin cannot deactivate themselves or other admin users
+- [x] **ADMN-01**: Admin can view a paginated list of all users
+- [x] **ADMN-02**: Admin can filter user list by role and active status
+- [x] **ADMN-03**: Admin can deactivate a user account (sets is_active=false, revokes all refresh tokens)
+- [x] **ADMN-04**: Admin can reactivate a previously deactivated user account
+- [x] **ADMN-05**: Admin cannot deactivate themselves or other admin users
 
 ## Future Requirements
 
@@ -81,11 +81,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMAL-04 | Phase 9 | Complete |
 | EMAL-05 | Phase 9 | Complete |
 | EMAL-06 | Phase 9 | Complete |
-| ADMN-01 | Phase 10 | Pending |
-| ADMN-02 | Phase 10 | Pending |
-| ADMN-03 | Phase 10 | Pending |
-| ADMN-04 | Phase 10 | Pending |
-| ADMN-05 | Phase 10 | Pending |
+| ADMN-01 | Phase 10 | Complete |
+| ADMN-02 | Phase 10 | Complete |
+| ADMN-03 | Phase 10 | Complete |
+| ADMN-04 | Phase 10 | Complete |
+| ADMN-05 | Phase 10 | Complete |
 | PRBK-01 | Phase 11 | Pending |
 | PRBK-02 | Phase 11 | Pending |
 | PRBK-03 | Phase 11 | Pending |
