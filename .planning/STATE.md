@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 9 of 12 (Email Infrastructure)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase — COMPLETE
 Status: In progress
-Last activity: 2026-02-26 — 09-01 Email infrastructure core (EmailService, MAIL_* settings, base.html) complete
+Last activity: 2026-02-26 — 09-02 Email infrastructure tests (10-test suite, EMAL-01/04/05/06 all passing) complete
 
-Progress: [████████░░░░░░░░░░░░] 42% (v1.0 complete — 8/12 phases done)
+Progress: [████████░░░░░░░░░░░░] 45% (v1.0 complete — 8/12 phases done; Phase 9 complete)
 
 ## Accumulated Context
 
@@ -53,6 +53,11 @@ From Phase 09 plan 01:
 - [Phase 09-01]: get_email_service() decorated with @lru_cache — FastMail reused across requests; tests call cache_clear() to reset
 - [Phase 09-01]: EmailSvc = Annotated[EmailService, Depends(get_email_service)] is the injection pattern for all routers
 
+From Phase 09 plan 02:
+- [Phase 09-02]: record_messages() is a sync context manager in fastapi-mail 1.6.2 — use `with`, not `async with`, for outbox capture in tests
+- [Phase 09-02]: _strip_html() bug fixed — block-level closing tags replaced with space before stripping to prevent text concatenation
+- [Phase 09-02]: Integration email tests use an isolated FastAPI() with only AppError handler — no DB dependency for email-only tests
+
 ### Blockers/Concerns
 
 - [Phase 12 pre-work]: JWT payload contains sub (user_id) and role but not email. Order confirmation and restock alert require user email. Decide before Phase 12 planning: add email to JWT claims vs. DB fetch at router. Both are correct — must be decided explicitly.
@@ -64,5 +69,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 09-01-PLAN.md complete — EmailService, MAIL_* config, base.html template. Next: 09-02 integration tests
+Stopped at: 09-02-PLAN.md complete — Email infrastructure tests (10-test suite). Phase 9 fully complete. Next: Phase 10 or next planned phase
 Resume file: None
