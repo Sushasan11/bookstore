@@ -1,6 +1,6 @@
 """Repository layer for Order and OrderItem database access."""
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -90,3 +90,20 @@ class OrderRepository:
             .options(selectinload(Order.items).selectinload(OrderItem.book))
         )
         return list(result.scalars().all())
+
+    async def has_user_purchased_book(self, user_id: int, book_id: int) -> bool:
+        """Return True if user has a CONFIRMED order containing this book.
+
+        Uses EXISTS subquery for efficiency — returns a boolean without fetching rows.
+        Only CONFIRMED orders count — PAYMENT_FAILED does NOT qualify as a purchase.
+        """
+        stmt = select(
+            exists().where(
+                Order.user_id == user_id,
+                Order.status == OrderStatus.CONFIRMED,
+                OrderItem.order_id == Order.id,
+                OrderItem.book_id == book_id,
+            )
+        )
+        result = await self.session.scalar(stmt)
+        return bool(result)
