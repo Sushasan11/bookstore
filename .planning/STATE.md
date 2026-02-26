@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 12 of 12 (Email Notifications Wiring)
-Plan: 1 of 2 in current phase — COMPLETE
-Status: In progress
-Last activity: 2026-02-26 — 12-01 Email notifications wiring (2 tasks, 5 files; order confirmation and restock alert emails wired into routers) complete.
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Complete
+Last activity: 2026-02-26 — 12-02 Email notifications integration tests (2 tasks, 1 file; 8 tests for EMAL-02/EMAL-03, full suite 178 tests passing) complete.
 
-Progress: [█████████████░░░░░░░] 67% (v1.0 complete — 8/12 phases done; Phase 11 fully complete; Phase 12 plan 1 of 2 complete)
+Progress: [████████████████████] 100% (v1.0 complete — Phase 12 fully complete; all 8 email tests pass; 178 total tests green)
 
 ## Accumulated Context
 
@@ -88,6 +88,12 @@ From Phase 12 plan 01:
 - [Phase 12-01]: UserRepository imported at module level in orders/router.py; local import inside update_stock() body in books/router.py following PreBookRepository pattern to avoid circular imports
 - [Phase 12-01]: total_price is a Pydantic @computed_field on OrderResponse, not on ORM model — build OrderResponse.model_validate(order) BEFORE constructing email context
 
+From Phase 12 plan 02:
+- [Phase 12-02]: email_client fixture overrides both get_db AND get_email_service — must override email service to capture outbox from the exact FastMail instance used by route handlers
+- [Phase 12-02]: get_email_service.cache_clear() in email_client teardown — prevents lru_cache from leaking controlled EmailService between tests
+- [Phase 12-02]: _get_email_html() uses recursive traversal — fastapi-mail wraps multipart/alternative in outer multipart/mixed envelope; simple top-level iteration only reaches wrapper object
+- [Phase 12-02]: fm.record_messages() wraps only target HTTP call (e.g., the restock PATCH) — not setup calls — so outbox length assertions are precise
+
 ### Blockers/Concerns
 
 None.
@@ -99,5 +105,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: 12-01-PLAN.md complete — Email wiring (2 tasks, 5 files: 2 templates + UserRepository.get_emails_by_ids + checkout email + update_stock email). Phase 12 plan 1 of 2 done. Next: Phase 12-02 (email integration tests)
+Stopped at: 12-02-PLAN.md complete — Email notification integration tests (2 tasks, 1 file: tests/test_email_notifications.py with 8 tests, 178 total passing). Phase 12 fully complete. v1.0 milestone complete.
 Resume file: None

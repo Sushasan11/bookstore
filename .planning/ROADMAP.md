@@ -167,4 +167,4 @@ Plans:
 | 9. Email Infrastructure | 2/2 | Complete   | 2026-02-26 | - |
 | 10. Admin User Management | 2/2 | Complete    | 2026-02-26 | - |
 | 11. Pre-booking | 2/2 | Complete    | 2026-02-26 | - |
-| 12. Email Notifications Wiring | 1/2 | In Progress|  | - |
+| 12. Email Notifications Wiring | 2/2 | Complete   | 2026-02-26 | - |
