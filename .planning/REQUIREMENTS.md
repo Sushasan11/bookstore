@@ -17,7 +17,7 @@ Requirements for reviews & ratings milestone. Each maps to roadmap phases.
 
 ### Verified Purchase
 
-- [ ] **VPRC-01**: Only users with a completed order containing the book can submit a review
+- [x] **VPRC-01**: Only users with a completed order containing the book can submit a review
 - [ ] **VPRC-02**: Review response includes "verified purchase" indicator
 
 ### Admin Moderation
@@ -61,7 +61,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REVW-03 | Phase 14 | Pending |
 | REVW-04 | Phase 14 | Pending |
 | REVW-05 | Phase 13 | Complete |
-| VPRC-01 | Phase 13 | Pending |
+| VPRC-01 | Phase 13 | Complete |
 | VPRC-02 | Phase 14 | Pending |
 | ADMR-01 | Phase 14 | Pending |
 | AGGR-01 | Phase 15 | Pending |

@@ -8,7 +8,7 @@ progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,24 +23,24 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 13 of 15 (Review Data Layer)
-Plan: 1 of 2
-Status: In progress
-Last activity: 2026-02-26 — Completed 13-01 (Review model, migration, repository)
+Plan: 2 of 2
+Status: Complete
+Last activity: 2026-02-26 — Completed 13-02 (has_user_purchased_book, 23 integration tests)
 
-Progress: [██░░░░░░░░] 20% (1/5 plans)
+Progress: [████░░░░░░] 40% (2/5 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1 (v2.0)
+- Total plans completed: 2 (v2.0)
 - Average duration: 4 min
-- Total execution time: 4 min
+- Total execution time: 8 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 13. Review Data Layer | 1/2 | 4 min | 4 min |
+| 13. Review Data Layer | 2/2 | 8 min | 4 min |
 | 14. Review CRUD Endpoints | 0/2 | — | — |
 | 15. Book Detail Aggregates | 0/1 | — | — |
 
@@ -81,6 +81,11 @@ From Phase 13-01:
 - onupdate=func.now() on updated_at is ORM-only — migration uses only server_default (no onupdate in SQL)
 - Pagination pattern: count via select(func.count()).select_from(base_stmt.subquery()), then limit/offset
 
+From Phase 13-02:
+- has_user_purchased_book uses EXISTS subquery (not COUNT) — returns bool scalar, more efficient
+- PAYMENT_FAILED orders explicitly excluded — only OrderStatus.CONFIRMED counts as purchase
+- Purchase check pattern: EXISTS(Order.status==CONFIRMED, OrderItem.book_id==book_id) — reusable for any purchased-item gate
+
 ### Blockers/Concerns
 
 None.
@@ -92,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 13-01-PLAN.md (Review model, migration, repository)
+Stopped at: Completed 13-02-PLAN.md (has_user_purchased_book, 23 integration tests)
 Resume file: None
