@@ -108,6 +108,7 @@ class BookDetailResponse(BaseModel):
 
     in_stock is a derived boolean (stock_quantity > 0) -- not stored in DB.
     stock_quantity is still included for admin-facing clients that need the exact count.
+    avg_rating and review_count are computed live from reviews (AGGR-01, AGGR-02).
     """
 
     id: int
@@ -120,6 +121,8 @@ class BookDetailResponse(BaseModel):
     cover_image_url: str | None
     publish_date: date | None
     stock_quantity: int
+    avg_rating: float | None = None   # None when no reviews exist
+    review_count: int = 0             # 0 when no reviews exist
 
     @computed_field  # type: ignore[misc]
     @property

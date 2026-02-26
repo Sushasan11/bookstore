@@ -5,6 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, Query, status
 
 from app.books.repository import BookRepository, GenreRepository
+from app.reviews.repository import ReviewRepository
 from app.books.schemas import (
     BookCreate,
     BookDetailResponse,
@@ -83,14 +84,30 @@ async def list_books(
 
 @router.get("/books/{book_id}", response_model=BookDetailResponse)
 async def get_book(book_id: int, db: DbSession) -> BookDetailResponse:
-    """Get book by ID including stock status. Public -- no auth required.
+    """Get book by ID including stock status and rating aggregates. Public -- no auth required.
 
     Returns in_stock boolean (true when stock_quantity > 0).
+    Returns avg_rating (float | None) rounded to 1 decimal place.
+    Returns review_count (int), 0 when no reviews exist.
     404 if book not found.
     """
     service = _make_service(db)
     book = await service._get_book_or_404(book_id)
-    return BookDetailResponse.model_validate(book)
+    review_repo = ReviewRepository(db)
+    aggregates = await review_repo.get_aggregates(book.id)
+    return BookDetailResponse.model_validate({
+        "id": book.id,
+        "title": book.title,
+        "author": book.author,
+        "price": book.price,
+        "isbn": book.isbn,
+        "genre_id": book.genre_id,
+        "description": book.description,
+        "cover_image_url": book.cover_image_url,
+        "publish_date": book.publish_date,
+        "stock_quantity": book.stock_quantity,
+        **aggregates,
+    })
 
 
 @router.put("/books/{book_id}", response_model=BookResponse)

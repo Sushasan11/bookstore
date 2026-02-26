@@ -37,7 +37,7 @@
 **Milestone Goal:** Let verified purchasers rate and review books, with admin moderation and aggregate ratings surfaced on book detail.
 
 - [x] **Phase 13: Review Data Layer** - Review model, migration, and repository (with verified-purchase query)
-- [ ] **Phase 14: Review CRUD Endpoints** - All review endpoints with auth, verified-purchase gate, and admin moderation
+- [x] **Phase 14: Review CRUD Endpoints** - All review endpoints with auth, verified-purchase gate, and admin moderation (completed 2026-02-26)
 - [ ] **Phase 15: Book Detail Aggregates** - Average rating and review count on book detail response
 
 ## Phase Details
@@ -105,5 +105,5 @@ Plans:
 | 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 13. Review Data Layer | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
-| 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
+| 14. Review CRUD Endpoints | v2.0 | Complete    | 2026-02-26 | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 0/1 | Not started | - |
