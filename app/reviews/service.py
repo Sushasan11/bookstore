@@ -4,6 +4,7 @@ Enforces:
 - Book existence (404 BOOK_NOT_FOUND)
 - Duplicate review detection (409 DUPLICATE_REVIEW via DuplicateReviewError)
 - Purchase gate (403 NOT_PURCHASED)
+- Ownership enforcement (403 NOT_REVIEW_OWNER) for update and delete
 - verified_purchase computation per review
 """
 
@@ -11,7 +12,7 @@ from app.books.repository import BookRepository
 from app.core.exceptions import AppError, DuplicateReviewError
 from app.orders.repository import OrderRepository
 from app.reviews.models import Review
-from app.reviews.repository import ReviewRepository
+from app.reviews.repository import ReviewRepository, _UNSET
 
 
 class ReviewService:
@@ -108,6 +109,76 @@ class ReviewService:
             review.user_id, review.book_id
         )
         return review, vp
+
+    async def update(
+        self,
+        review_id: int,
+        user_id: int,
+        rating: int | None,
+        text: object = _UNSET,
+    ) -> tuple[Review, bool]:
+        """Update an existing review.
+
+        Only the review owner can update their review.
+
+        Raises:
+            AppError(404) REVIEW_NOT_FOUND if not found or soft-deleted.
+            AppError(403) NOT_REVIEW_OWNER if the requesting user is not the review author.
+        """
+        # 1. Fetch review
+        review = await self.review_repo.get_by_id(review_id)
+        if review is None:
+            raise AppError(404, "Review not found", "REVIEW_NOT_FOUND")
+
+        # 2. Ownership check
+        if review.user_id != user_id:
+            raise AppError(
+                403,
+                "You can only modify your own reviews",
+                "NOT_REVIEW_OWNER",
+            )
+
+        # 3. Apply update
+        await self.review_repo.update(review, rating=rating, text=text)
+
+        # 4. Compute verified_purchase
+        vp = await self.order_repo.has_user_purchased_book(review.user_id, review.book_id)
+
+        # 5. Re-fetch to eager-load relationships (update() does refresh but not selectinload)
+        review = await self.review_repo.get_by_id(review.id)
+
+        return review, vp
+
+    async def delete(
+        self,
+        review_id: int,
+        user_id: int,
+        is_admin: bool = False,
+    ) -> None:
+        """Soft-delete a review.
+
+        Review owners can delete their own reviews. Admins can delete any review.
+
+        Raises:
+            AppError(404) REVIEW_NOT_FOUND if not found or already soft-deleted.
+            AppError(403) NOT_REVIEW_OWNER if the requesting user is not the owner
+                and is not an admin.
+        """
+        # 1. Fetch review
+        review = await self.review_repo.get_by_id(review_id)
+        if review is None:
+            raise AppError(404, "Review not found", "REVIEW_NOT_FOUND")
+
+        # 2. Ownership check (admins bypass)
+        if not is_admin and review.user_id != user_id:
+            raise AppError(
+                403,
+                "You can only delete your own reviews",
+                "NOT_REVIEW_OWNER",
+            )
+
+        # 3. Soft-delete
+        await self.review_repo.soft_delete(review)
 
     def _build_review_data(self, review: Review, verified_purchase: bool) -> dict:
         """Construct a plain dict suitable for ReviewResponse.model_validate().

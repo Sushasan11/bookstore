@@ -1,12 +1,12 @@
-"""Review HTTP endpoints: POST /books/{book_id}/reviews, GET /books/{book_id}/reviews, GET /reviews/{review_id}."""
+"""Review HTTP endpoints: POST /books/{book_id}/reviews, GET /books/{book_id}/reviews, GET /reviews/{review_id}, PATCH /reviews/{review_id}, DELETE /reviews/{review_id}."""
 
 from fastapi import APIRouter, Query, status
 
 from app.books.repository import BookRepository
 from app.core.deps import ActiveUser, DbSession
 from app.orders.repository import OrderRepository
-from app.reviews.repository import ReviewRepository
-from app.reviews.schemas import ReviewCreate, ReviewListResponse, ReviewResponse
+from app.reviews.repository import ReviewRepository, _UNSET
+from app.reviews.schemas import ReviewCreate, ReviewListResponse, ReviewResponse, ReviewUpdate
 from app.reviews.service import ReviewService
 
 router = APIRouter(tags=["reviews"])
@@ -80,3 +80,49 @@ async def get_review(
     service = _make_service(db)
     review, verified_purchase = await service.get(review_id)
     return ReviewResponse.model_validate(service._build_review_data(review, verified_purchase))
+
+
+@router.patch("/reviews/{review_id}", response_model=ReviewResponse)
+async def update_review(
+    review_id: int,
+    body: ReviewUpdate,
+    db: DbSession,
+    current_user: ActiveUser,
+) -> ReviewResponse:
+    """Update a review's rating and/or text.
+
+    Only the review owner can update their review.
+
+    Uses model_fields_set to distinguish fields the client explicitly sent from
+    those that were omitted (which should not be updated).
+
+    403 NOT_REVIEW_OWNER if the requesting user is not the review author.
+    404 REVIEW_NOT_FOUND if the review does not exist or has been soft-deleted.
+    """
+    user_id = int(current_user["sub"])
+    service = _make_service(db)
+    # Use model_fields_set to distinguish "user omitted text" from "user sent text=null"
+    text = body.text if "text" in body.model_fields_set else _UNSET
+    review, vp = await service.update(review_id, user_id, body.rating, text)
+    return ReviewResponse.model_validate(service._build_review_data(review, vp))
+
+
+@router.delete("/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_review(
+    review_id: int,
+    db: DbSession,
+    current_user: ActiveUser,
+) -> None:
+    """Soft-delete a review.
+
+    Review owners can delete their own review. Admins can delete any review.
+    The same endpoint handles both user and admin deletion — the service checks
+    ownership and grants admin bypass via the is_admin flag.
+
+    403 NOT_REVIEW_OWNER if the requesting user is not the owner and is not admin.
+    404 REVIEW_NOT_FOUND if the review does not exist or has been soft-deleted.
+    """
+    user_id = int(current_user["sub"])
+    is_admin = current_user.get("role") == "admin"
+    service = _make_service(db)
+    await service.delete(review_id, user_id, is_admin=is_admin)
