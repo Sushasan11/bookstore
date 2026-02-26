@@ -129,7 +129,7 @@ class ReviewRepository:
         # Paginated data query
         result = await self.session.execute(
             base_stmt
-            .options(selectinload(Review.user))
+            .options(selectinload(Review.user), selectinload(Review.book))
             .order_by(Review.created_at.desc(), Review.id.desc())
             .limit(size)
             .offset((page - 1) * size)
