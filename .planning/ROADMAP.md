@@ -49,7 +49,7 @@
 
 - [x] **Phase 16: Sales Analytics** - Revenue summary with period comparison, top-selling books by revenue and volume
 - [x] **Phase 17: Inventory Analytics** - Low-stock alerts with configurable threshold (completed 2026-02-27)
-- [ ] **Phase 18: Review Moderation Dashboard** - Admin review listing with filters and bulk delete
+- [x] **Phase 18: Review Moderation Dashboard** - Admin review listing with filters and bulk delete (completed 2026-02-27)
 
 ## Phase Details
 
@@ -119,4 +119,4 @@ Plans:
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
 | 16. Sales Analytics | v2.1 | Complete    | 2026-02-27 | 2026-02-27 |
 | 17. Inventory Analytics | 1/1 | Complete    | 2026-02-27 | - |
-| 18. Review Moderation Dashboard | 1/2 | In Progress|  | - |
+| 18. Review Moderation Dashboard | 2/2 | Complete   | 2026-02-27 | - |

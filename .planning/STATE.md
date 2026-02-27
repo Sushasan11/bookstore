@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Admin Dashboard & Analytics
 status: unknown
+last_updated: "2026-02-27T07:31:10.369Z"
+progress:
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Admin Dashboard & Analytics
+status: unknown
 last_updated: "2026-02-27T07:21:33Z"
 progress:
   total_phases: 2
@@ -22,12 +35,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 18 of 18 (Review Moderation Dashboard) — IN PROGRESS
-Plan: 1 of 2 — COMPLETE
-Status: Phase 18 Plan 01 complete — MOD-01 delivered
-Last activity: 2026-02-27 — Completed 18-01: Admin review list endpoint with filtering, sorting, and pagination
+Phase: 18 of 18 (Review Moderation Dashboard) — COMPLETE
+Plan: 2 of 2 — COMPLETE
+Status: Phase 18 complete — MOD-01 and MOD-02 delivered; v2.1 milestone complete
+Last activity: 2026-02-27 — Completed 18-02: Bulk delete endpoint and 32 integration tests for all review moderation
 
-Progress: [██████░░░░] 63%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -42,9 +55,10 @@ Progress: [██████░░░░] 63%
 |-------|-------|-------|----------|
 | 16-sales-analytics | 2/2 COMPLETE | ~7 min | ~3.5 min |
 | 17-inventory-analytics | 1/1 COMPLETE | ~3 min | ~3 min |
-| 18-review-moderation-dashboard | 1/2 IN PROGRESS | ~8 min | ~8 min |
+| 18-review-moderation-dashboard | 2/2 COMPLETE | ~13 min | ~6.5 min |
 
 *Updated after each plan completion*
+| Phase 18-review-moderation-dashboard P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +102,9 @@ From research/SUMMARY.md (v2.1):
 - bulk_delete uses single UPDATE ... WHERE id IN (...) with synchronize_session="fetch" — no per-row loops
 - AdminUser dependency set at APIRouter constructor level — protects all endpoints automatically
 - Decimal fields serialized as float in all response schemas
+- [Phase 18-02]: bulk_soft_delete() returns rowcount — DB-reported count of actually affected rows, correctly reflecting best-effort semantics where missing/already-deleted IDs are silently skipped
+- [Phase 18-02]: httpx AsyncClient.delete() does not accept json kwarg — use client.request('DELETE', url, json=...) in tests
+- [Phase 18-02]: r5 test review assigned to user3 (revmod_reader) to avoid uq_reviews_user_book conflict with user2's r3 on book_a
 
 ### Blockers/Concerns
 
@@ -100,5 +117,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 18-01-PLAN.md — Phase 18 Plan 01 complete, MOD-01 admin review list endpoint with filtering/sorting/pagination
+Stopped at: Completed 18-02-PLAN.md — Phase 18 Plan 02 complete, MOD-02 bulk delete endpoint with 32 integration tests; v2.1 milestone complete
 Resume file: None
