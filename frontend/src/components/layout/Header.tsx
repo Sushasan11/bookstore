@@ -23,7 +23,7 @@ export function Header() {
         {/* Center: Desktop nav links (hidden on mobile) */}
         <nav className="hidden md:flex items-center gap-6">
           <Link
-            href="/books"
+            href="/catalog"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Books
