@@ -2,10 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Heart } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart'
+import { useWishlist } from '@/lib/wishlist'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -34,9 +35,11 @@ function CoverPlaceholder({ book }: { book: BookResponse }) {
 export function BookCard({ book }: { book: BookResponse }) {
   const { data: session } = useSession()
   const { addItem } = useCart()
+  const { wishlistedIds, handleToggle, isPending: wishlistPending } = useWishlist()
   const router = useRouter()
   const price = parseFloat(book.price).toFixed(2)
   const inStock = book.stock_quantity > 0
+  const isWishlisted = wishlistedIds.has(book.id)
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -47,6 +50,12 @@ export function BookCard({ book }: { book: BookResponse }) {
       return
     }
     addItem.mutate({ bookId: book.id })
+  }
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleToggle(book.id)
   }
 
   return (
@@ -86,7 +95,19 @@ export function BookCard({ book }: { book: BookResponse }) {
         </div>
       </Link>
 
-      {/* Cart icon button — always visible on mobile, visible on hover on desktop */}
+      {/* Heart icon button — top-left, always visible on mobile, hover on desktop */}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute top-2 left-2 h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-sm z-10"
+        onClick={handleHeartClick}
+        disabled={wishlistPending}
+        aria-label={isWishlisted ? `Remove ${book.title} from wishlist` : `Add ${book.title} to wishlist`}
+      >
+        <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+      </Button>
+
+      {/* Cart icon button — top-right, always visible on mobile, visible on hover on desktop */}
       {inStock && (
         <Button
           variant="secondary"
