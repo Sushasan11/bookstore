@@ -73,3 +73,21 @@ async def list_reviews(
         per_page=per_page,
         total_pages=math.ceil(total / per_page) if total > 0 else 0,
     )
+
+
+@router.delete("/bulk", response_model=BulkDeleteResponse)
+async def bulk_delete_reviews(
+    body: BulkDeleteRequest,
+    db: DbSession,
+    _admin: AdminUser,
+) -> BulkDeleteResponse:
+    """Bulk soft-delete reviews by ID list.
+
+    Accepts up to 50 review IDs. Best-effort: silently skips IDs that are
+    missing or already soft-deleted. Returns count of actually deleted reviews.
+
+    Admin only. Empty list or >50 IDs returns 422.
+    """
+    repo = ReviewRepository(db)
+    deleted_count = await repo.bulk_soft_delete(body.review_ids)
+    return BulkDeleteResponse(deleted_count=deleted_count)

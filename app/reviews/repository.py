@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import asc, desc, func, select
+from sqlalchemy import asc, desc, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -199,6 +199,25 @@ class ReviewRepository:
             stmt.limit(per_page).offset((page - 1) * per_page)
         )
         return list(result.scalars().all()), total
+
+    async def bulk_soft_delete(self, review_ids: list[int]) -> int:
+        """Soft-delete multiple reviews by ID list in a single UPDATE.
+
+        Best-effort: silently skips IDs that are missing or already soft-deleted.
+        Returns the count of reviews actually soft-deleted.
+
+        Uses synchronize_session="fetch" per project convention (STATE.md).
+        """
+        if not review_ids:
+            return 0
+
+        result = await self.session.execute(
+            update(Review)
+            .where(Review.id.in_(review_ids), Review.deleted_at.is_(None))
+            .values(deleted_at=datetime.now(UTC))
+            .execution_options(synchronize_session="fetch")
+        )
+        return result.rowcount
 
     async def get_aggregates(self, book_id: int) -> dict:
         """Return avg_rating and review_count for a book.
