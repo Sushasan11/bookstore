@@ -3,9 +3,10 @@
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.books.models import Book
 from app.orders.models import Order, OrderItem, OrderStatus
 
 
@@ -49,3 +50,43 @@ class AnalyticsRepository:
         )
         row = (await self._db.execute(stmt)).one()
         return {"revenue": row.revenue, "order_count": row.order_count}
+
+    async def top_books(self, *, sort_by: str, limit: int = 10) -> list[dict]:
+        """Return top-selling books ranked by revenue or volume.
+
+        Only CONFIRMED orders are included. Books that have been deleted
+        (book_id IS NULL in order_items) are excluded.
+
+        Args:
+            sort_by: "revenue" to rank by total_revenue, "volume" to rank by units_sold.
+            limit: Maximum number of books to return (default 10, max 50).
+
+        Returns:
+            List of dicts with keys: book_id, title, author, total_revenue, units_sold.
+        """
+        revenue_col = func.sum(OrderItem.unit_price * OrderItem.quantity).label(
+            "total_revenue"
+        )
+        volume_col = func.sum(OrderItem.quantity).label("units_sold")
+        order_col = revenue_col if sort_by == "revenue" else volume_col
+
+        stmt = (
+            select(
+                OrderItem.book_id,
+                Book.title,
+                Book.author,
+                revenue_col,
+                volume_col,
+            )
+            .join(Order, OrderItem.order_id == Order.id)
+            .join(Book, OrderItem.book_id == Book.id)
+            .where(
+                Order.status == OrderStatus.CONFIRMED,
+                OrderItem.book_id.is_not(None),
+            )
+            .group_by(OrderItem.book_id, Book.title, Book.author)
+            .order_by(desc(order_col))
+            .limit(limit)
+        )
+        result = await self._db.execute(stmt)
+        return [row._asdict() for row in result.all()]

@@ -1,9 +1,9 @@
-"""Admin analytics endpoints — GET /admin/analytics/sales/summary."""
+"""Admin analytics endpoints — GET /admin/analytics/sales/summary and /sales/top-books."""
 
 from fastapi import APIRouter, Depends, Query
 
 from app.admin.analytics_repository import AnalyticsRepository
-from app.admin.analytics_schemas import SalesSummaryResponse
+from app.admin.analytics_schemas import SalesSummaryResponse, TopBooksResponse
 from app.admin.analytics_service import AdminAnalyticsService
 from app.core.deps import AdminUser, DbSession, require_admin
 
@@ -39,3 +39,24 @@ async def get_sales_summary(
     svc = AdminAnalyticsService(repo)
     data = await svc.sales_summary(period)
     return SalesSummaryResponse(**data)
+
+
+@router.get("/sales/top-books", response_model=TopBooksResponse)
+async def get_top_books(
+    db: DbSession,
+    _admin: AdminUser,
+    sort_by: str = Query("revenue", pattern="^(revenue|volume)$"),
+    limit: int = Query(10, ge=1, le=50),
+) -> TopBooksResponse:
+    """Return top-selling books ranked by revenue or volume.
+
+    Query parameters:
+    - sort_by: "revenue" (default) or "volume" — determines ranking dimension.
+    - limit: Number of books to return (1-50, default 10).
+
+    Only CONFIRMED orders are counted. Deleted books are excluded.
+    Admin only. Invalid sort_by values return 422.
+    """
+    repo = AnalyticsRepository(db)
+    books = await repo.top_books(sort_by=sort_by, limit=limit)
+    return TopBooksResponse(sort_by=sort_by, items=books)
