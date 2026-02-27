@@ -8,7 +8,7 @@ progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,24 +23,24 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 19 of 25 (Monorepo + Frontend Foundation)
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Active
-Last activity: 2026-02-27 — Completed 19-01 (monorepo restructure + CORSMiddleware + root package.json)
+Last activity: 2026-02-27 — Completed 19-02 (Next.js 15 scaffold, shadcn/ui, TanStack Query, API types, providers)
 
 Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 6 min
-- Total execution time: 6 min
+- Total plans completed: 2
+- Average duration: 8 min
+- Total execution time: 16 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 19 (in progress) | 1 | 6 min | 6 min |
+| 19 (in progress) | 2 | 16 min | 8 min |
 
 *Updated after each plan completion*
 
@@ -56,6 +56,9 @@ Recent decisions affecting v3.0 work:
 - [v3.0 Roadmap]: TanStack Query v5 for server state; Zustand v5 context-provider pattern for cart display state (SSR-safe)
 - [19-01]: CORSMiddleware uses explicit ALLOWED_ORIGINS (not wildcard) — required for allow_credentials=True; includes both localhost:3000 and 127.0.0.1:3000
 - [19-01]: CORSMiddleware registered last in add_middleware() — FastAPI reverse execution order makes it run first (CORS before session)
+- [19-02]: QueryClient created in useState factory pattern — prevents shared state across SSR requests
+- [19-02]: openapi-typescript v7 generates types from live FastAPI /openapi.json — backend must be running to regenerate types
+- [19-02]: Next.js 16 --yes creates flat layout (no src/) — restructured to src/ and updated tsconfig @/* and components.json paths
 
 ### Blockers/Concerns
 
@@ -69,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 19-01-PLAN.md — monorepo restructure, CORSMiddleware, root package.json
+Stopped at: Completed 19-02-PLAN.md — Next.js 15 scaffold, shadcn/ui, TanStack Query, API types, providers
 Resume file: None

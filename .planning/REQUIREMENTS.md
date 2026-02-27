@@ -10,10 +10,10 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 ### Foundation
 
 - [x] **FOUND-01**: Monorepo restructured with `backend/` and `frontend/` directories, backend CI passing
-- [ ] **FOUND-02**: Next.js 15 app scaffolded with TypeScript, shadcn/ui, Tailwind v4, and root layout shell
+- [x] **FOUND-02**: Next.js 15 app scaffolded with TypeScript, shadcn/ui, Tailwind v4, and root layout shell
 - [x] **FOUND-03**: CORS enabled on FastAPI backend for frontend origin
-- [ ] **FOUND-04**: openapi-typescript types auto-generated from FastAPI `/openapi.json`
-- [ ] **FOUND-05**: TanStack Query provider configured at root layout
+- [x] **FOUND-04**: openapi-typescript types auto-generated from FastAPI `/openapi.json`
+- [x] **FOUND-05**: TanStack Query provider configured at root layout
 - [ ] **FOUND-06**: Responsive mobile-first layout with header, navigation, and footer
 
 ### Auth
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 | Phase 19 | Complete |
-| FOUND-02 | Phase 19 | Pending |
+| FOUND-02 | Phase 19 | Complete |
 | FOUND-03 | Phase 19 | Complete |
-| FOUND-04 | Phase 19 | Pending |
-| FOUND-05 | Phase 19 | Pending |
+| FOUND-04 | Phase 19 | Complete |
+| FOUND-05 | Phase 19 | Complete |
 | FOUND-06 | Phase 19 | Pending |
 | AUTH-01 | Phase 20 | Pending |
 | AUTH-02 | Phase 20 | Pending |
