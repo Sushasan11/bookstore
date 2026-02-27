@@ -52,17 +52,17 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 
 ### Wishlist
 
-- [ ] **WISH-01**: User can add a book to their wishlist from catalog or detail page
-- [ ] **WISH-02**: User can remove a book from their wishlist
-- [ ] **WISH-03**: User can view their wishlist with book details and current price/stock
-- [ ] **WISH-04**: Wishlist toggle uses optimistic update (instant heart icon feedback)
+- [x] **WISH-01**: User can add a book to their wishlist from catalog or detail page
+- [x] **WISH-02**: User can remove a book from their wishlist
+- [x] **WISH-03**: User can view their wishlist with book details and current price/stock
+- [x] **WISH-04**: Wishlist toggle uses optimistic update (instant heart icon feedback)
 
 ### Pre-booking
 
-- [ ] **PREB-01**: User sees "Pre-book" button instead of "Add to Cart" when a book is out of stock
-- [ ] **PREB-02**: User can pre-book an out-of-stock book
-- [ ] **PREB-03**: User can view active pre-bookings on their account page
-- [ ] **PREB-04**: User can cancel a pre-booking
+- [x] **PREB-01**: User sees "Pre-book" button instead of "Add to Cart" when a book is out of stock
+- [x] **PREB-02**: User can pre-book an out-of-stock book
+- [x] **PREB-03**: User can view active pre-bookings on their account page
+- [x] **PREB-04**: User can cancel a pre-booking
 
 ### Reviews
 
@@ -138,14 +138,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SHOP-08 | Phase 23 | Complete |
 | SHOP-09 | Phase 22 | Complete |
 | SHOP-10 | Phase 22 | Complete |
-| WISH-01 | Phase 24 | Pending |
-| WISH-02 | Phase 24 | Pending |
-| WISH-03 | Phase 24 | Pending |
-| WISH-04 | Phase 24 | Pending |
-| PREB-01 | Phase 24 | Pending |
-| PREB-02 | Phase 24 | Pending |
-| PREB-03 | Phase 24 | Pending |
-| PREB-04 | Phase 24 | Pending |
+| WISH-01 | Phase 24 | Complete |
+| WISH-02 | Phase 24 | Complete |
+| WISH-03 | Phase 24 | Complete |
+| WISH-04 | Phase 24 | Complete |
+| PREB-01 | Phase 24 | Complete |
+| PREB-02 | Phase 24 | Complete |
+| PREB-03 | Phase 24 | Complete |
+| PREB-04 | Phase 24 | Complete |
 | REVW-01 | Phase 25 | Pending |
 | REVW-02 | Phase 25 | Pending |
 | REVW-03 | Phase 25 | Pending |

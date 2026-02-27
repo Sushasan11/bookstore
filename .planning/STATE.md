@@ -44,16 +44,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 24: Wishlist and Pre-booking
+**Current focus:** v3.0 Customer Storefront — Phase 25: Reviews and Ratings
 
 ## Current Position
 
-Phase: 24 of 25 (Wishlist and Pre-booking) — IN PROGRESS
-Plan: 1 of 2 complete (24-01 — Wishlist and pre-booking core hooks + UI wiring)
+Phase: 24 of 25 (Wishlist and Pre-booking) — COMPLETE
+Plan: 2 of 2 complete (24-02 — Wishlist page, pre-bookings management, navigation)
 Status: Active
-Last activity: 2026-02-28 — Completed 24-01 (useWishlist hook, usePrebook hook, BookCard heart icon, ActionButtons pre-book button)
+Last activity: 2026-02-28 — Completed 24-02 (/wishlist page, WishlistList, PrebookingsList, account page update, Header/MobileNav nav links)
 
-Progress: [█████░░░░░] 71% (5/7 phases complete)
+Progress: [██████░░░░] 86% (6/7 phases complete)
 
 ## Performance Metrics
 
@@ -133,6 +133,9 @@ Recent decisions affecting v3.0 work:
 - [24-01]: useMutation explicit generic type parameters required when mutationFn returns union type (WishlistItemResponse | void) — TypeScript loses context type inference without explicit TContext generic
 - [24-01]: Pre-book button replaces (not supplements) Add to Cart when inStock is false — cleaner conditional render, no disabled state needed
 - [24-01]: Heart button on BookCard uses e.preventDefault()+e.stopPropagation() — prevents Link navigation, matching cart button established pattern
+- [24-02]: WishlistList uses wishlistQuery.data?.items ?? items pattern — SSR items render immediately, TanStack Query cache takes over after hydration
+- [24-02]: PrebookingsList uses useState(prebooks) for optimistic removal — server-seeded list, no query subscription needed
+- [24-02]: Pre-bookings rendered inline on /account page (not separate route) — bounded list, account hub is natural home
 
 ### Blockers/Concerns
 
@@ -146,5 +149,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 24-01-PLAN.md — useWishlist/usePrebook hooks + BookCard/ActionButtons wiring
+Stopped at: Completed 24-02-PLAN.md — /wishlist page, PrebookingsList, account page update, Header/MobileNav nav links
 Resume file: None
