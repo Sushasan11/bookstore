@@ -1,56 +1,105 @@
 # Requirements: BookStore
 
 **Defined:** 2026-02-27
-**Core Value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
+**Core Value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience
 
-## v2.1 Requirements
+## v3.0 Requirements
 
-Requirements for milestone v2.1: Admin Dashboard & Analytics. Each maps to roadmap phases.
+Requirements for the Next.js customer-facing storefront. Each maps to roadmap phases.
 
-### Sales Analytics
+### Foundation
 
-- [x] **SALES-01**: Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month
-- [x] **SALES-02**: Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary
-- [x] **SALES-03**: Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue
-- [x] **SALES-04**: Admin can view top-selling books ranked by volume (units sold) with book title and author
+- [x] **FOUND-01**: Monorepo restructured with `backend/` and `frontend/` directories, backend CI passing
+- [ ] **FOUND-02**: Next.js 15 app scaffolded with TypeScript, shadcn/ui, Tailwind v4, and root layout shell
+- [x] **FOUND-03**: CORS enabled on FastAPI backend for frontend origin
+- [ ] **FOUND-04**: openapi-typescript types auto-generated from FastAPI `/openapi.json`
+- [ ] **FOUND-05**: TanStack Query provider configured at root layout
+- [ ] **FOUND-06**: Responsive mobile-first layout with header, navigation, and footer
 
-### Inventory Analytics
+### Auth
 
-- [x] **INV-01**: Admin can query books with stock at or below a configurable threshold, ordered by stock ascending
+- [ ] **AUTH-01**: User can sign up with email and password
+- [ ] **AUTH-02**: User can log in with email and password
+- [ ] **AUTH-03**: User can log in with Google OAuth
+- [ ] **AUTH-04**: User session persists across page navigation and refresh
+- [ ] **AUTH-05**: User can log out
+- [ ] **AUTH-06**: Protected routes redirect unauthenticated users to login
+- [ ] **AUTH-07**: Access token refreshes transparently when expired
+- [ ] **AUTH-08**: Deactivated user is signed out on next API call (401 handling)
 
-### Review Moderation
+### Catalog
 
-- [x] **MOD-01**: Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range)
-- [ ] **MOD-02**: Admin can bulk-delete reviews by providing a list of review IDs
+- [ ] **CATL-01**: User can browse paginated book grid with cover, title, author, price, and stock status
+- [ ] **CATL-02**: User can view book detail page with description, average rating, review count, and stock status
+- [ ] **CATL-03**: User can search books by title, author, or genre using full-text search
+- [ ] **CATL-04**: User can filter search results by genre and price range
+- [ ] **CATL-05**: Search and filter state is persisted in URL (bookmarkable, shareable)
+- [ ] **CATL-06**: Book detail page has SEO metadata (JSON-LD Book schema, Open Graph tags)
+- [ ] **CATL-07**: Catalog and book detail pages are server-rendered with ISR for SEO
+
+### Shopping
+
+- [ ] **SHOP-01**: User can add a book to the shopping cart
+- [ ] **SHOP-02**: User can update item quantity in the cart
+- [ ] **SHOP-03**: User can remove an item from the cart
+- [ ] **SHOP-04**: User can view cart with item list, quantities, and total
+- [ ] **SHOP-05**: User can checkout and place an order (mock payment)
+- [ ] **SHOP-06**: User sees order confirmation page after successful checkout
+- [ ] **SHOP-07**: User can view order history with date, total, and item summary
+- [ ] **SHOP-08**: User can view individual order detail with full item list and price snapshots
+- [ ] **SHOP-09**: Cart count badge in navbar updates reactively after mutations
+- [ ] **SHOP-10**: Cart add/remove uses optimistic updates with rollback on error
+
+### Wishlist
+
+- [ ] **WISH-01**: User can add a book to their wishlist from catalog or detail page
+- [ ] **WISH-02**: User can remove a book from their wishlist
+- [ ] **WISH-03**: User can view their wishlist with book details and current price/stock
+- [ ] **WISH-04**: Wishlist toggle uses optimistic update (instant heart icon feedback)
+
+### Pre-booking
+
+- [ ] **PREB-01**: User sees "Pre-book" button instead of "Add to Cart" when a book is out of stock
+- [ ] **PREB-02**: User can pre-book an out-of-stock book
+- [ ] **PREB-03**: User can view active pre-bookings on their account page
+- [ ] **PREB-04**: User can cancel a pre-booking
+
+### Reviews
+
+- [ ] **REVW-01**: User can see reviews and ratings on the book detail page
+- [ ] **REVW-02**: User who purchased a book can leave a 1-5 star rating with optional text review
+- [ ] **REVW-03**: User can edit their own review
+- [ ] **REVW-04**: User can delete their own review
+- [ ] **REVW-05**: User sees "already reviewed" state with edit option if they've already reviewed
 
 ## Future Requirements
 
-Deferred to future release. Tracked but not in current roadmap.
+Deferred to v3.1+ milestones.
 
-### Sales Analytics (v2.x)
+### Admin Dashboard
 
-- **SALES-05**: Admin can view AOV trend over time (weekly/monthly buckets)
-- **SALES-06**: Admin can view revenue breakdown by genre
+- **ADMN-01**: Admin can view sales analytics dashboard
+- **ADMN-02**: Admin can manage book catalog (CRUD) via UI
+- **ADMN-03**: Admin can manage users (list, deactivate/reactivate) via UI
+- **ADMN-04**: Admin can moderate reviews (list, bulk delete) via UI
+- **ADMN-05**: Admin can view inventory analytics (low stock, turnover) via UI
 
-### Inventory Analytics (v2.x)
+### Additional Auth
 
-- **INV-02**: Admin can view stock turnover velocity per book (units sold per period vs current stock)
-- **INV-03**: Admin can view pre-booking demand ranking (most-waited-for out-of-stock books)
+- **AUTH-09**: User can log in with GitHub OAuth
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| Real-time streaming analytics (WebSockets) | Admin analytics are not real-time; REST endpoints with explicit refresh are correct |
-| Materialized views / analytics tables | Live SQL aggregates on indexed columns are fast enough at current volume |
-| Celery / Redis for analytics | Existing constraint; BackgroundTasks sufficient, analytics are synchronous queries |
-| User cohort analysis | BI tool feature, not operational admin panel; requires complex query surface |
-| Revenue forecasting / demand prediction | Insufficient data history; manual judgment with velocity signals is correct |
-| Automated review flagging / AI moderation | External API cost + false-positive management unjustified at current review volume |
-| CSV/PDF export | API-first project; consumers handle formatting; adds file-gen complexity |
-| Pre-moderation review queue | Already rejected in v2.0; reactive admin-delete is correct pattern |
+| Admin dashboard UI | Deferred to v3.1+ — separate layouts, access control, components |
+| GitHub OAuth on frontend | Email + Google covers majority of users |
+| Real payment gateway (Stripe) | Mock payment sufficient; PCI scope is a separate milestone |
+| Mobile app | Web-first, API-only |
+| Real-time stock notifications | Backend is email-only for restock alerts |
+| Infinite scroll on catalog | Pagination is better UX for e-commerce (Baymard Institute) |
+| Client-only localStorage cart | Server is source of truth; breaks cross-device |
+| Recommendation engine | Needs transaction data first |
 
 ## Traceability
 
@@ -58,19 +107,56 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SALES-01 | Phase 16 | Complete (16-01) |
-| SALES-02 | Phase 16 | Complete (16-01) |
-| SALES-03 | Phase 16 | Complete |
-| SALES-04 | Phase 16 | Complete |
-| INV-01 | Phase 17 | Complete |
-| MOD-01 | Phase 18 | Complete |
-| MOD-02 | Phase 18 | Pending |
+| FOUND-01 | Phase 19 | Complete |
+| FOUND-02 | Phase 19 | Pending |
+| FOUND-03 | Phase 19 | Complete |
+| FOUND-04 | Phase 19 | Pending |
+| FOUND-05 | Phase 19 | Pending |
+| FOUND-06 | Phase 19 | Pending |
+| AUTH-01 | Phase 20 | Pending |
+| AUTH-02 | Phase 20 | Pending |
+| AUTH-03 | Phase 20 | Pending |
+| AUTH-04 | Phase 20 | Pending |
+| AUTH-05 | Phase 20 | Pending |
+| AUTH-06 | Phase 20 | Pending |
+| AUTH-07 | Phase 20 | Pending |
+| AUTH-08 | Phase 20 | Pending |
+| CATL-01 | Phase 21 | Pending |
+| CATL-02 | Phase 21 | Pending |
+| CATL-03 | Phase 21 | Pending |
+| CATL-04 | Phase 21 | Pending |
+| CATL-05 | Phase 21 | Pending |
+| CATL-06 | Phase 21 | Pending |
+| CATL-07 | Phase 21 | Pending |
+| SHOP-01 | Phase 22 | Pending |
+| SHOP-02 | Phase 22 | Pending |
+| SHOP-03 | Phase 22 | Pending |
+| SHOP-04 | Phase 22 | Pending |
+| SHOP-05 | Phase 22 | Pending |
+| SHOP-06 | Phase 22 | Pending |
+| SHOP-07 | Phase 23 | Pending |
+| SHOP-08 | Phase 23 | Pending |
+| SHOP-09 | Phase 22 | Pending |
+| SHOP-10 | Phase 22 | Pending |
+| WISH-01 | Phase 24 | Pending |
+| WISH-02 | Phase 24 | Pending |
+| WISH-03 | Phase 24 | Pending |
+| WISH-04 | Phase 24 | Pending |
+| PREB-01 | Phase 24 | Pending |
+| PREB-02 | Phase 24 | Pending |
+| PREB-03 | Phase 24 | Pending |
+| PREB-04 | Phase 24 | Pending |
+| REVW-01 | Phase 25 | Pending |
+| REVW-02 | Phase 25 | Pending |
+| REVW-03 | Phase 25 | Pending |
+| REVW-04 | Phase 25 | Pending |
+| REVW-05 | Phase 25 | Pending |
 
 **Coverage:**
-- v2.1 requirements: 7 total
-- Mapped to phases: 7
-- Unmapped: 0 ✓
+- v3.0 requirements: 35 total
+- Mapped to phases: 35
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after 16-01 completion (SALES-01, SALES-02 marked complete)*
+*Last updated: 2026-02-27 after roadmap creation (phases 19-25 finalized)*
