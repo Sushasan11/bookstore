@@ -89,7 +89,7 @@ export default async function BookDetailPage({ params }: PageProps) {
       <div className="mx-auto max-w-7xl px-4 py-8">
         <BreadcrumbNav genre={genre} bookTitle={book.title} />
         <BookDetailHero book={book} />
-        <ActionButtons inStock={book.in_stock} />
+        <ActionButtons bookId={book.id} inStock={book.in_stock} />
         {book.description && (
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-3">Description</h2>
