@@ -91,7 +91,12 @@
   3. After browser refresh or navigating away and back, the user remains signed in without re-entering credentials
   4. Navigating to a protected route while signed out redirects to the login page, then back to the original destination after sign-in
   5. A deactivated user's next API call signs them out automatically and returns them to the login page
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 20-01-PLAN.md — Backend Google token endpoint + NextAuth.js v5 config + SessionProvider
+- [ ] 20-02-PLAN.md — Auth UI pages (login/register), proxy.ts route protection, logout, Header auth state, 403 interceptor
+- [ ] 20-03-PLAN.md — Human verification of complete auth flow
 
 ### Phase 21: Catalog and Search
 **Goal**: Users can browse, search, and filter the book catalog through SEO-optimized server-rendered pages
@@ -170,7 +175,7 @@
 | 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
 | 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
-| 20. Auth Integration | v3.0 | 0/? | Not started | - |
+| 20. Auth Integration | v3.0 | 0/3 | Not started | - |
 | 21. Catalog and Search | v3.0 | 0/? | Not started | - |
 | 22. Cart and Checkout | v3.0 | 0/? | Not started | - |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |
