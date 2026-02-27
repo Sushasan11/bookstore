@@ -35,12 +35,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 23 of 25 (Orders and Account) — IN PROGRESS
-Plan: 1 of 2 complete (23-01 — Order history list, account hub, nav wiring)
+Phase: 23 of 25 (Orders and Account) — COMPLETE
+Plan: 2 of 2 complete (23-02 — Human verification of SHOP-07 and SHOP-08)
 Status: Active
-Last activity: 2026-02-28 — Completed 23-01 (fetchOrders helper, /orders list page, /account hub, Header and MobileNav Account links)
+Last activity: 2026-02-28 — Completed 23-02 (human verification of order history, order detail, account hub, nav, and auth protection)
 
-Progress: [████░░░░░░] 57% (4/7 phases complete)
+Progress: [█████░░░░░] 71% (5/7 phases complete)
 
 ## Performance Metrics
 
@@ -116,6 +116,7 @@ Recent decisions affecting v3.0 work:
 - [23-01]: fetchOrders() lives in orders.ts (not cart.ts) to keep order-list concerns separate from fetchOrder (singular) in cart.ts — avoids breaking existing /orders/[id]/page.tsx import
 - [23-01]: /orders page wraps fetchOrders in try/catch returning [] on error — shows empty state gracefully rather than crashing with 500 if backend down
 - [23-01]: Client-side pagination in OrderHistoryList — order history is a bounded user-owned list; simpler than URL-param pagination with no router/searchParams dependency
+- [23-02]: Human approval of SHOP-07 and SHOP-08 confirms Phase 23 implementation is production-ready
 
 ### Blockers/Concerns
 
@@ -129,5 +130,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 23-01-PLAN.md — order history list, account hub page, and Account nav link wiring
+Stopped at: Completed 23-02-PLAN.md — human verification of SHOP-07 and SHOP-08 approved
 Resume file: None
