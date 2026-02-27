@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCart } from '@/lib/cart'
 import { CartItem } from './CartItem'
 import { CartSummary } from './CartSummary'
+import { CheckoutDialog } from './CheckoutDialog'
 
 function CartLoadingSkeleton() {
   return (
@@ -30,6 +32,19 @@ function CartLoadingSkeleton() {
 
 export function CartPageContent() {
   const { cartQuery, updateItem, removeItem, checkoutMutation } = useCart()
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+
+  useEffect(() => {
+    if (checkoutMutation.isSuccess) {
+      setCheckoutOpen(false)
+    }
+  }, [checkoutMutation.isSuccess])
+
+  useEffect(() => {
+    if (checkoutMutation.isError) {
+      setCheckoutOpen(false)
+    }
+  }, [checkoutMutation.isError])
 
   if (cartQuery.isLoading) {
     return <CartLoadingSkeleton />
@@ -70,29 +85,38 @@ export function CartPageContent() {
   }
 
   function handleCheckout() {
-    checkoutMutation.mutate()
+    setCheckoutOpen(true)
   }
 
   return (
-    <div className="lg:flex lg:gap-8 pb-20 lg:pb-0">
-      <div className="flex-1 space-y-4">
-        {cart.items.map((item) => (
-          <CartItem
-            key={item.id}
-            item={item}
-            onUpdateQuantity={handleUpdateQuantity}
-            onRemove={handleRemove}
+    <>
+      <div className="lg:flex lg:gap-8 pb-20 lg:pb-0">
+        <div className="flex-1 space-y-4">
+          {cart.items.map((item) => (
+            <CartItem
+              key={item.id}
+              item={item}
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemove={handleRemove}
+            />
+          ))}
+        </div>
+        <div className="w-full lg:w-80 mt-6 lg:mt-0">
+          <CartSummary
+            totalItems={cart.total_items}
+            totalPrice={cart.total_price}
+            onCheckout={handleCheckout}
+            isCheckingOut={checkoutMutation.isPending}
           />
-        ))}
+        </div>
       </div>
-      <div className="w-full lg:w-80 mt-6 lg:mt-0">
-        <CartSummary
-          totalItems={cart.total_items}
-          totalPrice={cart.total_price}
-          onCheckout={handleCheckout}
-          isCheckingOut={checkoutMutation.isPending}
-        />
-      </div>
-    </div>
+      <CheckoutDialog
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        totalPrice={cart.total_price}
+        onConfirm={() => checkoutMutation.mutate()}
+        isPending={checkoutMutation.isPending}
+      />
+    </>
   )
 }
