@@ -102,6 +102,9 @@ Recent decisions affecting v3.0 work:
 - [21-01]: Price range added as backend params (min_price/max_price) — client-side filtering rejected as unviable at scale
 - [21-01]: BookCard is a pure server component (no 'use client') — uses next/link and next/image for SSR performance
 - [21-01]: remotePatterns uses https://** (permissive) — covers any future cover image CDN without config changes
+- [21-02]: SearchControls and Pagination wrapped in Suspense on catalog page — useSearchParams() requires Suspense boundary for Next.js static build
+- [21-02]: Sort encoded as composite key (price_asc, price_desc, avg_rating) in Select, mapped to sort+sort_dir params at update time
+- [21-02]: BookGrid as async server component — fetches popular books server-side on empty results without client waterfall
 - [21-03]: React.cache() wraps fetchBook so generateMetadata and page component share a single cached request — avoids double fetch
 - [21-03]: ActionButtons are disabled placeholders — Phase 22 (cart) and Phase 24 (wishlist) will enable them
 - [21-03]: MoreInGenre fetches size=7, filters current book, slices to 6 — avoids separate count query
