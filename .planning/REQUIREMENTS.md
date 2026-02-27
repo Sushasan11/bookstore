@@ -45,8 +45,8 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 - [x] **SHOP-04**: User can view cart with item list, quantities, and total
 - [x] **SHOP-05**: User can checkout and place an order (mock payment)
 - [x] **SHOP-06**: User sees order confirmation page after successful checkout
-- [ ] **SHOP-07**: User can view order history with date, total, and item summary
-- [ ] **SHOP-08**: User can view individual order detail with full item list and price snapshots
+- [x] **SHOP-07**: User can view order history with date, total, and item summary
+- [x] **SHOP-08**: User can view individual order detail with full item list and price snapshots
 - [x] **SHOP-09**: Cart count badge in navbar updates reactively after mutations
 - [x] **SHOP-10**: Cart add/remove uses optimistic updates with rollback on error
 
@@ -134,8 +134,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SHOP-04 | Phase 22 | Complete |
 | SHOP-05 | Phase 22 | Complete |
 | SHOP-06 | Phase 22 | Complete |
-| SHOP-07 | Phase 23 | Pending |
-| SHOP-08 | Phase 23 | Pending |
+| SHOP-07 | Phase 23 | Complete |
+| SHOP-08 | Phase 23 | Complete |
 | SHOP-09 | Phase 22 | Complete |
 | SHOP-10 | Phase 22 | Complete |
 | WISH-01 | Phase 24 | Pending |

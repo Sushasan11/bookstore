@@ -35,10 +35,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 22 of 25 (Cart and Checkout) — COMPLETE
-Plan: 5 of 5 complete (22-05 — Human verification of complete cart and checkout flow)
+Phase: 23 of 25 (Orders and Account) — IN PROGRESS
+Plan: 1 of 2 complete (23-01 — Order history list, account hub, nav wiring)
 Status: Active
-Last activity: 2026-02-27 — Completed 22-05 (Human verification — all SHOP-01 through SHOP-10 requirements approved)
+Last activity: 2026-02-28 — Completed 23-01 (fetchOrders helper, /orders list page, /account hub, Header and MobileNav Account links)
 
 Progress: [████░░░░░░] 57% (4/7 phases complete)
 
@@ -113,6 +113,9 @@ Recent decisions affecting v3.0 work:
 - [Phase 22-04]: isConfirmed passed as prop from server component (not useSearchParams) — OrderDetail stays a plain component with no client boundary needed
 - [Phase 22-04]: Dialog closes on both isSuccess and isError via useEffect — success triggers router.push redirect; error surfaces toast from useCart hook
 - [Phase 22-05]: All SHOP-01 through SHOP-10 requirements verified by human in browser — Phase 22 approved complete; Phase 23 (orders and account) ready to begin
+- [23-01]: fetchOrders() lives in orders.ts (not cart.ts) to keep order-list concerns separate from fetchOrder (singular) in cart.ts — avoids breaking existing /orders/[id]/page.tsx import
+- [23-01]: /orders page wraps fetchOrders in try/catch returning [] on error — shows empty state gracefully rather than crashing with 500 if backend down
+- [23-01]: Client-side pagination in OrderHistoryList — order history is a bounded user-owned list; simpler than URL-param pagination with no router/searchParams dependency
 
 ### Blockers/Concerns
 
@@ -125,6 +128,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 22-05-PLAN.md — human verification of complete cart and checkout flow (all SHOP-01 through SHOP-10 approved)
+Last session: 2026-02-28
+Stopped at: Completed 23-01-PLAN.md — order history list, account hub page, and Account nav link wiring
 Resume file: None

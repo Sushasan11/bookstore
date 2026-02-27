@@ -134,7 +134,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can view a paginated order history list showing date, total, and a summary of items for each order
   2. User can click an order to see the full item list with individual prices and quantities as recorded at time of purchase
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 23-01-PLAN.md — Order history list page, account hub page, and navigation wiring
+- [ ] 23-02-PLAN.md — Human verification of SHOP-07 and SHOP-08 requirements
 
 ### Phase 24: Wishlist and Pre-booking
 **Goal**: Users can save books for later and reserve out-of-stock titles with a single action
@@ -184,6 +188,6 @@ Plans:
 | 20. Auth Integration | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
-| 23. Orders and Account | v3.0 | 0/? | Not started | - |
+| 23. Orders and Account | 1/2 | In Progress|  | - |
 | 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
