@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/catalog', label: 'Books' },
   { href: '/cart', label: 'Cart' },
+  { href: '/account', label: 'Account' },
 ]
 
 export function MobileNav() {

@@ -29,6 +29,12 @@ export function Header() {
           >
             Books
           </Link>
+          <Link
+            href="/account"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Account
+          </Link>
         </nav>
 
         {/* Right: Actions */}
