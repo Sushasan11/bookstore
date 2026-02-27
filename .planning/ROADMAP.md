@@ -149,7 +149,12 @@ Plans:
   2. User can view their wishlist page showing all saved books with current price and stock status
   3. An out-of-stock book shows a "Pre-book" button instead of "Add to Cart" on the book detail page
   4. User can cancel an active pre-booking from their account page and it disappears from the pre-bookings list
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 24-01-PLAN.md — Wishlist hook + heart toggle on BookCard/ActionButtons + Pre-book button
+- [ ] 24-02-PLAN.md — Wishlist page, pre-bookings on account page, navigation update
+- [ ] 24-03-PLAN.md — Human verification of all WISH and PREB requirements
 
 ### Phase 25: Reviews
 **Goal**: Users can read reviews on book detail pages and write, edit, or delete their own reviews on books they purchased
@@ -188,6 +193,6 @@ Plans:
 | 20. Auth Integration | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
-| 23. Orders and Account | 2/2 | Complete   | 2026-02-27 | - |
+| 23. Orders and Account | 2/2 | Complete    | 2026-02-27 | - |
 | 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
