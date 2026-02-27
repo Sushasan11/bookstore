@@ -183,7 +183,7 @@ Plans:
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 20. Auth Integration | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
-| 22. Cart and Checkout | 5/5 | Complete   | 2026-02-27 | 2026-02-27 |
+| 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |
 | 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
