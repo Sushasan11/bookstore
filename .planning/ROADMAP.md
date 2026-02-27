@@ -57,7 +57,7 @@
 **Milestone Goal:** Build a Next.js 15 customer-facing storefront with full feature parity against all user-facing backend endpoints. Monorepo restructure with `backend/` and `frontend/` directories. Catalog browsing, auth, cart/checkout, orders, wishlist, pre-booking, and reviews delivered as a responsive, SEO-optimized storefront.
 
 - [x] **Phase 19: Monorepo + Frontend Foundation** — Restructure repo, scaffold Next.js 15 app with full tooling
-- [ ] **Phase 20: Auth Integration** — NextAuth.js with email/password and Google OAuth, JWT bridge to FastAPI
+- [x] **Phase 20: Auth Integration** — NextAuth.js with email/password and Google OAuth, JWT bridge to FastAPI
 - [ ] **Phase 21: Catalog and Search** — SSR catalog, book detail pages with SEO, full-text search with URL-persisted filters
 - [ ] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation
 - [ ] **Phase 23: Orders and Account** — Order history, order detail, account page with navigation
@@ -94,9 +94,9 @@
 **Plans**: 3 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Backend Google token endpoint + NextAuth.js v5 config + SessionProvider
-- [ ] 20-02-PLAN.md — Auth UI pages (login/register), proxy.ts route protection, logout, Header auth state, 403 interceptor
-- [ ] 20-03-PLAN.md — Human verification of complete auth flow
+- [x] 20-01-PLAN.md — Backend Google token endpoint + NextAuth.js v5 config + SessionProvider
+- [x] 20-02-PLAN.md — Auth UI pages (login/register), proxy.ts route protection, logout, Header auth state, 403 interceptor
+- [x] 20-03-PLAN.md — Human verification of complete auth flow
 
 ### Phase 21: Catalog and Search
 **Goal**: Users can browse, search, and filter the book catalog through SEO-optimized server-rendered pages
@@ -175,7 +175,7 @@ Plans:
 | 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
 | 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
-| 20. Auth Integration | 2/3 | In Progress|  | - |
+| 20. Auth Integration | v3.0 | 3/3 | Complete | 2026-02-27 |
 | 21. Catalog and Search | v3.0 | 0/? | Not started | - |
 | 22. Cart and Checkout | v3.0 | 0/? | Not started | - |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |
