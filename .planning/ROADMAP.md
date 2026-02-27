@@ -47,7 +47,7 @@
 
 **Milestone Goal:** Give admins operational visibility into sales performance, inventory health, and review quality through API endpoints.
 
-- [ ] **Phase 16: Sales Analytics** - Revenue summary with period comparison, top-selling books by revenue and volume
+- [x] **Phase 16: Sales Analytics** - Revenue summary with period comparison, top-selling books by revenue and volume
 - [ ] **Phase 17: Inventory Analytics** - Low-stock alerts with configurable threshold
 - [ ] **Phase 18: Review Moderation Dashboard** - Admin review listing with filters and bulk delete
 
@@ -67,7 +67,7 @@
 
 Plans:
 - [x] 16-01-PLAN.md — AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
-- [ ] 16-02-PLAN.md — Top-books endpoint and integration tests for all sales analytics
+- [x] 16-02-PLAN.md — Top-books endpoint and integration tests for all sales analytics
 
 ### Phase 17: Inventory Analytics
 **Goal**: Admins can answer "what do I need to restock?" by querying books at or below a configurable stock threshold
@@ -117,6 +117,6 @@ Plans:
 | 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
-| 16. Sales Analytics | v2.1 | 1/2 | In progress | - |
+| 16. Sales Analytics | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 17. Inventory Analytics | v2.1 | 0/1 | Not started | - |
 | 18. Review Moderation Dashboard | v2.1 | 0/2 | Not started | - |

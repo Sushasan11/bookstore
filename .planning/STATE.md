@@ -6,9 +6,9 @@ status: in_progress
 last_updated: "2026-02-27"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -22,25 +22,25 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 16 of 18 (Sales Analytics)
-Plan: 1 of 2
-Status: In progress
-Last activity: 2026-02-27 — Completed 16-01: Analytics stack (repository, service, schemas, router)
+Phase: 16 of 18 (Sales Analytics) — COMPLETE
+Plan: 2 of 2 — COMPLETE
+Status: Phase 16 complete, ready for Phase 17
+Last activity: 2026-02-27 — Completed 16-02: Top-books endpoint and integration tests
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1 (this milestone)
-- Average duration: ~2 min
-- Total execution time: ~2 min
+- Total plans completed: 2 (this milestone)
+- Average duration: ~3.5 min
+- Total execution time: ~7 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 16-sales-analytics | 1/2 | ~2 min | ~2 min |
+| 16-sales-analytics | 2/2 COMPLETE | ~7 min | ~3.5 min |
 
 *Updated after each plan completion*
 
@@ -54,6 +54,11 @@ From 16-01:
 - Period end for current period is always datetime.now(timezone.utc), not forced midnight — partial period
 - Router-level Depends(require_admin) protects all analytics endpoints automatically
 - float(round(val, 2)) for all money values — avoids Pydantic v2 Decimal-as-string serialization
+
+From 16-02:
+- Top-books goes directly to repository (no service layer) — no period/delta logic needed
+- INNER JOIN to Book safe after book_id IS NOT NULL filter — no ghost groups from NULL book_ids
+- Test data design: Book A (2x$50=$100 rev), Book B (8x$10=$80 rev), Book C (3x$30=$90 rev) proves revenue ≠ volume ordering
 
 From v2.0 (key decisions relevant to v2.1):
 - Live SQL aggregates (not stored) — avg_rating/review_count via SQL AVG/COUNT; same pattern for analytics
@@ -81,5 +86,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 16-01-PLAN.md — analytics stack established, Phase 16 Plan 2 ready
+Stopped at: Completed 16-02-PLAN.md — Phase 16 Sales Analytics complete, all 4 requirements implemented and tested
 Resume file: None
