@@ -39,10 +39,10 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 
 ### Shopping
 
-- [ ] **SHOP-01**: User can add a book to the shopping cart
-- [ ] **SHOP-02**: User can update item quantity in the cart
-- [ ] **SHOP-03**: User can remove an item from the cart
-- [ ] **SHOP-04**: User can view cart with item list, quantities, and total
+- [x] **SHOP-01**: User can add a book to the shopping cart
+- [x] **SHOP-02**: User can update item quantity in the cart
+- [x] **SHOP-03**: User can remove an item from the cart
+- [x] **SHOP-04**: User can view cart with item list, quantities, and total
 - [ ] **SHOP-05**: User can checkout and place an order (mock payment)
 - [ ] **SHOP-06**: User sees order confirmation page after successful checkout
 - [ ] **SHOP-07**: User can view order history with date, total, and item summary
@@ -128,10 +128,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CATL-05 | Phase 21 | Complete |
 | CATL-06 | Phase 21 | Complete |
 | CATL-07 | Phase 21 | Complete |
-| SHOP-01 | Phase 22 | Pending |
-| SHOP-02 | Phase 22 | Pending |
-| SHOP-03 | Phase 22 | Pending |
-| SHOP-04 | Phase 22 | Pending |
+| SHOP-01 | Phase 22 | Complete |
+| SHOP-02 | Phase 22 | Complete |
+| SHOP-03 | Phase 22 | Complete |
+| SHOP-04 | Phase 22 | Complete |
 | SHOP-05 | Phase 22 | Pending |
 | SHOP-06 | Phase 22 | Pending |
 | SHOP-07 | Phase 23 | Pending |
