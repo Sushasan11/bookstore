@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -137,6 +137,68 @@ class ReviewRepository:
         reviews = list(result.scalars().all())
 
         return reviews, total
+
+    async def list_all_admin(
+        self,
+        *,
+        page: int = 1,
+        per_page: int = 20,
+        book_id: int | None = None,
+        user_id: int | None = None,
+        rating_min: int | None = None,
+        rating_max: int | None = None,
+        sort_by: str = "date",
+        sort_dir: str = "desc",
+    ) -> tuple[list[Review], int]:
+        """Return paginated, filtered, sorted reviews for admin moderation.
+
+        Filters combine as AND (e.g., book_id=5 AND rating_min=3).
+        Soft-deleted reviews are always excluded.
+        Eager-loads user and book relationships for response serialization.
+
+        Args:
+            page: 1-indexed page number.
+            per_page: Items per page.
+            book_id: Filter to reviews for this book only.
+            user_id: Filter to reviews by this user only.
+            rating_min: Minimum rating (inclusive, 1-5).
+            rating_max: Maximum rating (inclusive, 1-5).
+            sort_by: "date" (created_at) or "rating".
+            sort_dir: "asc" or "desc".
+
+        Returns:
+            Tuple of (reviews list, total count).
+        """
+        stmt = (
+            select(Review)
+            .where(Review.deleted_at.is_(None))
+            .options(selectinload(Review.user), selectinload(Review.book))
+        )
+
+        # Conditional filters — all combine as AND
+        if book_id is not None:
+            stmt = stmt.where(Review.book_id == book_id)
+        if user_id is not None:
+            stmt = stmt.where(Review.user_id == user_id)
+        if rating_min is not None:
+            stmt = stmt.where(Review.rating >= rating_min)
+        if rating_max is not None:
+            stmt = stmt.where(Review.rating <= rating_max)
+
+        # Sort column and direction
+        sort_col = Review.created_at if sort_by == "date" else Review.rating
+        order_expr = desc(sort_col) if sort_dir == "desc" else asc(sort_col)
+        stmt = stmt.order_by(order_expr, Review.id.desc())  # id as stable tiebreaker
+
+        # Count (reuses same filters via subquery)
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        # Paginate
+        result = await self.session.execute(
+            stmt.limit(per_page).offset((page - 1) * per_page)
+        )
+        return list(result.scalars().all()), total
 
     async def get_aggregates(self, book_id: int) -> dict:
         """Return avg_rating and review_count for a book.
