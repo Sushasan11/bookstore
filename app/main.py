@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.admin.analytics_router import router as analytics_router
 from app.admin.router import router as admin_users_router
 from app.books.router import router as books_router
 from app.cart.router import router as cart_router
@@ -79,6 +80,7 @@ def create_app() -> FastAPI:
     application.include_router(wishlist_router)
     application.include_router(prebooks_router)
     application.include_router(admin_users_router)
+    application.include_router(analytics_router)
     application.include_router(reviews_router)
 
     return application
