@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-27T17:34:05.619Z"
+progress:
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 15
+  completed_plans: 13
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-27T16:22:06.151Z"
 progress:
   total_phases: 3
@@ -62,11 +75,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 22 of 25 (Cart and Checkout) — IN PROGRESS
-Plan: 1 of 5 complete (22-01 — cart data layer, CartBadge, /cart route protection, shadcn dialog+separator)
+Plan: 3 of 5 complete (22-03 — Cart page UI with CartItem, QuantityStepper, CartSummary, empty/error/loading states)
 Status: Active
-Last activity: 2026-02-27 — Completed 22-01 (cart.ts API + useCart hook with optimistic mutations, CartBadge in Header, /cart auth-protected, shadcn dialog+separator installed)
+Last activity: 2026-02-27 — Completed 22-03 (CartPageContent orchestrator, CartItem rows, QuantityStepper min=1 control, CartSummary sticky sidebar + mobile fixed bar)
 
-Progress: [████░░░░░░] 40% (3/7 phases complete, 1/5 plans in phase 22 complete)
+Progress: [████░░░░░░] 40% (3/7 phases complete, 3/5 plans in phase 22 complete)
 
 ## Performance Metrics
 
@@ -82,7 +95,7 @@ Progress: [████░░░░░░] 40% (3/7 phases complete, 1/5 plans i
 | 19 (complete) | 3 | ~41 min | ~14 min |
 | 20 (complete) | 3 | ~28 min | ~9 min |
 | 21 (complete) | 4/4 | ~51 min | ~13 min |
-| 22 (in progress) | 1/5 | ~3 min | ~3 min |
+| 22 (in progress) | 3/5 | ~9 min | ~3 min |
 
 *Updated after each plan completion*
 
@@ -127,6 +140,12 @@ Recent decisions affecting v3.0 work:
 - [22-01]: useCart hook exported from cart.ts — all mutations share CART_KEY so CartBadge and cart page stay in sync via TanStack Query cache
 - [22-01]: recomputeTotals helper uses parseFloat/toFixed(2) to recompute price strings optimistically without backend round-trip
 - [22-01]: ApiError.data carries full response body — enables 409 ORDER_INSUFFICIENT_STOCK to expose items[] for per-item stock error display
+- [22-02]: ActionButtons.tsx converted to 'use client' — accepts bookId + inStock props, calls useCart().addItem.mutate on click
+- [22-02]: BookCard.tsx converted to 'use client' — cart icon button is absolute-positioned outside the Link to prevent navigation on cart click
+- [22-02]: Unauthenticated add-to-cart: toast.error + router.push('/login') in click handler — consistent pattern across both components
+- [22-02]: BookCard cart icon: opacity-0 md:group-hover:opacity-100 on desktop, always visible mobile — per CONTEXT.md hover decision
+- [Phase 22-03]: removeItem.mutate({ itemId }) — hook's mutationFn destructures { itemId }, not a bare number
+- [Phase 22-03]: CartSummary renders sticky sidebar card (desktop) + fixed bottom bar (mobile <lg); CartPageContent adds pb-20 lg:pb-0 to prevent content overlap
 
 ### Blockers/Concerns
 
@@ -140,5 +159,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 22-01-PLAN.md — cart data layer (cart.ts + useCart hook with optimistic mutations), CartBadge in Header, /cart auth-protected, shadcn dialog+separator installed
+Stopped at: Completed 22-03-PLAN.md — cart page UI (CartPageContent, CartItem, QuantityStepper, CartSummary, loading skeleton, empty state)
 Resume file: None
