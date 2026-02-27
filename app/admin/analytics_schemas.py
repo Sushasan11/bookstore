@@ -36,3 +36,25 @@ class TopBooksResponse(BaseModel):
 
     sort_by: str
     items: list[TopBookEntry]
+
+
+class LowStockBookEntry(BaseModel):
+    """Single book entry in the low-stock inventory report.
+
+    threshold is echoed per-item per locked decision — allows dashboard to show
+    "5 units (threshold: 10)" without a second API call.
+    """
+
+    book_id: int
+    title: str
+    author: str
+    current_stock: int
+    threshold: int
+
+
+class LowStockResponse(BaseModel):
+    """Response schema for GET /admin/analytics/inventory/low-stock."""
+
+    threshold: int
+    total_low_stock: int
+    items: list[LowStockBookEntry]

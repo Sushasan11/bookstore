@@ -117,6 +117,6 @@ Plans:
 | 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
-| 16. Sales Analytics | v2.1 | 2/2 | Complete | 2026-02-27 |
+| 16. Sales Analytics | v2.1 | Complete    | 2026-02-27 | 2026-02-27 |
 | 17. Inventory Analytics | v2.1 | 0/1 | Not started | - |
 | 18. Review Moderation Dashboard | v2.1 | 0/2 | Not started | - |

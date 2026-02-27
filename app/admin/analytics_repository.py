@@ -3,7 +3,7 @@
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.books.models import Book
@@ -87,6 +87,29 @@ class AnalyticsRepository:
             .group_by(OrderItem.book_id, Book.title, Book.author)
             .order_by(desc(order_col))
             .limit(limit)
+        )
+        result = await self._db.execute(stmt)
+        return [row._asdict() for row in result.all()]
+
+    async def low_stock_books(self, *, threshold: int) -> list[dict]:
+        """Return all books with stock_quantity at or below threshold, ordered ascending.
+
+        Args:
+            threshold: Inclusive upper bound for stock_quantity filter.
+
+        Returns:
+            List of dicts: {book_id, title, author, current_stock}.
+            Ordered by current_stock ascending (zero-stock books first).
+        """
+        stmt = (
+            select(
+                Book.id.label("book_id"),
+                Book.title,
+                Book.author,
+                Book.stock_quantity.label("current_stock"),
+            )
+            .where(Book.stock_quantity <= threshold)
+            .order_by(asc(Book.stock_quantity))
         )
         result = await self._db.execute(stmt)
         return [row._asdict() for row in result.all()]
