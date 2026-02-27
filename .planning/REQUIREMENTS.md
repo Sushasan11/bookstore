@@ -20,7 +20,7 @@ Requirements for milestone v2.1: Admin Dashboard & Analytics. Each maps to roadm
 
 ### Review Moderation
 
-- [ ] **MOD-01**: Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range)
+- [x] **MOD-01**: Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range)
 - [ ] **MOD-02**: Admin can bulk-delete reviews by providing a list of review IDs
 
 ## Future Requirements
@@ -63,7 +63,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SALES-03 | Phase 16 | Complete |
 | SALES-04 | Phase 16 | Complete |
 | INV-01 | Phase 17 | Complete |
-| MOD-01 | Phase 18 | Pending |
+| MOD-01 | Phase 18 | Complete |
 | MOD-02 | Phase 18 | Pending |
 
 **Coverage:**

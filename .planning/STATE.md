@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Admin Dashboard & Analytics
 status: unknown
-last_updated: "2026-02-27T09:13:31Z"
+last_updated: "2026-02-27T07:21:33Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v2.1 Admin Dashboard & Analytics — Phase 17: Inventory Analytics
+**Current focus:** v2.1 Admin Dashboard & Analytics — Phase 18: Review Moderation Dashboard
 
 ## Current Position
 
-Phase: 17 of 18 (Inventory Analytics) — IN PROGRESS
-Plan: 1 of 1 — COMPLETE
-Status: Phase 17 Plan 01 complete — INV-01 delivered
-Last activity: 2026-02-27 — Completed 17-01: Low-stock inventory endpoint and integration tests
+Phase: 18 of 18 (Review Moderation Dashboard) — IN PROGRESS
+Plan: 1 of 2 — COMPLETE
+Status: Phase 18 Plan 01 complete — MOD-01 delivered
+Last activity: 2026-02-27 — Completed 18-01: Admin review list endpoint with filtering, sorting, and pagination
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 16-sales-analytics | 2/2 COMPLETE | ~7 min | ~3.5 min |
 | 17-inventory-analytics | 1/1 COMPLETE | ~3 min | ~3 min |
+| 18-review-moderation-dashboard | 1/2 IN PROGRESS | ~8 min | ~8 min |
 
 *Updated after each plan completion*
 
@@ -66,6 +67,12 @@ From 17-01:
 - current_stock is int (not float) — stock_quantity is Integer in Book model, no Decimal conversion needed
 - total_low_stock=len(items) avoids second DB query since all results returned (no pagination)
 - Query(10, ge=0) on threshold — FastAPI returns 422 automatically for negative values
+
+From 18-01:
+- BulkDeleteRequest/BulkDeleteResponse defined in Plan 01 schemas — Plan 02 will NOT modify reviews_schemas.py
+- list_all_admin() uses id.desc() as stable tiebreaker for deterministic pagination
+- Count query uses select(func.count()).select_from(stmt.subquery()) — guarantees count and data share identical filters
+- deleted_at.is_(None) is FIRST where clause in list_all_admin() — soft-deleted reviews never appear in any filter combination
 
 From v2.0 (key decisions relevant to v2.1):
 - Live SQL aggregates (not stored) — avg_rating/review_count via SQL AVG/COUNT; same pattern for analytics
@@ -93,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 17-01-PLAN.md — Phase 17 Plan 01 complete, INV-01 low-stock endpoint delivered with 15 integration tests
+Stopped at: Completed 18-01-PLAN.md — Phase 18 Plan 01 complete, MOD-01 admin review list endpoint with filtering/sorting/pagination
 Resume file: None

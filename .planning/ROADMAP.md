@@ -92,11 +92,11 @@ Plans:
   3. Admin can sort review results by date or rating in ascending or descending order
   4. Admin can call `DELETE /admin/reviews/bulk` with a list of review IDs and have all matching non-deleted reviews soft-deleted in a single operation
   5. Soft-deleted reviews do not reappear in subsequent calls to `GET /admin/reviews`
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: AdminReviewResponse schema, list_all_admin() repository method, and admin review list endpoint
-- [ ] 18-02: bulk_delete() repository method, bulk delete endpoint, and integration tests
+- [ ] 18-01-PLAN.md — Admin review schemas, list_all_admin() repository method, reviews_router.py, and GET /admin/reviews endpoint
+- [ ] 18-02-PLAN.md — bulk_soft_delete() repository method, DELETE /admin/reviews/bulk endpoint, and integration tests for MOD-01 + MOD-02
 
 ## Progress
 
@@ -118,5 +118,5 @@ Plans:
 | 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
 | 16. Sales Analytics | v2.1 | Complete    | 2026-02-27 | 2026-02-27 |
-| 17. Inventory Analytics | 1/1 | Complete   | 2026-02-27 | - |
-| 18. Review Moderation Dashboard | v2.1 | 0/2 | Not started | - |
+| 17. Inventory Analytics | 1/1 | Complete    | 2026-02-27 | - |
+| 18. Review Moderation Dashboard | 1/2 | In Progress|  | - |
