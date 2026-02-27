@@ -2,8 +2,11 @@
 
 from authlib.integrations.starlette_client import OAuthError
 from fastapi import APIRouter, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from starlette.requests import Request
 
+from app.core.config import get_settings
 from app.core.deps import DbSession
 from app.core.exceptions import AppError
 from app.core.oauth import oauth
@@ -12,7 +15,13 @@ from app.users.repository import (
     RefreshTokenRepository,
     UserRepository,
 )
-from app.users.schemas import LoginRequest, RefreshRequest, TokenResponse, UserCreate
+from app.users.schemas import (
+    GoogleTokenRequest,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+    UserCreate,
+)
 from app.users.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -106,5 +115,46 @@ async def google_callback(request: Request, db: DbSession) -> TokenResponse:
         provider="google",
         provider_user_id=userinfo["sub"],
         email=userinfo["email"],
+    )
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.post("/google/token", response_model=TokenResponse)
+async def google_token_exchange(body: GoogleTokenRequest, db: DbSession) -> TokenResponse:
+    """Exchange a Google id_token (from NextAuth) for a FastAPI token pair.
+
+    This endpoint validates the Google id_token using Google's public keys,
+    extracts the user's email and Google user ID, then delegates to the
+    existing oauth_login() service method.
+
+    Used by NextAuth.js v5 jwt callback after Google OAuth consent completes
+    on the frontend — avoids conflicting with Authlib's server-side OAuth state.
+    """
+    settings = get_settings()
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            body.id_token,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID,
+        )
+    except ValueError as e:
+        raise AppError(
+            status_code=401,
+            detail="Invalid Google token",
+            code="AUTH_GOOGLE_INVALID_TOKEN",
+        ) from e
+
+    if not idinfo.get("email_verified"):
+        raise AppError(
+            status_code=401,
+            detail="Google email is not verified",
+            code="AUTH_OAUTH_EMAIL_UNVERIFIED",
+        )
+
+    service = _make_service(db)
+    access_token, refresh_token = await service.oauth_login(
+        provider="google",
+        provider_user_id=idinfo["sub"],
+        email=idinfo["email"],
     )
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)

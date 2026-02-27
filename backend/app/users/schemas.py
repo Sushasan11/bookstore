@@ -42,3 +42,9 @@ class UserResponse(BaseModel):
     role: str
 
     model_config = {"from_attributes": True}
+
+
+class GoogleTokenRequest(BaseModel):
+    """POST /auth/google/token request body — Google id_token from NextAuth."""
+
+    id_token: str
