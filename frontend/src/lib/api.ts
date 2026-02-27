@@ -4,7 +4,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public detail?: string
+    public detail?: string,
+    public data?: unknown  // full response body for structured errors (e.g. 409 ORDER_INSUFFICIENT_STOCK)
   ) {
     super(message)
     this.name = 'ApiError'
@@ -29,7 +30,8 @@ export async function apiFetch<T>(
     throw new ApiError(
       body.detail ?? `API error ${res.status}`,
       res.status,
-      body.detail
+      body.detail,
+      body  // Pass full response body for structured error handling
     )
   }
 
