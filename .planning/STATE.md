@@ -20,8 +20,8 @@ last_updated: "2026-02-27"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -31,16 +31,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 19: Monorepo + Frontend Foundation
+**Current focus:** v3.0 Customer Storefront — Phase 20: Auth Integration
 
 ## Current Position
 
-Phase: 20 of 25 (Auth Integration — next up)
-Plan: 1 of TBD
+Phase: 20 of 25 (Auth Integration — in progress)
+Plan: 2 of 3 (20-01 complete, advancing to 20-02)
 Status: Active
-Last activity: 2026-02-27 — Completed 19-03 (responsive layout shell, health check home page, dark mode, mobile nav)
+Last activity: 2026-02-27 — Completed 20-01 (NextAuth.js v5 config, Google token exchange endpoint, SessionProvider)
 
-Progress: [█░░░░░░░░░] 14% (1/7 phases complete)
+Progress: [██░░░░░░░░] 14% (1/7 phases complete, 4/7 plans in phase 20)
 
 ## Performance Metrics
 
@@ -75,10 +75,14 @@ Recent decisions affecting v3.0 work:
 - [19-03]: ThemeToggle uses useEffect/useState mounted guard to return null before hydration — prevents SSR/CSR theme flicker (required next-themes pattern)
 - [19-03]: MobileNav Sheet open state controlled internally — enables programmatic close on link click
 - [19-03]: 404 page must be explicitly themed with shadcn/ui tokens — default Next.js not-found does not inherit ThemeProvider context
+- [20-01]: POST /auth/google/token new endpoint (not calling existing /auth/google): existing Authlib redirect flow conflicts with NextAuth's own OAuth state management
+- [20-01]: jose decodeJwt (not verify) for FastAPI JWT claims extraction: verification is FastAPI's responsibility; decoding avoids extra /me API call
+- [20-01]: Concurrent-refresh guard with module-level refreshPromise: prevents race condition when multiple server components hit jwt callback simultaneously during token expiry window
+- [20-01]: Credentials authorize returns null on 4xx failures (not throw): per NextAuth v5 spec — throw triggers 500, null triggers CredentialsSignin error with clean UX
 
 ### Blockers/Concerns
 
-- [Phase 20]: Google OAuth token exchange (NextAuth → FastAPI) is a non-standard pattern — plan a focused sub-task using PITFALLS.md code patterns
+- [Phase 20]: Google OAuth requires user to configure Google Cloud Console credentials and run npx auth secret — documented in 20-01-SUMMARY.md User Setup section
 - [Phase 25]: Star rating selector not in shadcn/ui — evaluate community extensions vs. small custom component before phase starts
 
 ### Pending Todos
@@ -88,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 19-03-PLAN.md — Phase 19 complete, ready for Phase 20 (Auth Integration)
+Stopped at: Completed 20-01-PLAN.md — NextAuth.js v5 session layer established, ready for 20-02 (Auth UI)
 Resume file: None

@@ -18,13 +18,13 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 
 ### Auth
 
-- [ ] **AUTH-01**: User can sign up with email and password
-- [ ] **AUTH-02**: User can log in with email and password
-- [ ] **AUTH-03**: User can log in with Google OAuth
-- [ ] **AUTH-04**: User session persists across page navigation and refresh
+- [x] **AUTH-01**: User can sign up with email and password
+- [x] **AUTH-02**: User can log in with email and password
+- [x] **AUTH-03**: User can log in with Google OAuth
+- [x] **AUTH-04**: User session persists across page navigation and refresh
 - [ ] **AUTH-05**: User can log out
 - [ ] **AUTH-06**: Protected routes redirect unauthenticated users to login
-- [ ] **AUTH-07**: Access token refreshes transparently when expired
+- [x] **AUTH-07**: Access token refreshes transparently when expired
 - [ ] **AUTH-08**: Deactivated user is signed out on next API call (401 handling)
 
 ### Catalog
@@ -113,13 +113,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-04 | Phase 19 | Complete |
 | FOUND-05 | Phase 19 | Complete |
 | FOUND-06 | Phase 19 | Complete |
-| AUTH-01 | Phase 20 | Pending |
-| AUTH-02 | Phase 20 | Pending |
-| AUTH-03 | Phase 20 | Pending |
-| AUTH-04 | Phase 20 | Pending |
+| AUTH-01 | Phase 20 | Complete |
+| AUTH-02 | Phase 20 | Complete |
+| AUTH-03 | Phase 20 | Complete |
+| AUTH-04 | Phase 20 | Complete |
 | AUTH-05 | Phase 20 | Pending |
 | AUTH-06 | Phase 20 | Pending |
-| AUTH-07 | Phase 20 | Pending |
+| AUTH-07 | Phase 20 | Complete |
 | AUTH-08 | Phase 20 | Pending |
 | CATL-01 | Phase 21 | Pending |
 | CATL-02 | Phase 21 | Pending |
