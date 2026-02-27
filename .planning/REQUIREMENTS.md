@@ -22,10 +22,10 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 - [x] **AUTH-02**: User can log in with email and password
 - [x] **AUTH-03**: User can log in with Google OAuth
 - [x] **AUTH-04**: User session persists across page navigation and refresh
-- [ ] **AUTH-05**: User can log out
-- [ ] **AUTH-06**: Protected routes redirect unauthenticated users to login
+- [x] **AUTH-05**: User can log out
+- [x] **AUTH-06**: Protected routes redirect unauthenticated users to login
 - [x] **AUTH-07**: Access token refreshes transparently when expired
-- [ ] **AUTH-08**: Deactivated user is signed out on next API call (401 handling)
+- [x] **AUTH-08**: Deactivated user is signed out on next API call (401 handling)
 
 ### Catalog
 
@@ -117,10 +117,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 20 | Complete |
 | AUTH-03 | Phase 20 | Complete |
 | AUTH-04 | Phase 20 | Complete |
-| AUTH-05 | Phase 20 | Pending |
-| AUTH-06 | Phase 20 | Pending |
+| AUTH-05 | Phase 20 | Complete |
+| AUTH-06 | Phase 20 | Complete |
 | AUTH-07 | Phase 20 | Complete |
-| AUTH-08 | Phase 20 | Pending |
+| AUTH-08 | Phase 20 | Complete |
 | CATL-01 | Phase 21 | Pending |
 | CATL-02 | Phase 21 | Pending |
 | CATL-03 | Phase 21 | Pending |

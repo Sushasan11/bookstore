@@ -175,7 +175,7 @@ Plans:
 | 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
 | 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
-| 20. Auth Integration | 1/3 | In Progress|  | - |
+| 20. Auth Integration | 2/3 | In Progress|  | - |
 | 21. Catalog and Search | v3.0 | 0/? | Not started | - |
 | 22. Cart and Checkout | v3.0 | 0/? | Not started | - |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |

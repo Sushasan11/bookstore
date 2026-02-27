@@ -36,24 +36,25 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 20 of 25 (Auth Integration — in progress)
-Plan: 2 of 3 (20-01 complete, advancing to 20-02)
+Plan: 3 of 3 (20-02 complete, advancing to 20-03)
 Status: Active
-Last activity: 2026-02-27 — Completed 20-01 (NextAuth.js v5 config, Google token exchange endpoint, SessionProvider)
+Last activity: 2026-02-27 — Completed 20-02 (auth UI pages, proxy.ts route protection, Header UserMenu, 403 interceptor)
 
-Progress: [██░░░░░░░░] 14% (1/7 phases complete, 4/7 plans in phase 20)
+Progress: [██░░░░░░░░] 14% (1/7 phases complete, 5/7 plans in phase 20)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~10 min
-- Total execution time: ~41 min
+- Total plans completed: 5
+- Average duration: ~8 min
+- Total execution time: ~46 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 19 (complete) | 3 | ~41 min | ~14 min |
+| 20 (in progress) | 2 | ~23 min | ~11 min |
 
 *Updated after each plan completion*
 
@@ -79,6 +80,10 @@ Recent decisions affecting v3.0 work:
 - [20-01]: jose decodeJwt (not verify) for FastAPI JWT claims extraction: verification is FastAPI's responsibility; decoding avoids extra /me API call
 - [20-01]: Concurrent-refresh guard with module-level refreshPromise: prevents race condition when multiple server components hit jwt callback simultaneously during token expiry window
 - [20-01]: Credentials authorize returns null on 4xx failures (not throw): per NextAuth v5 spec — throw triggers 500, null triggers CredentialsSignin error with clean UX
+- [20-02]: Suspense boundary required around components using useSearchParams() in Next.js static builds — caught by npm run build, not TypeScript
+- [20-02]: proxy.ts uses named export const proxy = auth(...) (not export default): Next.js 16 requires named proxy export per pitfall documentation
+- [20-02]: UserMenu as separate 'use client' component with mounted guard: keeps Header as server component, prevents SSR/CSR hydration mismatch
+- [20-02]: AuthGuard as child component inside SessionProvider: calls useSession() to watch session.error and trigger signOut on RefreshTokenError
 
 ### Blockers/Concerns
 
@@ -92,5 +97,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 20-01-PLAN.md — NextAuth.js v5 session layer established, ready for 20-02 (Auth UI)
+Stopped at: Completed 20-02-PLAN.md — Auth UI pages, proxy.ts route protection, Header UserMenu, 403 interceptor complete; ready for 20-03
 Resume file: None
