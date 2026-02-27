@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { UserMenu } from '@/components/layout/UserMenu'
+import { CartBadge } from '@/components/layout/CartBadge'
 
 export function Header() {
   return (
@@ -32,10 +33,11 @@ export function Header() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          <Link href="/cart">
+          <Link href="/cart" className="relative">
             <Button variant="ghost" size="icon" aria-label="Shopping cart">
               <ShoppingCart className="h-5 w-5" />
             </Button>
+            <CartBadge />
           </Link>
           <UserMenu />
           <ThemeToggle />

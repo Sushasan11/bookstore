@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
 // Routes that require authentication
-const protectedPrefixes = ["/account", "/orders", "/checkout", "/wishlist", "/prebook"]
+const protectedPrefixes = ["/account", "/orders", "/checkout", "/wishlist", "/prebook", "/cart"]
 
 // Auth-only pages (redirect to / when already signed in)
 const authOnlyPaths = ["/login", "/register"]
