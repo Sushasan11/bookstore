@@ -1,6 +1,14 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { ShoppingCart } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { useCart } from '@/lib/cart'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import type { BookResponse } from '@/lib/catalog'
 
 const COVER_COLORS = [
@@ -24,46 +32,73 @@ function CoverPlaceholder({ book }: { book: BookResponse }) {
 }
 
 export function BookCard({ book }: { book: BookResponse }) {
+  const { data: session } = useSession()
+  const { addItem } = useCart()
+  const router = useRouter()
   const price = parseFloat(book.price).toFixed(2)
   const inStock = book.stock_quantity > 0
 
-  return (
-    <Link
-      href={`/books/${book.id}`}
-      className="flex flex-col rounded-lg overflow-hidden border hover:shadow-md transition-shadow"
-    >
-      {/* Cover area */}
-      <div className="relative aspect-[2/3] w-full">
-        {book.cover_image_url ? (
-          <Image
-            src={book.cover_image_url}
-            alt={`Cover of ${book.title}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 25vw"
-          />
-        ) : (
-          <CoverPlaceholder book={book} />
-        )}
-      </div>
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!session?.accessToken) {
+      toast.error('Please sign in to add items to your cart')
+      router.push('/login')
+      return
+    }
+    addItem.mutate({ bookId: book.id })
+  }
 
-      {/* Book info */}
-      <div className="flex flex-col gap-1 p-3">
-        <p className="font-medium text-sm line-clamp-1">{book.title}</p>
-        <p className="text-xs text-muted-foreground line-clamp-1">{book.author}</p>
-        <p className="text-sm font-semibold">${price}</p>
-        <div>
-          {inStock ? (
-            <Badge variant="secondary" className="text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900">
-              In Stock
-            </Badge>
+  return (
+    <div className="group relative flex flex-col rounded-lg overflow-hidden border hover:shadow-md transition-shadow">
+      <Link href={`/books/${book.id}`} className="flex flex-col flex-1">
+        {/* Cover area */}
+        <div className="relative aspect-[2/3] w-full">
+          {book.cover_image_url ? (
+            <Image
+              src={book.cover_image_url}
+              alt={`Cover of ${book.title}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 25vw"
+            />
           ) : (
-            <Badge variant="secondary" className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900">
-              Out of Stock
-            </Badge>
+            <CoverPlaceholder book={book} />
           )}
         </div>
-      </div>
-    </Link>
+
+        {/* Book info */}
+        <div className="flex flex-col gap-1 p-3">
+          <p className="font-medium text-sm line-clamp-1">{book.title}</p>
+          <p className="text-xs text-muted-foreground line-clamp-1">{book.author}</p>
+          <p className="text-sm font-semibold">${price}</p>
+          <div>
+            {inStock ? (
+              <Badge variant="secondary" className="text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900">
+                In Stock
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900">
+                Out of Stock
+              </Badge>
+            )}
+          </div>
+        </div>
+      </Link>
+
+      {/* Cart icon button — always visible on mobile, visible on hover on desktop */}
+      {inStock && (
+        <Button
+          variant="secondary"
+          size="icon"
+          className="absolute top-2 right-2 h-8 w-8 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-sm"
+          onClick={handleAddToCart}
+          disabled={addItem.isPending}
+          aria-label={`Add ${book.title} to cart`}
+        >
+          <ShoppingCart className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
   )
 }
