@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-27T16:22:06.151Z"
+progress:
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 10
+  completed_plans: 10
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-27T14:27:49.240Z"
 progress:
   total_phases: 2
@@ -44,16 +57,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 21: Catalog and Search
+**Current focus:** v3.0 Customer Storefront — Phase 22: Cart and Checkout
 
 ## Current Position
 
-Phase: 21 of 25 (Catalog and Search) — COMPLETE
-Plan: 4 of 4 complete (21-04 — human verification of all CATL-01 through CATL-07 requirements)
+Phase: 22 of 25 (Cart and Checkout) — IN PROGRESS
+Plan: 1 of 5 complete (22-01 — cart data layer, CartBadge, /cart route protection, shadcn dialog+separator)
 Status: Active
-Last activity: 2026-02-27 — Completed 21-04 (human verification of catalog browsing, search, filters, pagination, book detail, SEO metadata, and URL persistence — all CATL requirements approved)
+Last activity: 2026-02-27 — Completed 22-01 (cart.ts API + useCart hook with optimistic mutations, CartBadge in Header, /cart auth-protected, shadcn dialog+separator installed)
 
-Progress: [████░░░░░░] 40% (3/7 phases complete, 4/4 plans in phase 21 complete)
+Progress: [████░░░░░░] 40% (3/7 phases complete, 1/5 plans in phase 22 complete)
 
 ## Performance Metrics
 
@@ -68,7 +81,8 @@ Progress: [████░░░░░░] 40% (3/7 phases complete, 4/4 plans i
 |-------|-------|-------|----------|
 | 19 (complete) | 3 | ~41 min | ~14 min |
 | 20 (complete) | 3 | ~28 min | ~9 min |
-| 21 (in progress) | 3/4 | ~38 min | ~13 min |
+| 21 (complete) | 4/4 | ~51 min | ~13 min |
+| 22 (in progress) | 1/5 | ~3 min | ~3 min |
 
 *Updated after each plan completion*
 
@@ -109,6 +123,10 @@ Recent decisions affecting v3.0 work:
 - [21-03]: ActionButtons are disabled placeholders — Phase 22 (cart) and Phase 24 (wishlist) will enable them
 - [21-03]: MoreInGenre fetches size=7, filters current book, slices to 6 — avoids separate count query
 - [21-04]: All CATL-01 through CATL-07 requirements verified by human in browser — Phase 21 approved complete; Phase 22 (cart) ready to begin
+- [22-01]: CartBadge uses mounted guard (useEffect/useState) to prevent SSR/CSR hydration mismatch — same pattern as UserMenu
+- [22-01]: useCart hook exported from cart.ts — all mutations share CART_KEY so CartBadge and cart page stay in sync via TanStack Query cache
+- [22-01]: recomputeTotals helper uses parseFloat/toFixed(2) to recompute price strings optimistically without backend round-trip
+- [22-01]: ApiError.data carries full response body — enables 409 ORDER_INSUFFICIENT_STOCK to expose items[] for per-item stock error display
 
 ### Blockers/Concerns
 
@@ -122,5 +140,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 21-04-PLAN.md — human verification of all CATL-01 through CATL-07 requirements approved; Phase 21 catalog and search complete
+Stopped at: Completed 22-01-PLAN.md — cart data layer (cart.ts + useCart hook with optimistic mutations), CartBadge in Header, /cart auth-protected, shadcn dialog+separator installed
 Resume file: None
