@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An online bookstore API where administrators manage a catalog of books (with details, pricing, and stock) and users can browse, search, purchase books through a cart/checkout flow, maintain wishlists, pre-book out-of-stock titles, leave verified-purchase reviews with ratings, and receive transactional emails. Admins have user lifecycle management and review moderation. Built with FastAPI, PostgreSQL, SQLAlchemy, and managed with Poetry.
+An online bookstore API where administrators manage a catalog of books (with details, pricing, and stock) and users can browse, search, purchase books through a cart/checkout flow, maintain wishlists, pre-book out-of-stock titles, leave verified-purchase reviews with ratings, and receive transactional emails. Admins have user lifecycle management, review moderation, and operational analytics (sales, inventory, reviews). Built with FastAPI, PostgreSQL, SQLAlchemy, and managed with Poetry.
 
 ## Core Value
 
@@ -37,28 +37,37 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - ✓ Admin can delete any review — v2.0
 - ✓ Book detail shows average rating and review count — v2.0
 
+- ✓ Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month — v2.1
+- ✓ Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary — v2.1
+- ✓ Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue — v2.1
+- ✓ Admin can view top-selling books ranked by volume (units sold) with book title and author — v2.1
+- ✓ Admin can query books with stock at or below a configurable threshold, ordered by stock ascending — v2.1
+- ✓ Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range) — v2.1
+- ✓ Admin can bulk-delete reviews by providing a list of review IDs — v2.1
+
 ### Active
 
-<!-- Current milestone: v2.1 Admin Dashboard & Analytics -->
+<!-- No active milestone — backend complete through v2.1, next milestone TBD -->
 
-- [ ] Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month
-- [ ] Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary
-- [ ] Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue
-- [ ] Admin can view top-selling books ranked by volume (units sold) with book title and author
-- [ ] Admin can query books with stock at or below a configurable threshold, ordered by stock ascending
-- [ ] Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range)
-- [ ] Admin can bulk-delete reviews by providing a list of review IDs
+(None — all backend milestones shipped. Next: v3.0 Frontend or new backend milestone.)
 
-## Current Milestone: v2.1 Admin Dashboard & Analytics
+### Frontend (Planned)
 
-**Goal:** Give admins operational visibility into sales performance, inventory health, and review quality through API endpoints.
+Next.js 15 (App Router) + TypeScript frontend, to be built after backend milestones are complete.
 
-**Target features:**
-- Sales analytics (revenue summary, top sellers, average order value)
-- Inventory analytics (low stock alerts, turnover rates, pre-booking demand)
-- Review moderation dashboard (admin listing with sort/filter, bulk delete)
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Server State | TanStack Query |
+| UI | shadcn/ui + Tailwind CSS |
+| Auth | NextAuth.js (JWT + Google OAuth) |
+| Validation | Zod |
+| API Types | openapi-typescript (auto-generated from FastAPI OpenAPI spec) |
 
-### Out of Scope
+Backend development uses Claude Code MCP.
+
+## Out of Scope
 
 - Real payment integration (Stripe, etc.) — mock payment sufficient
 - Mobile app — API-first, web/API only
@@ -73,17 +82,20 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 
 ## Context
 
-Shipped v2.0 with 12,010 LOC Python, 240 tests passing.
+Shipped v2.1 with 13,743 LOC Python, ~306 tests passing.
 Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail.
-15 phases delivered across 3 milestones (v1.0: 8 phases, v1.1: 4 phases, v2.0: 3 phases).
-Reviews system: 5 CRUD endpoints, verified-purchase gate, admin moderation, live aggregates on book detail.
+18 phases delivered across 4 milestones (v1.0: 8 phases, v1.1: 4 phases, v2.0: 3 phases, v2.1: 3 phases).
+Admin analytics: sales summary with period comparison, top-sellers by revenue/volume, low-stock inventory alerts, review moderation with bulk delete.
+66 new integration tests for admin analytics and moderation endpoints.
 
 ## Constraints
 
-- **Stack**: Python 3.11+, FastAPI, Poetry, PostgreSQL, SQLAlchemy + Alembic
-- **Auth**: JWT tokens (access + refresh), DB is_active check per request
+- **Backend Stack**: Python 3.11+, FastAPI, Poetry, PostgreSQL, SQLAlchemy + Alembic
+- **Frontend Stack**: Next.js 15, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS
+- **Auth**: JWT tokens (access + refresh), DB is_active check per request; NextAuth.js on frontend
 - **Payments**: Mock/simulated only — no real payment gateway
 - **Email**: fastapi-mail with SMTP, BackgroundTasks dispatch
+- **Dev Tooling**: Claude Code MCP for backend development
 
 ## Key Decisions
 
@@ -107,6 +119,14 @@ Reviews system: 5 CRUD endpoints, verified-purchase gate, admin moderation, live
 | DuplicateReviewError separate from AppError | 409 body needs existing_review_id which AppError handler can't produce | ✓ Good |
 | model_fields_set sentinel for PATCH | Distinguishes "omitted" from explicit null on review text field | ✓ Good |
 | Single DELETE endpoint (user + admin) | is_admin flag passed to service; no separate admin route needed | ✓ Good |
+| Next.js over Vite SPA | SSR for SEO on public catalog pages, App Router for layouts, built-in middleware for auth | Planned |
+| openapi-typescript for API types | Auto-generate TypeScript types from FastAPI OpenAPI spec, keeps Pydantic ↔ TS in sync | Planned |
+| Router-level admin guard for analytics | `dependencies=[Depends(require_admin)]` at APIRouter constructor protects all endpoints automatically | ✓ Good |
+| Live SQL aggregates for analytics | Direct queries on orders/order_items/books tables; no materialized views or denormalization needed at current volume | ✓ Good |
+| No service layer for simple aggregates | Top-books, low-stock, review-list go directly to repository — service layer only for period/delta logic | ✓ Good |
+| Bulk soft-delete via single UPDATE...WHERE IN | O(1) DB round-trips, returns rowcount for best-effort semantics | ✓ Good |
+| AOV = 0.0 when no orders, delta = null when prior = 0 | Consistent zero-state semantics, avoids division by zero | ✓ Good |
+| Claude Code MCP for backend dev | AI-assisted development for backend phases | Active |
 
 ---
-*Last updated: 2026-02-27 after v2.1 milestone start*
+*Last updated: 2026-02-27 after v2.1 milestone*

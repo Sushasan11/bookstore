@@ -2,11 +2,11 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** - Phases 1-8 (shipped 2026-02-25)
-- ✅ **v1.1 Pre-booking, Notifications & Admin** - Phases 9-12 (shipped 2026-02-26)
-- ✅ **v2.0 Reviews & Ratings** - Phases 13-15 (shipped 2026-02-27)
-- 🚧 **v2.1 Admin Dashboard & Analytics** - Phases 16-18 (in progress)
-- 📋 **v3.0 Frontend (Next.js + TypeScript)** - Phases TBD (planned, after backend completes)
+- ✅ **v1.0 MVP** — Phases 1-8 (shipped 2026-02-25)
+- ✅ **v1.1 Pre-booking, Notifications & Admin** — Phases 9-12 (shipped 2026-02-26)
+- ✅ **v2.0 Reviews & Ratings** — Phases 13-15 (shipped 2026-02-27)
+- ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
+- 📋 **v3.0 Frontend (Next.js + TypeScript)** — Phases TBD (planned, after backend completes)
 
 ## Phases
 
@@ -43,60 +43,14 @@
 
 </details>
 
-### 🚧 v2.1 Admin Dashboard & Analytics (In Progress)
+<details>
+<summary>✅ v2.1 Admin Dashboard & Analytics (Phases 16-18) — SHIPPED 2026-02-27</summary>
 
-**Milestone Goal:** Give admins operational visibility into sales performance, inventory health, and review quality through API endpoints.
+- [x] Phase 16: Sales Analytics (2/2 plans) — completed 2026-02-27
+- [x] Phase 17: Inventory Analytics (1/1 plan) — completed 2026-02-27
+- [x] Phase 18: Review Moderation Dashboard (2/2 plans) — completed 2026-02-27
 
-- [x] **Phase 16: Sales Analytics** - Revenue summary with period comparison, top-selling books by revenue and volume
-- [x] **Phase 17: Inventory Analytics** - Low-stock alerts with configurable threshold (completed 2026-02-27)
-- [x] **Phase 18: Review Moderation Dashboard** - Admin review listing with filters and bulk delete (completed 2026-02-27)
-
-## Phase Details
-
-### Phase 16: Sales Analytics
-**Goal**: Admins can answer "how is the store performing?" through revenue summary, period-over-period comparison, and top-seller rankings
-**Depends on**: Phase 15 (existing orders/order_items tables, AdminUser dependency)
-**Requirements**: SALES-01, SALES-02, SALES-03, SALES-04
-**Success Criteria** (what must be TRUE):
-  1. Admin can call `GET /admin/analytics/sales/summary?period=today` and receive total revenue, order count, and AOV for the requested period
-  2. Admin can call `GET /admin/analytics/sales/summary?period=week` and see a delta percentage comparing current week revenue to the previous week
-  3. Admin can call `GET /admin/analytics/sales/top-books?sort_by=revenue` and receive books ranked by total revenue with title, author, units sold, and revenue per book
-  4. Admin can call `GET /admin/analytics/sales/top-books?sort_by=volume` and receive books ranked by units sold — distinct ordering from revenue ranking when the two diverge
-  5. Only CONFIRMED orders appear in all analytics; PAYMENT_FAILED orders are silently excluded
-**Plans**: 2 plans
-
-Plans:
-- [x] 16-01-PLAN.md — AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
-- [x] 16-02-PLAN.md — Top-books endpoint and integration tests for all sales analytics
-
-### Phase 17: Inventory Analytics
-**Goal**: Admins can answer "what do I need to restock?" by querying books at or below a configurable stock threshold
-**Depends on**: Phase 16 (analytics infrastructure: router, schemas, repository base)
-**Requirements**: INV-01
-**Success Criteria** (what must be TRUE):
-  1. Admin can call `GET /admin/analytics/inventory/low-stock?threshold=10` and receive all books with stock at or below 10, ordered by stock ascending
-  2. The threshold parameter is configurable per request — changing from `threshold=5` to `threshold=20` returns a different, correctly filtered set
-  3. Books with zero stock appear at the top of the low-stock list (ordered by stock ascending)
-**Plans**: TBD
-
-Plans:
-- [ ] 17-01: Low-stock endpoint and integration tests
-
-### Phase 18: Review Moderation Dashboard
-**Goal**: Admins can list, filter, and bulk-delete reviews to maintain review quality across the catalog
-**Depends on**: Phase 15 (Review model, soft-delete convention, ReviewRepository)
-**Requirements**: MOD-01, MOD-02
-**Success Criteria** (what must be TRUE):
-  1. Admin can call `GET /admin/reviews?page=1&per_page=20` and receive a paginated list of all non-deleted reviews with reviewer and book context
-  2. Admin can filter reviews by book, user, or rating range — e.g. `?book_id=5&rating_min=1&rating_max=2` returns only low-rated reviews for that book
-  3. Admin can sort review results by date or rating in ascending or descending order
-  4. Admin can call `DELETE /admin/reviews/bulk` with a list of review IDs and have all matching non-deleted reviews soft-deleted in a single operation
-  5. Soft-deleted reviews do not reappear in subsequent calls to `GET /admin/reviews`
-**Plans**: 2 plans
-
-Plans:
-- [ ] 18-01-PLAN.md — Admin review schemas, list_all_admin() repository method, reviews_router.py, and GET /admin/reviews endpoint
-- [ ] 18-02-PLAN.md — bulk_soft_delete() repository method, DELETE /admin/reviews/bulk endpoint, and integration tests for MOD-01 + MOD-02
+</details>
 
 ## Progress
 
@@ -117,6 +71,6 @@ Plans:
 | 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
-| 16. Sales Analytics | v2.1 | Complete    | 2026-02-27 | 2026-02-27 |
-| 17. Inventory Analytics | 1/1 | Complete    | 2026-02-27 | - |
-| 18. Review Moderation Dashboard | 2/2 | Complete   | 2026-02-27 | - |
+| 16. Sales Analytics | v2.1 | 2/2 | Complete | 2026-02-27 |
+| 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
+| 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |

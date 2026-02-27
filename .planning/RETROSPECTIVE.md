@@ -85,6 +85,47 @@
 
 ---
 
+## Milestone: v2.1 — Admin Dashboard & Analytics
+
+**Shipped:** 2026-02-27
+**Phases:** 3 | **Plans:** 5 | **Sessions:** 1
+
+### What Was Built
+- Sales analytics stack: revenue summary with period comparison (today/week/month), AOV, delta percentage, top-selling books by revenue and volume
+- Low-stock inventory endpoint with configurable threshold, ascending ordering, and per-item threshold echo
+- Admin review moderation: paginated list with AND-combined filters (book/user/rating range), date/rating sort, bulk soft-delete
+- 66 integration tests across 3 test files covering all admin analytics and moderation endpoints
+
+### What Worked
+- Phase 16 router-level admin guard (`dependencies=[Depends(require_admin)]`) automatically protected all subsequent endpoints added to the same router (Phase 17 got auth for free)
+- Pre-building BulkDelete schemas in Plan 18-01 for Plan 18-02 — clean separation, zero schema modifications in second plan
+- Audit 3-source cross-reference caught frontmatter gaps (SALES-01/02 and INV-01 missing from `requirements_completed`) — documentation-only issue, code was correct
+- Direct repo-to-router pattern for simple aggregates avoided unnecessary service layers in 3 of 5 plans
+
+### What Was Inefficient
+- ROADMAP.md Progress table had column alignment issues in Phase 16-18 rows (milestone column missing, dates misplaced) — manual cleanup needed
+- STATE.md accumulated 3 duplicate YAML frontmatter blocks from repeated CLI updates — needed full rewrite at milestone close
+- Test email collision between `test_sales_analytics.py` and `test_orders.py` (shared `orders_admin@example.com`) — flaky test in full-suite runs, deferred as tech debt
+
+### Patterns Established
+- Router-level admin guard at `APIRouter()` constructor: all endpoints on the router inherit protection automatically
+- Direct repo endpoint pattern: simple aggregate queries bypass service layer, only use service for computed logic (period bounds, delta %)
+- `client.request("DELETE", url, json=...)` for httpx DELETE with JSON body — `client.delete()` doesn't accept `json` kwarg
+- Threshold echo pattern: include the request parameter in each response item for self-contained dashboard rendering
+- `select(func.count()).select_from(stmt.subquery())` for filter-then-count that shares exact filter constraints with data query
+
+### Key Lessons
+1. Service layers should earn their existence — only add when there's actual business logic (period bounds, delta calculation), not for simple query forwarding
+2. Pre-building schemas for the next plan reduces cross-plan coupling and enables clean plan boundaries
+3. Unique email fixtures per test file are essential — shared emails cause flaky failures that only manifest in full-suite runs
+
+### Cost Observations
+- Model mix: ~10% opus (orchestrator), ~90% sonnet (executors, verifiers, checkers)
+- Sessions: 1 (entire milestone in single context)
+- Notable: 3 phases + audit completed in one session, milestone completion in separate session
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -94,6 +135,7 @@
 | v1.0 | multiple | 8 | Initial project setup, established patterns |
 | v1.1 | 1 | 4 | Wave-based execution, integration audit |
 | v2.0 | 1 | 3 | Interfaces block in PLANs, 3-source req cross-reference |
+| v2.1 | 1 | 3 | Direct repo pattern for simple aggregates, pre-built schemas across plans |
 
 ### Cumulative Quality
 
@@ -102,9 +144,11 @@
 | v1.0 | 121 | 6,763 | 121 |
 | v1.1 | 179 | 9,473 | 58 |
 | v2.0 | 240 | 12,010 | 62 |
+| v2.1 | ~306 | 13,743 | 66 |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Explicit interface contracts in plans (signatures, imports, types) dramatically reduce executor deviations
 2. Structural guarantees (ordering, guards) are more reliable than runtime checks for correctness invariants
 3. Eager-load auditing is critical in async SQLAlchemy — phase verification catches missing selectinloads before they hit production
+4. Service layers should earn their existence — skip for simple aggregates, add only when business logic (period bounds, deltas) is present

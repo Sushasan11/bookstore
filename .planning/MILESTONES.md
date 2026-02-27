@@ -54,3 +54,20 @@
 
 ---
 
+
+## v2.1 Admin Dashboard & Analytics (Shipped: 2026-02-27)
+
+**Phases completed:** 3 phases, 5 plans, 10 tasks
+**Stats:** 13,743 LOC Python, 66 new integration tests, 19 files changed (+2,791/-152)
+**Audit:** 7/7 requirements satisfied, 3/3 phases verified, 14/14 integrations wired, 7/7 E2E flows complete
+
+**Key accomplishments:**
+- Full sales analytics stack — revenue summary with period comparison (today/week/month), AOV, and delta percentage
+- Top-selling books endpoint with dual revenue/volume rankings proving distinct orderings
+- Low-stock inventory endpoint with configurable threshold, ascending ordering, and per-item threshold echo
+- Admin review moderation with paginated list, AND-combined filters (book/user/rating range), and date/rating sort
+- Bulk review soft-delete with best-effort semantics (single UPDATE...WHERE IN, silently skips missing/deleted IDs)
+- 66 integration tests across 3 test files covering all admin analytics and moderation endpoints
+
+---
+
