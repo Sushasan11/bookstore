@@ -6,9 +6,9 @@ status: active
 last_updated: "2026-02-27"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -22,25 +22,25 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 19 of 25 (Monorepo + Frontend Foundation)
-Plan: 3 of 3
+Phase: 20 of 25 (Auth Integration — next up)
+Plan: 1 of TBD
 Status: Active
-Last activity: 2026-02-27 — In progress 19-03 (layout shell, health check home page — paused at checkpoint Task 3)
+Last activity: 2026-02-27 — Completed 19-03 (responsive layout shell, health check home page, dark mode, mobile nav)
 
-Progress: [░░░░░░░░░░] 0% (0/7 phases complete)
+Progress: [█░░░░░░░░░] 14% (1/7 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 8 min
-- Total execution time: 16 min
+- Total plans completed: 3
+- Average duration: ~10 min
+- Total execution time: ~41 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 19 (in progress) | 2 | 16 min | 8 min |
+| 19 (complete) | 3 | ~41 min | ~14 min |
 
 *Updated after each plan completion*
 
@@ -59,6 +59,9 @@ Recent decisions affecting v3.0 work:
 - [19-02]: QueryClient created in useState factory pattern — prevents shared state across SSR requests
 - [19-02]: openapi-typescript v7 generates types from live FastAPI /openapi.json — backend must be running to regenerate types
 - [19-02]: Next.js 16 --yes creates flat layout (no src/) — restructured to src/ and updated tsconfig @/* and components.json paths
+- [19-03]: ThemeToggle uses useEffect/useState mounted guard to return null before hydration — prevents SSR/CSR theme flicker (required next-themes pattern)
+- [19-03]: MobileNav Sheet open state controlled internally — enables programmatic close on link click
+- [19-03]: 404 page must be explicitly themed with shadcn/ui tokens — default Next.js not-found does not inherit ThemeProvider context
 
 ### Blockers/Concerns
 
@@ -72,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: 19-03-PLAN.md Task 3 checkpoint — awaiting human verification of responsive layout and backend connectivity
+Stopped at: Completed 19-03-PLAN.md — Phase 19 complete, ready for Phase 20 (Auth Integration)
 Resume file: None

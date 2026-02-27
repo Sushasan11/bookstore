@@ -14,7 +14,7 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 - [x] **FOUND-03**: CORS enabled on FastAPI backend for frontend origin
 - [x] **FOUND-04**: openapi-typescript types auto-generated from FastAPI `/openapi.json`
 - [x] **FOUND-05**: TanStack Query provider configured at root layout
-- [ ] **FOUND-06**: Responsive mobile-first layout with header, navigation, and footer
+- [x] **FOUND-06**: Responsive mobile-first layout with header, navigation, and footer
 
 ### Auth
 
@@ -112,7 +112,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-03 | Phase 19 | Complete |
 | FOUND-04 | Phase 19 | Complete |
 | FOUND-05 | Phase 19 | Complete |
-| FOUND-06 | Phase 19 | Pending |
+| FOUND-06 | Phase 19 | Complete |
 | AUTH-01 | Phase 20 | Pending |
 | AUTH-02 | Phase 20 | Pending |
 | AUTH-03 | Phase 20 | Pending |

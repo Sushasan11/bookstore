@@ -56,7 +56,7 @@
 
 **Milestone Goal:** Build a Next.js 15 customer-facing storefront with full feature parity against all user-facing backend endpoints. Monorepo restructure with `backend/` and `frontend/` directories. Catalog browsing, auth, cart/checkout, orders, wishlist, pre-booking, and reviews delivered as a responsive, SEO-optimized storefront.
 
-- [ ] **Phase 19: Monorepo + Frontend Foundation** — Restructure repo, scaffold Next.js 15 app with full tooling
+- [x] **Phase 19: Monorepo + Frontend Foundation** — Restructure repo, scaffold Next.js 15 app with full tooling
 - [ ] **Phase 20: Auth Integration** — NextAuth.js with email/password and Google OAuth, JWT bridge to FastAPI
 - [ ] **Phase 21: Catalog and Search** — SSR catalog, book detail pages with SEO, full-text search with URL-persisted filters
 - [ ] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation
@@ -77,9 +77,9 @@
   4. The browser renders a responsive layout (header, nav, footer) on mobile and desktop viewports
   5. Any fetch from the frontend to `localhost:8000` succeeds without a CORS error in the browser console
 **Plans**: 3 plans
-- [ ] 19-01-PLAN.md — Monorepo restructure (git mv to backend/) + CORS + root package.json
-- [ ] 19-02-PLAN.md — Next.js 15 scaffold + shadcn/ui + API types + TanStack Query + providers
-- [ ] 19-03-PLAN.md — Responsive layout shell (header, mobile nav, footer, dark mode) + smoke test
+- [x] 19-01-PLAN.md — Monorepo restructure (git mv to backend/) + CORS + root package.json
+- [x] 19-02-PLAN.md — Next.js 15 scaffold + shadcn/ui + API types + TanStack Query + providers
+- [x] 19-03-PLAN.md — Responsive layout shell (header, mobile nav, footer, dark mode) + smoke test
 
 ### Phase 20: Auth Integration
 **Goal**: Users can securely sign up, sign in (email + Google), and maintain sessions that carry FastAPI tokens
@@ -169,7 +169,7 @@
 | 16. Sales Analytics | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
 | 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
-| 19. Monorepo + Frontend Foundation | 2/3 | In Progress|  | - |
+| 19. Monorepo + Frontend Foundation | v3.0 | 3/3 | Complete | 2026-02-27 |
 | 20. Auth Integration | v3.0 | 0/? | Not started | - |
 | 21. Catalog and Search | v3.0 | 0/? | Not started | - |
 | 22. Cart and Checkout | v3.0 | 0/? | Not started | - |
