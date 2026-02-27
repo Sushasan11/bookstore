@@ -1,79 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Customer Storefront
-status: unknown
-last_updated: "2026-02-27T17:41:28.822Z"
-progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 14
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Customer Storefront
-status: unknown
-last_updated: "2026-02-27T17:34:05.619Z"
-progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 13
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Customer Storefront
-status: unknown
-last_updated: "2026-02-27T16:22:06.151Z"
-progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Customer Storefront
-status: unknown
-last_updated: "2026-02-27T14:27:49.240Z"
-progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Customer Storefront
-status: unknown
-last_updated: "2026-02-27T11:07:02.759Z"
-progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
----
-
----
-gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Customer Storefront
 status: active
-last_updated: "2026-02-27"
+last_updated: "2026-02-27T17:48:48Z"
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 4
+  total_plans: 16
+  completed_plans: 15
 ---
 
 # Project State
@@ -83,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 22: Cart and Checkout
+**Current focus:** v3.0 Customer Storefront — Phase 23: Orders and Account
 
 ## Current Position
 
-Phase: 22 of 25 (Cart and Checkout) — IN PROGRESS
-Plan: 4 of 5 complete (22-04 — Checkout confirmation dialog and order detail/confirmation page)
+Phase: 22 of 25 (Cart and Checkout) — COMPLETE
+Plan: 5 of 5 complete (22-05 — Human verification of complete cart and checkout flow)
 Status: Active
-Last activity: 2026-02-27 — Completed 22-04 (CheckoutDialog, CartPageContent updated, /orders/[id] page, OrderDetail with success banner)
+Last activity: 2026-02-27 — Completed 22-05 (Human verification — all SHOP-01 through SHOP-10 requirements approved)
 
-Progress: [████░░░░░░] 40% (3/7 phases complete, 4/5 plans in phase 22 complete)
+Progress: [████░░░░░░] 57% (4/7 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: ~8 min
-- Total execution time: ~67 min
+- Total plans completed: 9
+- Average duration: ~7 min
+- Total execution time: ~69 min
 
 **By Phase:**
 
@@ -108,10 +43,11 @@ Progress: [████░░░░░░] 40% (3/7 phases complete, 4/5 plans i
 | 19 (complete) | 3 | ~41 min | ~14 min |
 | 20 (complete) | 3 | ~28 min | ~9 min |
 | 21 (complete) | 4/4 | ~51 min | ~13 min |
-| 22 (in progress) | 3/5 | ~9 min | ~3 min |
+| 22 (complete) | 5/5 | ~11 min | ~2 min |
 
 *Updated after each plan completion*
 | Phase 22 P04 | 102 | 2 tasks | 4 files |
+| Phase 22 P05 | ~2min | 1 task (human verify) | 0 files |
 
 ## Accumulated Context
 
@@ -163,6 +99,7 @@ Recent decisions affecting v3.0 work:
 - [Phase 22-04]: CheckoutDialog is a pure controlled component — open/onOpenChange/isPending state owned by CartPageContent, dialog is stateless
 - [Phase 22-04]: isConfirmed passed as prop from server component (not useSearchParams) — OrderDetail stays a plain component with no client boundary needed
 - [Phase 22-04]: Dialog closes on both isSuccess and isError via useEffect — success triggers router.push redirect; error surfaces toast from useCart hook
+- [Phase 22-05]: All SHOP-01 through SHOP-10 requirements verified by human in browser — Phase 22 approved complete; Phase 23 (orders and account) ready to begin
 
 ### Blockers/Concerns
 
@@ -176,5 +113,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 22-04-PLAN.md — checkout dialog and order confirmation page (CheckoutDialog, CartPageContent updated, /orders/[id] page, OrderDetail with success banner)
+Stopped at: Completed 22-05-PLAN.md — human verification of complete cart and checkout flow (all SHOP-01 through SHOP-10 approved)
 Resume file: None

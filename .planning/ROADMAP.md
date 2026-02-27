@@ -59,7 +59,7 @@
 - [x] **Phase 19: Monorepo + Frontend Foundation** — Restructure repo, scaffold Next.js 15 app with full tooling
 - [x] **Phase 20: Auth Integration** — NextAuth.js with email/password and Google OAuth, JWT bridge to FastAPI
 - [x] **Phase 21: Catalog and Search** — SSR catalog, book detail pages with SEO, full-text search with URL-persisted filters (completed 2026-02-27)
-- [ ] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation
+- [x] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation (completed 2026-02-27)
 - [ ] **Phase 23: Orders and Account** — Order history, order detail, account page with navigation
 - [ ] **Phase 24: Wishlist and Pre-booking** — Wishlist with optimistic toggle, pre-booking for out-of-stock titles
 - [ ] **Phase 25: Reviews** — Read/write/edit/delete reviews on book detail page with verified-purchase gate
@@ -183,7 +183,7 @@ Plans:
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 20. Auth Integration | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
-| 22. Cart and Checkout | 4/5 | In Progress|  | - |
+| 22. Cart and Checkout | 5/5 | Complete   | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |
 | 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
