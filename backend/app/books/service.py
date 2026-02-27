@@ -108,6 +108,9 @@ class BookService:
         genre_id: int | None = None,
         author: str | None = None,
         sort: str = "title",
+        sort_dir: str = "asc",
+        min_price: object = None,
+        max_price: object = None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Book], int]:
@@ -121,6 +124,9 @@ class BookService:
             genre_id=genre_id,
             author=author,
             sort=sort,
+            sort_dir=sort_dir,
+            min_price=min_price,
+            max_price=max_price,
             page=page,
             size=size,
         )

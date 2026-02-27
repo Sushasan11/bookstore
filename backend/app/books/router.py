@@ -1,5 +1,6 @@
 """Catalog HTTP endpoints: book CRUD, stock management, genre taxonomy."""
 
+from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Query, status
@@ -52,25 +53,33 @@ async def list_books(
     q: str | None = Query(None, description="Full-text search across title and author"),
     genre_id: int | None = Query(None, description="Filter by genre ID (from GET /genres)"),
     author: str | None = Query(None, description="Filter by author name (case-insensitive partial match)"),
-    sort: Literal["title", "price", "date", "created_at"] = Query(
-        "title", description="Sort order: title (A-Z), price (asc), date (publish_date asc), created_at (newest first)"
+    min_price: Decimal | None = Query(None, ge=0, description="Minimum price filter (inclusive)"),
+    max_price: Decimal | None = Query(None, ge=0, description="Maximum price filter (inclusive)"),
+    sort: Literal["title", "price", "date", "created_at", "avg_rating"] = Query(
+        "title", description="Sort order: title (A-Z), price, date (publish_date), created_at (newest first), avg_rating (highest rated first)"
     ),
+    sort_dir: Literal["asc", "desc"] = Query("asc", description="Sort direction: asc or desc"),
     page: int = Query(1, ge=1, description="Page number, 1-indexed"),
     size: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
 ) -> BookListResponse:
     """Browse the book catalog. Public -- no auth required.
 
-    Supports pagination (page/size), sorting (sort), full-text search (q),
-    and filtering by genre (genre_id) and author. Filters combine with AND.
+    Supports pagination (page/size), sorting (sort + sort_dir), full-text search (q),
+    and filtering by genre (genre_id), author, and price range (min_price/max_price).
+    Filters combine with AND.
 
     When q is present, results are sorted by relevance (ts_rank) regardless of sort param.
+    sort=avg_rating uses a left-join subquery on reviews; books with no reviews sort last.
     """
     service = _make_service(db)
     books, total = await service.list_books(
         q=q,
         genre_id=genre_id,
         author=author,
+        min_price=min_price,
+        max_price=max_price,
         sort=sort,
+        sort_dir=sort_dir,
         page=page,
         size=size,
     )

@@ -1,8 +1,9 @@
 """Repository layer for Genre and Book database access."""
 
 import re
+from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, nulls_last, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.books.models import Book, Genre
@@ -89,6 +90,9 @@ class BookRepository:
         genre_id: int | None = None,
         author: str | None = None,
         sort: str = "title",
+        sort_dir: str = "asc",
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Book], int]:
@@ -99,9 +103,12 @@ class BookRepository:
         When q is absent: sorts by the sort parameter.
 
         Sort values: 'title' (A-Z), 'price' (asc), 'date' (publish_date asc),
-          'created_at' (desc -- newest first). Tiebreaker: Book.id asc (stable pagination).
+          'created_at' (desc -- newest first), 'avg_rating' (desc -- highest rated first).
+          sort_dir='desc' reverses all sorts except 'avg_rating' (which defaults to desc).
+          Tiebreaker: Book.id asc (stable pagination).
 
         genre_id and author filters combine with AND when both are provided.
+        min_price and max_price filter by price range (inclusive).
         """
         stmt = select(Book)
 
@@ -120,6 +127,12 @@ class BookRepository:
         if author:
             stmt = stmt.where(Book.author.ilike(f"%{author}%"))
 
+        # Price range filter (inclusive bounds)
+        if min_price is not None:
+            stmt = stmt.where(Book.price >= min_price)
+        if max_price is not None:
+            stmt = stmt.where(Book.price <= max_price)
+
         # Sort order
         if q:
             tsquery_str_for_rank = _build_tsquery(q)
@@ -132,15 +145,44 @@ class BookRepository:
             # If tsquery_str is empty (all special chars stripped), fall through to default sort
             else:
                 stmt = stmt.order_by(Book.title, Book.id)
+        elif sort == "avg_rating":
+            # Left-join subquery against reviews to compute avg rating per book
+            from app.reviews.models import Review  # avoid circular at module level
+
+            avg_sub = (
+                select(
+                    Review.book_id,
+                    func.avg(Review.rating).label("avg_rating"),
+                )
+                .where(Review.deleted_at.is_(None))
+                .group_by(Review.book_id)
+                .subquery()
+            )
+            stmt = stmt.outerjoin(avg_sub, Book.id == avg_sub.c.book_id)
+            # Default for avg_rating: desc (highest first); sort_dir overrides
+            if sort_dir == "asc":
+                stmt = stmt.order_by(nulls_last(avg_sub.c.avg_rating.asc()), Book.id)
+            else:
+                stmt = stmt.order_by(nulls_last(avg_sub.c.avg_rating.desc()), Book.id)
         else:
-            sort_map = {
-                "title": (Book.title, Book.id),
-                "price": (Book.price, Book.id),
-                "date": (Book.publish_date, Book.id),
-                "created_at": (Book.created_at.desc(), Book.id),
-            }
-            order_cols = sort_map.get(sort, (Book.title, Book.id))
-            stmt = stmt.order_by(*order_cols)
+            # For created_at, default is desc (newest first); sort_dir overrides
+            if sort == "created_at":
+                if sort_dir == "asc":
+                    order_col = Book.created_at.asc()
+                else:
+                    order_col = Book.created_at.desc()
+            else:
+                sort_col_map = {
+                    "title": Book.title,
+                    "price": Book.price,
+                    "date": Book.publish_date,
+                }
+                col = sort_col_map.get(sort, Book.title)
+                if sort_dir == "desc":
+                    order_col = col.desc()
+                else:
+                    order_col = col.asc()
+            stmt = stmt.order_by(order_col, Book.id)
 
         # Total count BEFORE pagination (reuses same filters)
         count_stmt = select(func.count()).select_from(stmt.subquery())
