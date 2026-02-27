@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-27T14:27:49.240Z"
+progress:
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-27T11:07:02.759Z"
 progress:
   total_phases: 1
@@ -31,23 +44,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 20: Auth Integration
+**Current focus:** v3.0 Customer Storefront — Phase 21: Catalog and Search
 
 ## Current Position
 
-Phase: 20 of 25 (Auth Integration — complete)
-Plan: 3 of 3 complete (20-03 verified — all 8 AUTH requirements confirmed in browser)
+Phase: 21 of 25 (Catalog and Search)
+Plan: 1 of 4 complete (21-01 — backend extension + frontend foundation components)
 Status: Active
-Last activity: 2026-02-27 — Completed 20-03 (human verification of complete auth flow — all AUTH-01 through AUTH-08 confirmed)
+Last activity: 2026-02-27 — Completed 21-01 (extended GET /books with price/sort params; built catalog API helpers, BookCard, skeletons)
 
-Progress: [███░░░░░░░] 28% (2/7 phases complete, 3/3 plans in phase 20 complete)
+Progress: [███░░░░░░░] 30% (2/7 phases complete, 1/4 plans in phase 21 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: ~8 min
-- Total execution time: ~51 min
+- Total execution time: ~65 min
 
 **By Phase:**
 
@@ -55,6 +68,7 @@ Progress: [███░░░░░░░] 28% (2/7 phases complete, 3/3 plans i
 |-------|-------|-------|----------|
 | 19 (complete) | 3 | ~41 min | ~14 min |
 | 20 (complete) | 3 | ~28 min | ~9 min |
+| 21 (in progress) | 1/4 | ~14 min | ~14 min |
 
 *Updated after each plan completion*
 
@@ -84,6 +98,10 @@ Recent decisions affecting v3.0 work:
 - [20-02]: proxy.ts uses named export const proxy = auth(...) (not export default): Next.js 16 requires named proxy export per pitfall documentation
 - [20-02]: UserMenu as separate 'use client' component with mounted guard: keeps Header as server component, prevents SSR/CSR hydration mismatch
 - [20-02]: AuthGuard as child component inside SessionProvider: calls useSession() to watch session.error and trigger signOut on RefreshTokenError
+- [21-01]: avg_rating sort uses LEFT JOIN subquery on reviews with nulls_last() — books without reviews sort last in both asc and desc directions
+- [21-01]: Price range added as backend params (min_price/max_price) — client-side filtering rejected as unviable at scale
+- [21-01]: BookCard is a pure server component (no 'use client') — uses next/link and next/image for SSR performance
+- [21-01]: remotePatterns uses https://** (permissive) — covers any future cover image CDN without config changes
 
 ### Blockers/Concerns
 
@@ -97,5 +115,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 20-03-PLAN.md — Human verification of full auth flow approved; Phase 20 complete; ready for Phase 21 (Catalog and Search)
+Stopped at: Completed 21-01-PLAN.md — Backend extended with price/sort params; frontend foundation components (catalog.ts, BookCard, skeletons) ready for Phase 21 Plans 02-03
 Resume file: None
