@@ -30,6 +30,10 @@ out/
 .env.*.local
 backend/.env
 
+# Logs
+logs/
+*.log
+
 # IDE
 .idea/
 .vscode/

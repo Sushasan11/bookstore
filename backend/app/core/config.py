@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
     # Application
     DEBUG: bool = False
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

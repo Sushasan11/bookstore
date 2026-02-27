@@ -50,6 +50,7 @@ lint = "ruff check . && ruff format --check ."
 format = "ruff format . && ruff check --fix ."
 migrate = "alembic upgrade head"
 makemigration = "alembic revision --autogenerate"
+monitor = "python scripts/monitor_errors.py"
 
 [tool.ruff]
 line-length = 88

@@ -30,6 +30,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.health import router as health_router
+from app.core.logging_config import setup_logging
 from app.core.oauth import configure_oauth
 from app.orders.router import admin_router as orders_admin_router
 from app.orders.router import router as orders_router
@@ -45,6 +46,8 @@ def create_app() -> FastAPI:
     Returns a fully configured app instance with exception handlers
     and all routers registered.
     """
+    setup_logging(get_settings().LOG_LEVEL)
+
     application = FastAPI(
         title="Bookstore API",
         version="1.0.0",
