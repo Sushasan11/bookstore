@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-27T19:45:52.086Z"
+progress:
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 17
+  completed_plans: 17
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-27T17:56:41.454Z"
 progress:
   total_phases: 4
@@ -31,14 +44,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** v3.0 Customer Storefront — Phase 23: Orders and Account
+**Current focus:** v3.0 Customer Storefront — Phase 24: Wishlist and Pre-booking
 
 ## Current Position
 
-Phase: 23 of 25 (Orders and Account) — COMPLETE
-Plan: 2 of 2 complete (23-02 — Human verification of SHOP-07 and SHOP-08)
+Phase: 24 of 25 (Wishlist and Pre-booking) — IN PROGRESS
+Plan: 1 of 2 complete (24-01 — Wishlist and pre-booking core hooks + UI wiring)
 Status: Active
-Last activity: 2026-02-28 — Completed 23-02 (human verification of order history, order detail, account hub, nav, and auth protection)
+Last activity: 2026-02-28 — Completed 24-01 (useWishlist hook, usePrebook hook, BookCard heart icon, ActionButtons pre-book button)
 
 Progress: [█████░░░░░] 71% (5/7 phases complete)
 
@@ -117,6 +130,9 @@ Recent decisions affecting v3.0 work:
 - [23-01]: /orders page wraps fetchOrders in try/catch returning [] on error — shows empty state gracefully rather than crashing with 500 if backend down
 - [23-01]: Client-side pagination in OrderHistoryList — order history is a bounded user-owned list; simpler than URL-param pagination with no router/searchParams dependency
 - [23-02]: Human approval of SHOP-07 and SHOP-08 confirms Phase 23 implementation is production-ready
+- [24-01]: useMutation explicit generic type parameters required when mutationFn returns union type (WishlistItemResponse | void) — TypeScript loses context type inference without explicit TContext generic
+- [24-01]: Pre-book button replaces (not supplements) Add to Cart when inStock is false — cleaner conditional render, no disabled state needed
+- [24-01]: Heart button on BookCard uses e.preventDefault()+e.stopPropagation() — prevents Link navigation, matching cart button established pattern
 
 ### Blockers/Concerns
 
@@ -130,5 +146,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 23-02-PLAN.md — human verification of SHOP-07 and SHOP-08 approved
+Stopped at: Completed 24-01-PLAN.md — useWishlist/usePrebook hooks + BookCard/ActionButtons wiring
 Resume file: None

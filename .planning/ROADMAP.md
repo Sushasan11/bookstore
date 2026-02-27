@@ -194,5 +194,5 @@ Plans:
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | 2/2 | Complete    | 2026-02-27 | - |
-| 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |
+| 24. Wishlist and Pre-booking | 1/3 | In Progress|  | - |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
