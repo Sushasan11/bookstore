@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/catalog', label: 'Books' },
   { href: '/cart', label: 'Cart' },
+  { href: '/wishlist', label: 'Wishlist' },
   { href: '/account', label: 'Account' },
 ]
 
