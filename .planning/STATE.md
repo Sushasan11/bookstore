@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Admin Dashboard & Analytics
-status: ready_to_plan
+status: in_progress
 last_updated: "2026-02-27"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -23,30 +23,37 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 16 of 18 (Sales Analytics)
-Plan: 0 of 2
-Status: Ready to plan
-Last activity: 2026-02-27 — Roadmap created for v2.1 (3 phases, 7 requirements)
+Plan: 1 of 2
+Status: In progress
+Last activity: 2026-02-27 — Completed 16-01: Analytics stack (repository, service, schemas, router)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0 (this milestone)
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 1 (this milestone)
+- Average duration: ~2 min
+- Total execution time: ~2 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 16-sales-analytics | 1/2 | ~2 min | ~2 min |
 
 *Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
+
+From 16-01:
+- AOV returns 0.0 (not null) when order_count is 0 — consistent zero-state semantics
+- delta_percentage returns null when prior period revenue is 0 — avoids division by zero
+- Period end for current period is always datetime.now(timezone.utc), not forced midnight — partial period
+- Router-level Depends(require_admin) protects all analytics endpoints automatically
+- float(round(val, 2)) for all money values — avoids Pydantic v2 Decimal-as-string serialization
 
 From v2.0 (key decisions relevant to v2.1):
 - Live SQL aggregates (not stored) — avg_rating/review_count via SQL AVG/COUNT; same pattern for analytics
@@ -74,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Roadmap created — Phase 16 ready to plan
+Stopped at: Completed 16-01-PLAN.md — analytics stack established, Phase 16 Plan 2 ready
 Resume file: None

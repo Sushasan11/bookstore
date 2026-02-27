@@ -9,8 +9,8 @@ Requirements for milestone v2.1: Admin Dashboard & Analytics. Each maps to roadm
 
 ### Sales Analytics
 
-- [ ] **SALES-01**: Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month
-- [ ] **SALES-02**: Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary
+- [x] **SALES-01**: Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month
+- [x] **SALES-02**: Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary
 - [ ] **SALES-03**: Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue
 - [ ] **SALES-04**: Admin can view top-selling books ranked by volume (units sold) with book title and author
 
@@ -58,8 +58,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SALES-01 | Phase 16 | Pending |
-| SALES-02 | Phase 16 | Pending |
+| SALES-01 | Phase 16 | Complete (16-01) |
+| SALES-02 | Phase 16 | Complete (16-01) |
 | SALES-03 | Phase 16 | Pending |
 | SALES-04 | Phase 16 | Pending |
 | INV-01 | Phase 17 | Pending |
@@ -73,4 +73,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 after roadmap creation (v2.1 phases 16-18)*
+*Last updated: 2026-02-27 after 16-01 completion (SALES-01, SALES-02 marked complete)*

@@ -66,7 +66,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 16-01-PLAN.md — AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
+- [x] 16-01-PLAN.md — AnalyticsRepository, AdminAnalyticsService, schemas, and revenue summary endpoint
 - [ ] 16-02-PLAN.md — Top-books endpoint and integration tests for all sales analytics
 
 ### Phase 17: Inventory Analytics
@@ -117,6 +117,6 @@ Plans:
 | 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
 | 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
-| 16. Sales Analytics | v2.1 | 0/2 | Not started | - |
+| 16. Sales Analytics | v2.1 | 1/2 | In progress | - |
 | 17. Inventory Analytics | v2.1 | 0/1 | Not started | - |
 | 18. Review Moderation Dashboard | v2.1 | 0/2 | Not started | - |
