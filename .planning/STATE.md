@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-27T17:41:28.822Z"
+progress:
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 15
+  completed_plans: 14
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-27T17:34:05.619Z"
 progress:
   total_phases: 4
@@ -75,18 +88,18 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 22 of 25 (Cart and Checkout) — IN PROGRESS
-Plan: 3 of 5 complete (22-03 — Cart page UI with CartItem, QuantityStepper, CartSummary, empty/error/loading states)
+Plan: 4 of 5 complete (22-04 — Checkout confirmation dialog and order detail/confirmation page)
 Status: Active
-Last activity: 2026-02-27 — Completed 22-03 (CartPageContent orchestrator, CartItem rows, QuantityStepper min=1 control, CartSummary sticky sidebar + mobile fixed bar)
+Last activity: 2026-02-27 — Completed 22-04 (CheckoutDialog, CartPageContent updated, /orders/[id] page, OrderDetail with success banner)
 
-Progress: [████░░░░░░] 40% (3/7 phases complete, 3/5 plans in phase 22 complete)
+Progress: [████░░░░░░] 40% (3/7 phases complete, 4/5 plans in phase 22 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: ~8 min
-- Total execution time: ~65 min
+- Total execution time: ~67 min
 
 **By Phase:**
 
@@ -98,6 +111,7 @@ Progress: [████░░░░░░] 40% (3/7 phases complete, 3/5 plans i
 | 22 (in progress) | 3/5 | ~9 min | ~3 min |
 
 *Updated after each plan completion*
+| Phase 22 P04 | 102 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -146,6 +160,9 @@ Recent decisions affecting v3.0 work:
 - [22-02]: BookCard cart icon: opacity-0 md:group-hover:opacity-100 on desktop, always visible mobile — per CONTEXT.md hover decision
 - [Phase 22-03]: removeItem.mutate({ itemId }) — hook's mutationFn destructures { itemId }, not a bare number
 - [Phase 22-03]: CartSummary renders sticky sidebar card (desktop) + fixed bottom bar (mobile <lg); CartPageContent adds pb-20 lg:pb-0 to prevent content overlap
+- [Phase 22-04]: CheckoutDialog is a pure controlled component — open/onOpenChange/isPending state owned by CartPageContent, dialog is stateless
+- [Phase 22-04]: isConfirmed passed as prop from server component (not useSearchParams) — OrderDetail stays a plain component with no client boundary needed
+- [Phase 22-04]: Dialog closes on both isSuccess and isError via useEffect — success triggers router.push redirect; error surfaces toast from useCart hook
 
 ### Blockers/Concerns
 
@@ -159,5 +176,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 22-03-PLAN.md — cart page UI (CartPageContent, CartItem, QuantityStepper, CartSummary, loading skeleton, empty state)
+Stopped at: Completed 22-04-PLAN.md — checkout dialog and order confirmation page (CheckoutDialog, CartPageContent updated, /orders/[id] page, OrderDetail with success banner)
 Resume file: None
