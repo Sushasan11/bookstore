@@ -3,6 +3,7 @@ import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { UserMenu } from '@/components/layout/UserMenu'
 
 export function Header() {
   return (
@@ -36,6 +37,7 @@ export function Header() {
               <ShoppingCart className="h-5 w-5" />
             </Button>
           </Link>
+          <UserMenu />
           <ThemeToggle />
         </div>
       </div>

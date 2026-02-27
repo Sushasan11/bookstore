@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
@@ -7,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardContent,
 } from '@/components/ui/card'
 
 export const metadata: Metadata = {
@@ -21,7 +23,10 @@ export default function LoginPage() {
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
 
-      <LoginForm />
+      {/* Suspense required: LoginForm uses useSearchParams() for callbackUrl */}
+      <Suspense fallback={<CardContent><div className="h-40 animate-pulse rounded-md bg-muted" /></CardContent>}>
+        <LoginForm />
+      </Suspense>
 
       <div className="px-6">
         <div className="relative my-2">
