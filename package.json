@@ -1,0 +1,12 @@
+{
+  "name": "bookstore-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"cd backend && poetry run task dev\" \"cd frontend && npm run dev\"",
+    "dev:backend": "cd backend && poetry run task dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

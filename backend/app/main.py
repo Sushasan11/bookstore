@@ -10,6 +10,7 @@ Usage:
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -68,7 +69,18 @@ def create_app() -> FastAPI:
         max_age=600,
     )
 
-    # Register OAuth providers (Google OIDC + GitHub OAuth2).
+    # CORSMiddleware registered AFTER SessionMiddleware so it runs FIRST in the
+    # middleware stack (FastAPI middleware runs in reverse registration order).
+    # Do NOT use allow_origins=["*"] with allow_credentials=True — browsers reject it.
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=get_settings().ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
+
+    # Register OAuth providers (Google OIDC).
     configure_oauth()
 
     # Include routers
