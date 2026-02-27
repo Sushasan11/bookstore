@@ -182,7 +182,7 @@ Plans:
 | 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
 | 19. Monorepo + Frontend Foundation | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
 | 20. Auth Integration | v3.0 | Complete    | 2026-02-27 | 2026-02-27 |
-| 21. Catalog and Search | 1/4 | In Progress|  | - |
+| 21. Catalog and Search | 3/4 | In Progress|  | - |
 | 22. Cart and Checkout | v3.0 | 0/? | Not started | - |
 | 23. Orders and Account | v3.0 | 0/? | Not started | - |
 | 24. Wishlist and Pre-booking | v3.0 | 0/? | Not started | - |

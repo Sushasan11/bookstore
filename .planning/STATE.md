@@ -49,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 21 of 25 (Catalog and Search)
-Plan: 1 of 4 complete (21-01 — backend extension + frontend foundation components)
+Plan: 3 of 4 complete (21-03 — book detail page with ISR, JSON-LD, Open Graph, sub-components)
 Status: Active
-Last activity: 2026-02-27 — Completed 21-01 (extended GET /books with price/sort params; built catalog API helpers, BookCard, skeletons)
+Last activity: 2026-02-27 — Completed 21-03 (ISR book detail page at /books/[id] with JSON-LD Book schema, Open Graph metadata, BookDetailHero, BreadcrumbNav, RatingDisplay, ActionButtons, MoreInGenre)
 
-Progress: [███░░░░░░░] 30% (2/7 phases complete, 1/4 plans in phase 21 complete)
+Progress: [████░░░░░░] 35% (2/7 phases complete, 3/4 plans in phase 21 complete)
 
 ## Performance Metrics
 
@@ -68,7 +68,7 @@ Progress: [███░░░░░░░] 30% (2/7 phases complete, 1/4 plans i
 |-------|-------|-------|----------|
 | 19 (complete) | 3 | ~41 min | ~14 min |
 | 20 (complete) | 3 | ~28 min | ~9 min |
-| 21 (in progress) | 1/4 | ~14 min | ~14 min |
+| 21 (in progress) | 3/4 | ~38 min | ~13 min |
 
 *Updated after each plan completion*
 
@@ -102,6 +102,9 @@ Recent decisions affecting v3.0 work:
 - [21-01]: Price range added as backend params (min_price/max_price) — client-side filtering rejected as unviable at scale
 - [21-01]: BookCard is a pure server component (no 'use client') — uses next/link and next/image for SSR performance
 - [21-01]: remotePatterns uses https://** (permissive) — covers any future cover image CDN without config changes
+- [21-03]: React.cache() wraps fetchBook so generateMetadata and page component share a single cached request — avoids double fetch
+- [21-03]: ActionButtons are disabled placeholders — Phase 22 (cart) and Phase 24 (wishlist) will enable them
+- [21-03]: MoreInGenre fetches size=7, filters current book, slices to 6 — avoids separate count query
 
 ### Blockers/Concerns
 
@@ -115,5 +118,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 21-01-PLAN.md — Backend extended with price/sort params; frontend foundation components (catalog.ts, BookCard, skeletons) ready for Phase 21 Plans 02-03
+Stopped at: Completed 21-03-PLAN.md — ISR book detail page at /books/[id] with JSON-LD Book schema, Open Graph metadata, breadcrumbs, rating display, disabled action buttons, and MoreInGenre section
 Resume file: None

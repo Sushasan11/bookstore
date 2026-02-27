@@ -30,12 +30,12 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 ### Catalog
 
 - [x] **CATL-01**: User can browse paginated book grid with cover, title, author, price, and stock status
-- [ ] **CATL-02**: User can view book detail page with description, average rating, review count, and stock status
+- [x] **CATL-02**: User can view book detail page with description, average rating, review count, and stock status
 - [ ] **CATL-03**: User can search books by title, author, or genre using full-text search
 - [x] **CATL-04**: User can filter search results by genre and price range
 - [ ] **CATL-05**: Search and filter state is persisted in URL (bookmarkable, shareable)
-- [ ] **CATL-06**: Book detail page has SEO metadata (JSON-LD Book schema, Open Graph tags)
-- [ ] **CATL-07**: Catalog and book detail pages are server-rendered with ISR for SEO
+- [x] **CATL-06**: Book detail page has SEO metadata (JSON-LD Book schema, Open Graph tags)
+- [x] **CATL-07**: Catalog and book detail pages are server-rendered with ISR for SEO
 
 ### Shopping
 
@@ -122,12 +122,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-07 | Phase 20 | Complete |
 | AUTH-08 | Phase 20 | Complete |
 | CATL-01 | Phase 21 | Complete |
-| CATL-02 | Phase 21 | Pending |
+| CATL-02 | Phase 21 | Complete |
 | CATL-03 | Phase 21 | Pending |
 | CATL-04 | Phase 21 | Complete |
 | CATL-05 | Phase 21 | Pending |
-| CATL-06 | Phase 21 | Pending |
-| CATL-07 | Phase 21 | Pending |
+| CATL-06 | Phase 21 | Complete |
+| CATL-07 | Phase 21 | Complete |
 | SHOP-01 | Phase 22 | Pending |
 | SHOP-02 | Phase 22 | Pending |
 | SHOP-03 | Phase 22 | Pending |
