@@ -16,7 +16,7 @@ Requirements for milestone v2.1: Admin Dashboard & Analytics. Each maps to roadm
 
 ### Inventory Analytics
 
-- [ ] **INV-01**: Admin can query books with stock at or below a configurable threshold, ordered by stock ascending
+- [x] **INV-01**: Admin can query books with stock at or below a configurable threshold, ordered by stock ascending
 
 ### Review Moderation
 
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SALES-02 | Phase 16 | Complete (16-01) |
 | SALES-03 | Phase 16 | Complete |
 | SALES-04 | Phase 16 | Complete |
-| INV-01 | Phase 17 | Pending |
+| INV-01 | Phase 17 | Complete |
 | MOD-01 | Phase 18 | Pending |
 | MOD-02 | Phase 18 | Pending |
 
