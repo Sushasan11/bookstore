@@ -1,6 +1,6 @@
 """Integration tests for OAuth endpoints (AUTH-06).
 
-Covers: Google and GitHub redirect flows, callback token issuance,
+Covers: Google redirect flow, callback token issuance,
 account linking by email, OAuth-only user behavior, duplicate/idempotent
 login, and error cases (unverified email, no email).
 """
@@ -22,8 +22,6 @@ from app.users.models import OAuthAccount, User
 
 GOOGLE_LOGIN_URL = "/auth/google"
 GOOGLE_CALLBACK_URL = "/auth/google/callback"
-GITHUB_LOGIN_URL = "/auth/github"
-GITHUB_CALLBACK_URL = "/auth/github/callback"
 REGISTER_URL = "/auth/register"
 LOGIN_URL = "/auth/login"
 
@@ -44,14 +42,6 @@ def _make_google_userinfo(
         info["email"] = email
     info["email_verified"] = email_verified
     return info
-
-
-def _make_github_mock_response(json_data: dict) -> MagicMock:
-    """Create a mock response object with .json() and .raise_for_status()."""
-    resp = MagicMock()
-    resp.json.return_value = json_data
-    resp.raise_for_status = MagicMock()
-    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -90,71 +80,10 @@ def mock_google_oauth():
         mock_google.authorize_access_token = mock_authorize_access_token
         mock_oauth.google = mock_google
 
-        # Also keep github as a MagicMock so it doesn't break if accessed
-        mock_oauth.github = MagicMock()
-
         yield {
             "oauth": mock_oauth,
             "authorize_redirect": mock_authorize_redirect,
             "authorize_access_token": mock_authorize_access_token,
-        }
-
-
-@pytest.fixture
-def mock_github_oauth():
-    """Patch oauth.github methods to simulate GitHub OAuth2 without real credentials.
-
-    By default:
-    - authorize_redirect returns a 307 redirect to a fake GitHub URL.
-    - authorize_access_token returns a token dict.
-    - get("user") returns a profile with id and email.
-    - get("user/emails") returns a list with one primary verified email.
-
-    Tests can override mock return values as needed.
-    """
-    redirect_response = RedirectResponse(
-        url="https://github.com/login/oauth/authorize?fake=1", status_code=307
-    )
-
-    mock_authorize_redirect = AsyncMock(return_value=redirect_response)
-    mock_authorize_access_token = AsyncMock(
-        return_value={"access_token": "fake-github-access-token"}
-    )
-
-    # Default responses for GET calls
-    user_profile = {"id": 456, "email": "ghuser@test.com", "login": "ghuser"}
-    user_emails = [
-        {"email": "ghuser@test.com", "primary": True, "verified": True},
-    ]
-
-    async def mock_get_side_effect(url, **kwargs):
-        if url == "user":
-            return _make_github_mock_response(user_profile)
-        elif url == "user/emails":
-            return _make_github_mock_response(user_emails)
-        raise ValueError(f"Unexpected GitHub API URL: {url}")
-
-    mock_get = AsyncMock(side_effect=mock_get_side_effect)
-
-    with (
-        patch("app.users.router.oauth") as mock_oauth,
-    ):
-        mock_github = MagicMock()
-        mock_github.authorize_redirect = mock_authorize_redirect
-        mock_github.authorize_access_token = mock_authorize_access_token
-        mock_github.get = mock_get
-        mock_oauth.github = mock_github
-
-        # Also keep google as a MagicMock
-        mock_oauth.google = MagicMock()
-
-        yield {
-            "oauth": mock_oauth,
-            "authorize_redirect": mock_authorize_redirect,
-            "authorize_access_token": mock_authorize_access_token,
-            "get": mock_get,
-            "user_profile": user_profile,
-            "user_emails": user_emails,
         }
 
 
@@ -229,97 +158,6 @@ class TestGoogleOAuth:
         }
 
         resp = await client.get(GOOGLE_CALLBACK_URL)
-        assert resp.status_code == 401
-        assert resp.json()["code"] == "AUTH_OAUTH_NO_EMAIL"
-
-
-# ---------------------------------------------------------------------------
-# TestGitHubOAuth
-# ---------------------------------------------------------------------------
-
-
-class TestGitHubOAuth:
-    """Tests for GET /auth/github and GET /auth/github/callback."""
-
-    async def test_github_login_redirects(
-        self, client: AsyncClient, mock_github_oauth: dict
-    ) -> None:
-        """GET /auth/github returns a redirect response to GitHub's authorization URL."""
-        resp = await client.get(GITHUB_LOGIN_URL, follow_redirects=False)
-        assert resp.status_code in (302, 307)
-        assert "github.com" in resp.headers["location"]
-
-    async def test_github_callback_returns_tokens(
-        self, client: AsyncClient, db_session: AsyncSession, mock_github_oauth: dict
-    ) -> None:
-        """GET /auth/github/callback with valid OAuth returns JWT access + refresh tokens."""
-        resp = await client.get(GITHUB_CALLBACK_URL)
-        assert resp.status_code == 200
-
-        data = resp.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-
-        # Decode the access token
-        payload = decode_access_token(data["access_token"])
-        assert "sub" in payload
-        assert int(payload["sub"]) > 0
-
-    async def test_github_callback_private_email(
-        self, client: AsyncClient, db_session: AsyncSession, mock_github_oauth: dict
-    ) -> None:
-        """GitHub callback fetches email from /user/emails when profile email is null."""
-        private_email = "private@test.com"
-
-        # Override: profile has no email, but /user/emails has a primary verified one
-        profile_no_email = {"id": 789, "email": None, "login": "private-user"}
-        emails_with_primary = [
-            {"email": private_email, "primary": True, "verified": True},
-        ]
-
-        async def mock_get_private(url, **kwargs):
-            if url == "user":
-                return _make_github_mock_response(profile_no_email)
-            elif url == "user/emails":
-                return _make_github_mock_response(emails_with_primary)
-            raise ValueError(f"Unexpected URL: {url}")
-
-        mock_github_oauth["get"].side_effect = mock_get_private
-
-        resp = await client.get(GITHUB_CALLBACK_URL)
-        assert resp.status_code == 200
-
-        data = resp.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-
-        # Verify the user was created with the private email
-        payload = decode_access_token(data["access_token"])
-        user_id = int(payload["sub"])
-        result = await db_session.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one()
-        assert user.email == private_email
-
-    async def test_github_callback_no_verified_email(
-        self, client: AsyncClient, mock_github_oauth: dict
-    ) -> None:
-        """GitHub callback with no verified email returns 401 with AUTH_OAUTH_NO_EMAIL."""
-        profile_no_email = {"id": 999, "email": None, "login": "noemail-user"}
-        unverified_emails = [
-            {"email": "unverified@test.com", "primary": True, "verified": False},
-        ]
-
-        async def mock_get_no_email(url, **kwargs):
-            if url == "user":
-                return _make_github_mock_response(profile_no_email)
-            elif url == "user/emails":
-                return _make_github_mock_response(unverified_emails)
-            raise ValueError(f"Unexpected URL: {url}")
-
-        mock_github_oauth["get"].side_effect = mock_get_no_email
-
-        resp = await client.get(GITHUB_CALLBACK_URL)
         assert resp.status_code == 401
         assert resp.json()["code"] == "AUTH_OAUTH_NO_EMAIL"
 
@@ -489,25 +327,3 @@ class TestAccountLinking:
         )
         assert login_resp.status_code == 200
         assert "access_token" in login_resp.json()
-
-    async def test_github_oauth_creates_oauth_account_row(
-        self, client: AsyncClient, db_session: AsyncSession, mock_github_oauth: dict
-    ) -> None:
-        """GitHub OAuth creates an OAuthAccount row linked to the user."""
-        resp = await client.get(GITHUB_CALLBACK_URL)
-        assert resp.status_code == 200
-
-        payload = decode_access_token(resp.json()["access_token"])
-        user_id = int(payload["sub"])
-
-        # Verify OAuthAccount was created
-        result = await db_session.execute(
-            select(OAuthAccount).where(
-                OAuthAccount.user_id == user_id,
-                OAuthAccount.oauth_provider == "github",
-            )
-        )
-        oauth_account = result.scalar_one()
-        assert oauth_account.oauth_account_id == str(
-            mock_github_oauth["user_profile"]["id"]
-        )

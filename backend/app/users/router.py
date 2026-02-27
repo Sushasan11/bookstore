@@ -1,4 +1,4 @@
-"""Auth endpoints: register, login, refresh, logout, OAuth (Google, GitHub)."""
+"""Auth endpoints: register, login, refresh, logout, OAuth (Google)."""
 
 from authlib.integrations.starlette_client import OAuthError
 from fastapi import APIRouter, status
@@ -106,68 +106,5 @@ async def google_callback(request: Request, db: DbSession) -> TokenResponse:
         provider="google",
         provider_user_id=userinfo["sub"],
         email=userinfo["email"],
-    )
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
-
-
-# ---------------------------------------------------------------------------
-# GitHub OAuth
-# ---------------------------------------------------------------------------
-
-
-@router.get("/github")
-async def github_login(request: Request):
-    """Redirect to GitHub's authorization screen for OAuth login."""
-    redirect_uri = request.url_for("github_callback")
-    return await oauth.github.authorize_redirect(request, redirect_uri)
-
-
-@router.get("/github/callback", response_model=TokenResponse)
-async def github_callback(request: Request, db: DbSession) -> TokenResponse:
-    """Handle GitHub's OAuth callback. Returns JWT token pair.
-
-    GitHub does not support OIDC, so we must fetch user info via API calls.
-    Email may be null if user has private email -- fetch from /user/emails.
-    """
-    try:
-        token = await oauth.github.authorize_access_token(request)
-    except OAuthError as e:
-        raise AppError(
-            status_code=401,
-            detail=f"GitHub authentication failed: {e.description}",
-            code="AUTH_OAUTH_FAILED",
-        ) from e
-
-    # Fetch user profile
-    resp = await oauth.github.get("user", token=token)
-    resp.raise_for_status()
-    profile = resp.json()
-    provider_user_id = str(profile["id"])
-
-    # Email may be null if user has private email settings
-    email = profile.get("email")
-    if not email:
-        email_resp = await oauth.github.get("user/emails", token=token)
-        email_resp.raise_for_status()
-        emails = email_resp.json()
-        primary = next(
-            (e for e in emails if e["primary"] and e["verified"]),
-            None,
-        )
-        if primary:
-            email = primary["email"]
-
-    if not email:
-        raise AppError(
-            status_code=401,
-            detail="Could not retrieve a verified email from GitHub",
-            code="AUTH_OAUTH_NO_EMAIL",
-        )
-
-    service = _make_service(db)
-    access_token, refresh_token = await service.oauth_login(
-        provider="github",
-        provider_user_id=provider_user_id,
-        email=email,
     )
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
