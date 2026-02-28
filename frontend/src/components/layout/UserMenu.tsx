@@ -44,6 +44,13 @@ export function UserMenu() {
       >
         {truncatedEmail}
       </span>
+      {session?.user?.role === 'admin' && (
+        <Link href="/admin">
+          <Button variant="ghost" size="sm">
+            Admin
+          </Button>
+        </Link>
+      )}
       <Button
         variant="ghost"
         size="sm"
