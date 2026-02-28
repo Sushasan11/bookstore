@@ -5,7 +5,7 @@ import {
   Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent,
 } from '@/components/ui/sidebar'
-import { LayoutDashboard, TrendingUp, BookOpen, Users, Star, ChevronLeft } from 'lucide-react'
+import { LayoutDashboard, TrendingUp, BookOpen, Package, Users, Star, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { SidebarFooterUser } from './SidebarFooterUser'
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/overview', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/sales', label: 'Sales', icon: TrendingUp },
   { href: '/admin/catalog', label: 'Catalog', icon: BookOpen },
+  { href: '/admin/inventory', label: 'Inventory', icon: Package },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
 ]
