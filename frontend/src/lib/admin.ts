@@ -46,7 +46,8 @@ export const adminKeys = {
   sales: {
     all: ['admin', 'sales'] as const,
     summary: (period: string) => ['admin', 'sales', 'summary', period] as const,
-    topBooks: (limit: number) => ['admin', 'sales', 'top-books', limit] as const,
+    topBooks: (limit: number, sort_by: 'revenue' | 'volume' = 'revenue') =>
+      ['admin', 'sales', 'top-books', limit, sort_by] as const,
   },
   inventory: {
     all: ['admin', 'inventory'] as const,
