@@ -103,11 +103,11 @@ Plans:
   3. Admin can toggle the top-sellers table between revenue ranking and volume ranking, and select a row limit of 5, 10, or 25 entries
   4. Admin on the Inventory Alerts page sees books sorted by stock ascending with red badges for out-of-stock and amber badges for low stock
   5. Admin can change the stock threshold via an input field and the table updates to reflect the new threshold; clicking "Update Stock" on any row opens the stock update modal
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: sales analytics, Wave 2: inventory alerts)
 
 Plans:
-- [ ] 27-01: Install recharts via shadcn chart CLI, `RevenueChart.tsx` wrapped with `next/dynamic { ssr: false }`, Sales Analytics page with summary stats and top-sellers table with revenue/volume toggle and limit selector
-- [ ] 27-02: Inventory Alerts page with configurable threshold input, color-coded stock badges, and "Update Stock" row action linking to stock update modal
+- [ ] 27-01-PLAN.md — Install recharts via shadcn chart CLI, create RevenueChart.tsx with next/dynamic SSR-disable, fix adminKeys.sales.topBooks cache key, build Sales Analytics page with KPI cards, revenue comparison chart, and top-sellers table with revenue/volume toggle and 5/10/25 limit selector
+- [ ] 27-02-PLAN.md — Add updateBookStock function to admin.ts, enhance Inventory Alerts page with shadcn Badge stock status pills, free-form debounced threshold input alongside preset buttons, and Update Stock dialog modal with useMutation
 
 ### Phase 28: Book Catalog CRUD
 **Goal**: Admin can manage the entire book catalog from a paginated, searchable table — adding, editing, deleting books and updating stock quantities — with changes reflected immediately in the customer storefront
@@ -170,7 +170,7 @@ Plans:
 | 23. Orders and Account | v3.0 | 2/2 | Complete | 2026-02-27 |
 | 24. Wishlist and Pre-booking | v3.0 | 3/3 | Complete | 2026-02-28 |
 | 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
-| 26. Admin Foundation | 2/2 | Complete   | 2026-02-28 | - |
-| 27. Sales Analytics and Inventory Alerts | v3.1 | 0/2 | Not started | - |
+| 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
+| 27. Sales Analytics and Inventory Alerts | 1/2 | In Progress|  | - |
 | 28. Book Catalog CRUD | v3.1 | 0/2 | Not started | - |
 | 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |

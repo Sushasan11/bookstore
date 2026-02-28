@@ -24,10 +24,10 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 ### Sales Analytics
 
-- [ ] **SALE-01**: Admin can view a revenue comparison bar chart showing current vs previous period
-- [ ] **SALE-02**: Admin can view summary stats (revenue, order count, AOV, delta) on the analytics page
-- [ ] **SALE-03**: Admin can view a top-sellers table ranked by revenue or volume via a toggle
-- [ ] **SALE-04**: Admin can configure the top-sellers table limit (5, 10, or 25 entries)
+- [x] **SALE-01**: Admin can view a revenue comparison bar chart showing current vs previous period
+- [x] **SALE-02**: Admin can view summary stats (revenue, order count, AOV, delta) on the analytics page
+- [x] **SALE-03**: Admin can view a top-sellers table ranked by revenue or volume via a toggle
+- [x] **SALE-04**: Admin can configure the top-sellers table limit (5, 10, or 25 entries)
 
 ### Book Catalog Management
 
@@ -100,10 +100,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-03 | Phase 26 | Complete |
 | DASH-04 | Phase 26 | Complete |
 | DASH-05 | Phase 26 | Complete |
-| SALE-01 | Phase 27 | Pending |
-| SALE-02 | Phase 27 | Pending |
-| SALE-03 | Phase 27 | Pending |
-| SALE-04 | Phase 27 | Pending |
+| SALE-01 | Phase 27 | Complete |
+| SALE-02 | Phase 27 | Complete |
+| SALE-03 | Phase 27 | Complete |
+| SALE-04 | Phase 27 | Complete |
 | INVT-01 | Phase 27 | Pending |
 | INVT-02 | Phase 27 | Pending |
 | INVT-03 | Phase 27 | Pending |
