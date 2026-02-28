@@ -107,6 +107,20 @@ None — no external service configuration required.
 - CartSummary Checkout button calls `checkoutMutation.mutate()` directly — Plan 04 will wrap this in a CheckoutDialog confirmation step
 - Ready for Plan 04: Checkout dialog and order confirmation flow
 
+## Self-Check: PASSED
+
+Files verified:
+- frontend/src/app/cart/page.tsx — FOUND
+- frontend/src/app/cart/loading.tsx — FOUND
+- frontend/src/app/cart/_components/CartPageContent.tsx — FOUND
+- frontend/src/app/cart/_components/CartItem.tsx — FOUND
+- frontend/src/app/cart/_components/QuantityStepper.tsx — FOUND
+- frontend/src/app/cart/_components/CartSummary.tsx — FOUND
+
+Commits verified:
+- 9ceddaf — feat(22-03): create cart page shell, loading skeleton, and CartPageContent
+- 0e02bed — feat(22-02): convert BookCard to client component with cart icon button (contained Task 2 files)
+
 ---
 *Phase: 22-cart-and-checkout*
 *Completed: 2026-02-27*

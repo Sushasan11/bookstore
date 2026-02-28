@@ -129,3 +129,22 @@ None — no external service configuration required.
 ---
 *Phase: 21-catalog-and-search*
 *Completed: 2026-02-27*
+
+## Self-Check: PASSED
+
+### Files Created
+- [x] frontend/src/app/catalog/page.tsx — FOUND
+- [x] frontend/src/app/catalog/loading.tsx — FOUND
+- [x] frontend/src/app/catalog/_components/SearchControls.tsx — FOUND
+- [x] frontend/src/app/catalog/_components/Pagination.tsx — FOUND
+- [x] frontend/src/app/catalog/_components/NoResults.tsx — FOUND
+- [x] frontend/src/app/catalog/_components/BookGrid.tsx — FOUND
+- [x] frontend/src/components/ui/select.tsx — FOUND
+
+### Commits
+- [x] 5c84f77 — Task 1 feat commit FOUND
+- [x] 3aa5721 — Task 2 feat commit FOUND
+- [x] 3ca95b3 — docs metadata commit FOUND
+
+### Verifications
+- [x] `npm run build` — succeeded, /catalog renders as dynamic server route with zero errors

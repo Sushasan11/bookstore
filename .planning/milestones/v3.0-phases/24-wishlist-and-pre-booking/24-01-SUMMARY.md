@@ -127,3 +127,13 @@ None - no external service configuration required.
 ---
 *Phase: 24-wishlist-and-pre-booking*
 *Completed: 2026-02-28*
+
+## Self-Check: PASSED
+
+- FOUND: frontend/src/lib/wishlist.ts
+- FOUND: frontend/src/lib/prebook.ts
+- FOUND: frontend/src/app/catalog/_components/BookCard.tsx
+- FOUND: frontend/src/app/books/[id]/_components/ActionButtons.tsx
+- FOUND: .planning/phases/24-wishlist-and-pre-booking/24-01-SUMMARY.md
+- FOUND: commit 824d73f (feat: useWishlist and usePrebook hooks)
+- FOUND: commit dfb6130 (feat: BookCard heart + ActionButtons pre-book)

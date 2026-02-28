@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An online bookstore API where administrators manage a catalog of books (with details, pricing, and stock) and users can browse, search, purchase books through a cart/checkout flow, maintain wishlists, pre-book out-of-stock titles, leave verified-purchase reviews with ratings, and receive transactional emails. Admins have user lifecycle management, review moderation, and operational analytics (sales, inventory, reviews). Built with FastAPI, PostgreSQL, SQLAlchemy, and managed with Poetry.
+A full-stack online bookstore with a FastAPI backend and Next.js customer-facing storefront. Users can browse an SEO-optimized catalog, search and filter books, sign in with email or Google OAuth, manage a shopping cart with optimistic updates, checkout, review order history, maintain wishlists, pre-book out-of-stock titles, and leave verified-purchase reviews with star ratings. The backend provides a comprehensive API with admin capabilities including user management, review moderation, and operational analytics. Monorepo structure: `backend/` (Python/FastAPI) and `frontend/` (Next.js/TypeScript).
 
 ## Core Value
 
@@ -36,7 +36,6 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - ✓ Users can delete their own review — v2.0
 - ✓ Admin can delete any review — v2.0
 - ✓ Book detail shows average rating and review count — v2.0
-
 - ✓ Admin can view revenue summary (total revenue, order count, AOV) for today, this week, or this month — v2.1
 - ✓ Admin can view period-over-period comparison (delta % vs previous period) alongside revenue summary — v2.1
 - ✓ Admin can view top-selling books ranked by revenue with book title, author, units sold, and total revenue — v2.1
@@ -44,28 +43,19 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - ✓ Admin can query books with stock at or below a configurable threshold, ordered by stock ascending — v2.1
 - ✓ Admin can list all reviews with pagination, sort (by date or rating), and filter (by book, user, or rating range) — v2.1
 - ✓ Admin can bulk-delete reviews by providing a list of review IDs — v2.1
+- ✓ Monorepo restructured with backend/ and frontend/ directories — v3.0
+- ✓ Next.js 15 storefront with SSR catalog, ISR book detail, JSON-LD and Open Graph SEO — v3.0
+- ✓ NextAuth.js v5 auth with email/password and Google OAuth, JWT bridge to FastAPI — v3.0
+- ✓ Shopping cart with optimistic updates, checkout dialog, order confirmation — v3.0
+- ✓ Order history and account hub with navigation — v3.0
+- ✓ Wishlist with instant heart toggle and pre-booking for out-of-stock titles — v3.0
+- ✓ Reviews CRUD on book detail page with verified-purchase gate and star ratings — v3.0
+- ✓ URL-persisted search and filter state (bookmarkable, shareable) — v3.0
+- ✓ Responsive mobile-first layout with header, navigation, footer, and dark mode — v3.0
 
 ### Active
 
-<!-- No active milestone — backend complete through v2.1, next milestone TBD -->
-
-(None — all backend milestones shipped. Next: v3.0 Frontend or new backend milestone.)
-
-### Frontend (Planned)
-
-Next.js 15 (App Router) + TypeScript frontend, to be built after backend milestones are complete.
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Server State | TanStack Query |
-| UI | shadcn/ui + Tailwind CSS |
-| Auth | NextAuth.js (JWT + Google OAuth) |
-| Validation | Zod |
-| API Types | openapi-typescript (auto-generated from FastAPI OpenAPI spec) |
-
-Backend development uses Claude Code MCP.
+(No active requirements — start next milestone with `/gsd:new-milestone`)
 
 ## Out of Scope
 
@@ -78,24 +68,28 @@ Backend development uses Claude Code MCP.
 - Celery / Redis task queue — BackgroundTasks sufficient at current volume
 - Helpfulness voting on reviews — defer until review volume justifies it
 - Pre-moderation queue — reactive admin-delete is correct; pre-moderation suppresses authentic reviews
-- Rating sort in search results — deferred, keep v2.0 focused on core review CRUD
+- Rating sort in search results — deferred, keep focused on core review CRUD
+- Admin dashboard UI — deferred to future milestone
+- GitHub OAuth on frontend — email + Google sufficient
 
 ## Context
 
-Shipped v2.1 with 13,743 LOC Python, ~306 tests passing.
-Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail.
-18 phases delivered across 4 milestones (v1.0: 8 phases, v1.1: 4 phases, v2.0: 3 phases, v2.1: 3 phases).
+Shipped v3.0 with 8,022 LOC TypeScript (frontend) + 14,728 LOC Python (backend), ~306 backend tests passing.
+Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail (backend); Next.js 15, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS, NextAuth.js v5 (frontend).
+25 phases delivered across 5 milestones (v1.0: 8 phases, v1.1: 4 phases, v2.0: 3 phases, v2.1: 3 phases, v3.0: 7 phases).
+Full customer storefront with catalog browsing, search/filter, auth, cart/checkout, orders, wishlist, pre-booking, and reviews.
 Admin analytics: sales summary with period comparison, top-sellers by revenue/volume, low-stock inventory alerts, review moderation with bulk delete.
-66 new integration tests for admin analytics and moderation endpoints.
+73 frontend commits, 253 files changed in v3.0.
 
 ## Constraints
 
 - **Backend Stack**: Python 3.11+, FastAPI, Poetry, PostgreSQL, SQLAlchemy + Alembic
-- **Frontend Stack**: Next.js 15, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS
+- **Frontend Stack**: Next.js 15 (App Router), TypeScript, TanStack Query, shadcn/ui, Tailwind CSS
 - **Auth**: JWT tokens (access + refresh), DB is_active check per request; NextAuth.js on frontend
 - **Payments**: Mock/simulated only — no real payment gateway
 - **Email**: fastapi-mail with SMTP, BackgroundTasks dispatch
-- **Dev Tooling**: Claude Code MCP for backend development
+- **Repo Structure**: Monorepo — `backend/` (Python) + `frontend/` (Next.js) at repo root
+- **Dev Tooling**: Claude Code MCP
 
 ## Key Decisions
 
@@ -119,14 +113,19 @@ Admin analytics: sales summary with period comparison, top-sellers by revenue/vo
 | DuplicateReviewError separate from AppError | 409 body needs existing_review_id which AppError handler can't produce | ✓ Good |
 | model_fields_set sentinel for PATCH | Distinguishes "omitted" from explicit null on review text field | ✓ Good |
 | Single DELETE endpoint (user + admin) | is_admin flag passed to service; no separate admin route needed | ✓ Good |
-| Next.js over Vite SPA | SSR for SEO on public catalog pages, App Router for layouts, built-in middleware for auth | Planned |
-| openapi-typescript for API types | Auto-generate TypeScript types from FastAPI OpenAPI spec, keeps Pydantic ↔ TS in sync | Planned |
 | Router-level admin guard for analytics | `dependencies=[Depends(require_admin)]` at APIRouter constructor protects all endpoints automatically | ✓ Good |
 | Live SQL aggregates for analytics | Direct queries on orders/order_items/books tables; no materialized views or denormalization needed at current volume | ✓ Good |
 | No service layer for simple aggregates | Top-books, low-stock, review-list go directly to repository — service layer only for period/delta logic | ✓ Good |
 | Bulk soft-delete via single UPDATE...WHERE IN | O(1) DB round-trips, returns rowcount for best-effort semantics | ✓ Good |
 | AOV = 0.0 when no orders, delta = null when prior = 0 | Consistent zero-state semantics, avoids division by zero | ✓ Good |
-| Claude Code MCP for backend dev | AI-assisted development for backend phases | Active |
+| Next.js 15 over Vite SPA | SSR for SEO on public catalog pages, App Router for layouts, built-in middleware for auth | ✓ Good |
+| openapi-typescript for API types | Auto-generate TypeScript types from FastAPI OpenAPI spec, keeps Pydantic ↔ TS in sync | ✓ Good |
+| NextAuth.js v5 as JWT bridge | Frontend auth via encrypted cookie, FastAPI remains auth authority, no BFF proxy needed | ✓ Good |
+| TanStack Query for server state | Cache invalidation, optimistic updates, and deduplication — proven pattern for API-driven UIs | ✓ Good |
+| proxy.ts over middleware | Next.js 16 named export pattern for route protection, cleaner than middleware matcher | ✓ Good |
+| Optimistic updates with rollback | Instant UI feedback for cart/wishlist, automatic rollback on server error via TanStack Query | ✓ Good |
+| React.cache() for SSR dedup | generateMetadata and page component share single cached fetch — avoids double data loading | ✓ Good |
+| Claude Code MCP for development | AI-assisted development across all phases | Active |
 
 ---
-*Last updated: 2026-02-27 after v2.1 milestone*
+*Last updated: 2026-02-28 after v3.0 milestone completion*

@@ -1,5 +1,22 @@
 # Milestones
 
+## v3.0 Customer Storefront (Shipped: 2026-02-28)
+
+**Phases completed:** 7 phases, 22 plans, 0 tasks
+
+**Key accomplishments:**
+- Monorepo restructure (backend/ + frontend/) with CORS, auto-generated TypeScript types from FastAPI OpenAPI spec, and responsive layout shell with dark mode
+- NextAuth.js v5 auth with email/password and Google OAuth, JWT bridge to FastAPI, proxy.ts route protection, and 403 auto-signout
+- SSR catalog with full-text search, URL-persisted filters, book detail pages with ISR, JSON-LD Book schema, and Open Graph SEO
+- Full cart/checkout flow with optimistic updates, checkout dialog, order confirmation, and order history with price snapshots
+- Wishlist with instant heart toggle on catalog/detail pages and pre-booking for out-of-stock titles with account management
+- Reviews CRUD (write/edit/delete) with verified-purchase gate and star rating selector on book detail pages
+
+**Stats:** 8,022 LOC TypeScript (frontend), 14,728 LOC Python (backend), 73 commits, 253 files changed (+31,061/-413)
+**Audit:** 35/35 requirements, 37/37 integrations, 10/10 E2E flows
+
+---
+
 ## v1.0 MVP (Shipped: 2026-02-25)
 
 **Phases completed:** 8 phases, 24 plans, 0 tasks

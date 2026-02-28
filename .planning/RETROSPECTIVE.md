@@ -126,6 +126,53 @@
 
 ---
 
+## Milestone: v3.0 — Customer Storefront
+
+**Shipped:** 2026-02-28
+**Phases:** 7 | **Plans:** 22 | **Sessions:** ~4
+
+### What Was Built
+- Monorepo restructure (backend/ + frontend/) with CORS, auto-generated TypeScript types, and responsive layout shell with dark mode
+- NextAuth.js v5 auth with email/password and Google OAuth, JWT bridge to FastAPI, route protection, 403 auto-signout
+- SSR catalog with full-text search, URL-persisted filters, ISR book detail pages, JSON-LD and Open Graph SEO
+- Full cart/checkout with optimistic updates via TanStack Query, checkout dialog, order confirmation page
+- Order history, account hub, wishlist with instant heart toggle, pre-booking for out-of-stock titles
+- Reviews CRUD on book detail page with verified-purchase gate, star rating selector, edit/delete with confirmation
+
+### What Worked
+- openapi-typescript auto-generation kept TypeScript types in perfect sync with FastAPI Pydantic schemas — zero manual type duplication
+- TanStack Query with shared query keys (CART_KEY, WISHLIST_KEY, REVIEWS_KEY) enabled reactive cache invalidation across components (CartBadge, BookCard, ActionButtons all stay in sync)
+- Established useEffect/useState mounted guard pattern early (Phase 19 ThemeToggle) — reused in UserMenu, CartBadge across 3 later phases with zero hydration issues
+- proxy.ts named export pattern for Next.js 16 route protection — cleaner than middleware, caught early in Phase 20
+- React.cache() for SSR request deduplication (generateMetadata + page share one fetch) — applied in Phase 21, replicated in Phase 25
+
+### What Was Inefficient
+- BookCard started as server component (Phase 21) then converted to client component (Phase 22) — could have been planned as client from the start given known cart/wishlist interactivity
+- ActionButtons started as disabled placeholders (Phase 21) then wired in Phases 22 and 24 — placeholder approach required revisiting the same file 3 times
+- ROADMAP.md Progress table formatting drifted significantly (misaligned columns, inconsistent milestone labels) — needed full rewrite at milestone close
+- STATE.md accumulated 6 duplicate YAML frontmatter blocks from repeated CLI updates — needed full rewrite at milestone close
+
+### Patterns Established
+- useEffect/useState mounted guard for all client components that differ between SSR and CSR (theme, auth, cart badge)
+- e.preventDefault() + e.stopPropagation() on interactive elements inside Link components (cart icon, heart icon)
+- Optimistic update with rollback via TanStack Query onMutate/onError/onSettled — applied to cart, wishlist, pre-booking
+- SSR-seeded initialData with TanStack Query hydration — server component fetches, client component subscribes via same cache key
+- Separate useQuery in consumer (not modifying original hook) when initialData pattern differs from hook's default behavior
+
+### Key Lessons
+1. Plan components as client from the start if any phase will add interactivity — server-to-client conversion requires touching every consumer
+2. URL-persisted search state via useSearchParams needs Suspense boundaries — not caught by TypeScript, only by `npm run build`
+3. Named export patterns for Next.js proxy/middleware must be verified against the exact Next.js version — docs lag behind releases
+4. TanStack Query cache key design is critical upfront — CART_KEY (global), REVIEWS_KEY(bookId) (parameterized), WISHLIST_KEY (global) each have different invalidation semantics
+5. React.cache() is SSR-only and request-scoped — perfect for generateMetadata + page dedup, but irrelevant for client components
+
+### Cost Observations
+- Model mix: ~15% opus (orchestrator, milestone ops), ~85% sonnet (executors, verifiers, researchers)
+- Sessions: ~4 (spread across 2 days)
+- Notable: 7 phases (22 plans) completed in ~2 days — largest milestone by phase count, fastest per-phase due to established frontend patterns
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -136,6 +183,7 @@
 | v1.1 | 1 | 4 | Wave-based execution, integration audit |
 | v2.0 | 1 | 3 | Interfaces block in PLANs, 3-source req cross-reference |
 | v2.1 | 1 | 3 | Direct repo pattern for simple aggregates, pre-built schemas across plans |
+| v3.0 | ~4 | 7 | Full frontend milestone, SSR+client patterns, TanStack Query cache architecture |
 
 ### Cumulative Quality
 
@@ -145,6 +193,7 @@
 | v1.1 | 179 | 9,473 | 58 |
 | v2.0 | 240 | 12,010 | 62 |
 | v2.1 | ~306 | 13,743 | 66 |
+| v3.0 | ~306 | 22,750 (14,728 py + 8,022 ts) | 0 (frontend, no new backend tests) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -152,3 +201,4 @@
 2. Structural guarantees (ordering, guards) are more reliable than runtime checks for correctness invariants
 3. Eager-load auditing is critical in async SQLAlchemy — phase verification catches missing selectinloads before they hit production
 4. Service layers should earn their existence — skip for simple aggregates, add only when business logic (period bounds, deltas) is present
+5. Establish component patterns (mounted guard, optimistic update, SSR dedup) early — they compound across phases as every new feature reuses them
