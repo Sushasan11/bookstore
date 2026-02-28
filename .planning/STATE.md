@@ -61,12 +61,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 25 of 25 (Reviews) — NEXT
-Plan: Phase 24 complete (3/3 plans: hooks, wishlist page + account, human verification)
+Phase: 25 of 25 (Reviews) — IN PROGRESS
+Plan: 25-01 complete (1/2 plans: data layer + foundational components)
 Status: Active
-Last activity: 2026-02-28 — Completed 24-03 (human verification — all WISH and PREB requirements approved)
+Last activity: 2026-02-28 — Completed 25-01 (reviews data layer, StarSelector, ReviewCard, Textarea)
 
-Progress: [███████░░░] 93% (7/7 phases started, Phase 24 fully verified)
+Progress: [████████░░] 96% (Phase 25 in progress, 1/2 plans complete)
 
 ## Performance Metrics
 
@@ -150,11 +150,16 @@ Recent decisions affecting v3.0 work:
 - [24-02]: PrebookingsList uses useState(prebooks) for optimistic removal — server-seeded list, no query subscription needed
 - [24-02]: Pre-bookings rendered inline on /account page (not separate route) — bounded list, account hub is natural home
 - [24-03]: Human approved all 8 requirements (WISH-01 through WISH-04, PREB-01 through PREB-04) — Phase 24 complete and production-ready
+- [25-01]: session.user.id (string) is the FastAPI user ID — myReview detection uses Number(session.user.id) vs author.user_id (number)
+- [25-01]: REVIEWS_KEY(bookId) parameterized by bookId — per-book cache isolation (unlike global WISHLIST_KEY)
+- [25-01]: ReviewCard has no 'use client' directive — pure server-compatible presentational component
+- [25-01]: updateMutation takes { reviewId, body } — caller builds selective PATCH body to respect partial update semantics
+- [25-01]: Reviews query has no enabled guard — public endpoint always fetched regardless of auth
 
 ### Blockers/Concerns
 
 - [Phase 20]: Google OAuth requires user to configure Google Cloud Console credentials and run npx auth secret — documented in 20-01-SUMMARY.md User Setup section
-- [Phase 25]: Star rating selector not in shadcn/ui — evaluate community extensions vs. small custom component before phase starts
+- [Phase 25]: Star rating selector not in shadcn/ui — RESOLVED: custom StarSelector component built (30 lines, matches existing RatingDisplay aesthetic)
 
 ### Pending Todos
 
@@ -163,5 +168,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 24-03-PLAN.md — human verification of all WISH and PREB requirements approved
+Stopped at: Completed 25-01-PLAN.md — reviews data layer, StarSelector, ReviewCard, Textarea installed
 Resume file: None
