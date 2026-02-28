@@ -93,7 +93,7 @@ export function SearchControls({ genres }: SearchControlsProps) {
   }, 300)
 
   function handleGenreChange(value: string) {
-    updateParams({ genre_id: value || undefined })
+    updateParams({ genre_id: value === 'all' ? undefined : value })
   }
 
   function handlePriceRange(range: PriceRange) {
@@ -116,7 +116,7 @@ export function SearchControls({ genres }: SearchControlsProps) {
   const currentSort = searchParams.get('sort')
   const currentSortDir = searchParams.get('sort_dir')
   const currentSortValue = getSortValue(currentSort, currentSortDir)
-  const currentGenreId = searchParams.get('genre_id') ?? ''
+  const currentGenreId = searchParams.get('genre_id') ?? 'all'
 
   function isPriceRangeActive(range: PriceRange): boolean {
     if (!range.min && !range.max) {
@@ -148,7 +148,7 @@ export function SearchControls({ genres }: SearchControlsProps) {
             <SelectValue placeholder="All Genres" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Genres</SelectItem>
+            <SelectItem value="all">All Genres</SelectItem>
             {genres.map((genre) => (
               <SelectItem key={genre.id} value={String(genre.id)}>
                 {genre.name}

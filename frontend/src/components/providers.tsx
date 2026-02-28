@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes'
 import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ApiError } from '@/lib/api'
 
 /**
@@ -66,9 +67,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          <AuthGuard>
-            {children}
-          </AuthGuard>
+          <TooltipProvider>
+            <AuthGuard>
+              {children}
+            </AuthGuard>
+          </TooltipProvider>
           <Toaster richColors position="bottom-right" />
         </ThemeProvider>
         <ReactQueryDevtools initialIsOpen={false} />

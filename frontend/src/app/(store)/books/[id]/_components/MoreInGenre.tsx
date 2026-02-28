@@ -1,5 +1,5 @@
 import type { BookResponse } from '@/lib/catalog'
-import { BookCard } from '@/app/catalog/_components/BookCard'
+import { BookCard } from '@/app/(store)/catalog/_components/BookCard'
 
 interface MoreInGenreProps {
   books: BookResponse[]
