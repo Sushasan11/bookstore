@@ -68,9 +68,9 @@ Requirements for the Next.js customer-facing storefront. Each maps to roadmap ph
 
 - [x] **REVW-01**: User can see reviews and ratings on the book detail page
 - [x] **REVW-02**: User who purchased a book can leave a 1-5 star rating with optional text review
-- [ ] **REVW-03**: User can edit their own review
-- [ ] **REVW-04**: User can delete their own review
-- [ ] **REVW-05**: User sees "already reviewed" state with edit option if they've already reviewed
+- [x] **REVW-03**: User can edit their own review
+- [x] **REVW-04**: User can delete their own review
+- [x] **REVW-05**: User sees "already reviewed" state with edit option if they've already reviewed
 
 ## Future Requirements
 
@@ -148,9 +148,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PREB-04 | Phase 24 | Complete |
 | REVW-01 | Phase 25 | Complete |
 | REVW-02 | Phase 25 | Complete |
-| REVW-03 | Phase 25 | Pending |
-| REVW-04 | Phase 25 | Pending |
-| REVW-05 | Phase 25 | Pending |
+| REVW-03 | Phase 25 | Complete |
+| REVW-04 | Phase 25 | Complete |
+| REVW-05 | Phase 25 | Complete |
 
 **Coverage:**
 - v3.0 requirements: 35 total

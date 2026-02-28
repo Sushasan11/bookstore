@@ -6,7 +6,7 @@
 - ✅ **v1.1 Pre-booking, Notifications & Admin** — Phases 9-12 (shipped 2026-02-26)
 - ✅ **v2.0 Reviews & Ratings** — Phases 13-15 (shipped 2026-02-27)
 - ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
-- 🚧 **v3.0 Customer Storefront** — Phases 19-25 (in progress)
+- ✅ **v3.0 Customer Storefront** — Phases 19-25 (shipped 2026-02-28)
 
 ## Phases
 
@@ -52,7 +52,7 @@
 
 </details>
 
-### 🚧 v3.0 Customer Storefront (In Progress)
+### v3.0 Customer Storefront (Completed 2026-02-28)
 
 **Milestone Goal:** Build a Next.js 15 customer-facing storefront with full feature parity against all user-facing backend endpoints. Monorepo restructure with `backend/` and `frontend/` directories. Catalog browsing, auth, cart/checkout, orders, wishlist, pre-booking, and reviews delivered as a responsive, SEO-optimized storefront.
 
@@ -62,7 +62,7 @@
 - [x] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation (completed 2026-02-27)
 - [x] **Phase 23: Orders and Account** — Order history, order detail, account page with navigation (completed 2026-02-27)
 - [x] **Phase 24: Wishlist and Pre-booking** — Wishlist with optimistic toggle, pre-booking for out-of-stock titles (completed 2026-02-28)
-- [ ] **Phase 25: Reviews** — Read/write/edit/delete reviews on book detail page with verified-purchase gate
+- [x] **Phase 25: Reviews** — Read/write/edit/delete reviews on book detail page with verified-purchase gate (completed 2026-02-28)
 
 ## Phase Details
 
@@ -199,4 +199,4 @@ Plans:
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | 2/2 | Complete    | 2026-02-27 | - |
 | 24. Wishlist and Pre-booking | 3/3 | Complete    | 2026-02-28 | 2026-02-28 |
-| 25. Reviews | 1/2 | In Progress|  | - |
+| 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |

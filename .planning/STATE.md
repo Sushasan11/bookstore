@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Customer Storefront
 status: unknown
+last_updated: "2026-02-28T07:29:36.816Z"
+progress:
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 22
+  completed_plans: 22
+---
+
+---
+gsd_state_version: 1.0
+milestone: v3.0
+milestone_name: Customer Storefront
+status: unknown
 last_updated: "2026-02-28T06:27:52.255Z"
 progress:
   total_phases: 6
@@ -61,12 +74,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 25 of 25 (Reviews) — IN PROGRESS
-Plan: 25-01 complete (1/2 plans: data layer + foundational components)
-Status: Active
-Last activity: 2026-02-28 — Completed 25-01 (reviews data layer, StarSelector, ReviewCard, Textarea)
+Phase: 25 of 25 (Reviews) — COMPLETE
+Plan: 25-02 complete (2/2 plans: ReviewsSection + ReviewForm, human verification)
+Status: Complete — v3.0 Customer Storefront milestone complete
+Last activity: 2026-02-28 — Completed 25-02 (ReviewsSection, ReviewForm, page wiring, human-verified)
 
-Progress: [████████░░] 96% (Phase 25 in progress, 1/2 plans complete)
+Progress: [██████████] 100% (Phase 25 complete, all plans done)
 
 ## Performance Metrics
 
@@ -87,6 +100,7 @@ Progress: [████████░░] 96% (Phase 25 in progress, 1/2 plans 
 *Updated after each plan completion*
 | Phase 22 P04 | 102 | 2 tasks | 4 files |
 | Phase 22 P05 | ~2min | 1 task (human verify) | 0 files |
+| Phase 25 P02 | 10min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -155,6 +169,9 @@ Recent decisions affecting v3.0 work:
 - [25-01]: ReviewCard has no 'use client' directive — pure server-compatible presentational component
 - [25-01]: updateMutation takes { reviewId, body } — caller builds selective PATCH body to respect partial update semantics
 - [25-01]: Reviews query has no enabled guard — public endpoint always fetched regardless of auth
+- [Phase 25-02]: ReviewsSection uses separate useQuery with initialData (not modifying useReviews hook) — avoids breaking Plan 25-01 hook, same REVIEWS_KEY deduplicates in cache
+- [Phase 25-02]: RatingDisplay changed from div to a href='#reviews' — stays server component, pure HTML anchor, no client boundary needed
+- [Phase 25-02]: All REVW-01 through REVW-05 requirements human-verified — Phase 25 Reviews complete and v3.0 Customer Storefront milestone complete
 
 ### Blockers/Concerns
 
@@ -168,5 +185,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 25-01-PLAN.md — reviews data layer, StarSelector, ReviewCard, Textarea installed
+Stopped at: Completed 25-02-PLAN.md — ReviewsSection + ReviewForm wired into book detail page, all REVW requirements human-verified, v3.0 Customer Storefront milestone complete
 Resume file: None
