@@ -70,7 +70,7 @@
 
 **Milestone Goal:** A working admin dashboard at `/admin` where an authenticated admin can view KPI metrics, analyze sales, manage the book catalog, manage users, and moderate reviews — all surfacing existing backend endpoints through a clean, protected Next.js interface.
 
-- [ ] **Phase 26: Admin Foundation** - Admin layout, route protection, and dashboard overview with KPI cards and period selector
+- [x] **Phase 26: Admin Foundation** - Admin layout, route protection, and dashboard overview with KPI cards and period selector (completed 2026-02-28)
 - [ ] **Phase 27: Sales Analytics and Inventory Alerts** - Revenue chart, top-sellers table, and low-stock inventory alerts with configurable threshold
 - [ ] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal
 - [ ] **Phase 29: User Management and Review Moderation** - Paginated user table with deactivate/reactivate, and review moderation table with bulk delete
@@ -170,7 +170,7 @@ Plans:
 | 23. Orders and Account | v3.0 | 2/2 | Complete | 2026-02-27 |
 | 24. Wishlist and Pre-booking | v3.0 | 3/3 | Complete | 2026-02-28 |
 | 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
-| 26. Admin Foundation | 1/2 | In Progress|  | - |
+| 26. Admin Foundation | 2/2 | Complete   | 2026-02-28 | - |
 | 27. Sales Analytics and Inventory Alerts | v3.1 | 0/2 | Not started | - |
 | 28. Book Catalog CRUD | v3.1 | 0/2 | Not started | - |
 | 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |

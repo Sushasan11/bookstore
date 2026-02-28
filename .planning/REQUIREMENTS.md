@@ -16,11 +16,11 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 ### Dashboard Overview
 
-- [ ] **DASH-01**: Admin can view KPI cards showing revenue, order count, and AOV for the selected period
-- [ ] **DASH-02**: Admin can switch period between Today, This Week, and This Month
-- [ ] **DASH-03**: Each KPI card shows a delta badge (green up / red down / grey dash) comparing to the previous period
-- [ ] **DASH-04**: Admin can see a low-stock count card that links to the inventory alerts section
-- [ ] **DASH-05**: Admin can view a top-5 best-selling books mini-table on the overview page
+- [x] **DASH-01**: Admin can view KPI cards showing revenue, order count, and AOV for the selected period
+- [x] **DASH-02**: Admin can switch period between Today, This Week, and This Month
+- [x] **DASH-03**: Each KPI card shows a delta badge (green up / red down / grey dash) comparing to the previous period
+- [x] **DASH-04**: Admin can see a low-stock count card that links to the inventory alerts section
+- [x] **DASH-05**: Admin can view a top-5 best-selling books mini-table on the overview page
 
 ### Sales Analytics
 
@@ -95,11 +95,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMF-02 | Phase 26 | Complete |
 | ADMF-03 | Phase 26 | Complete |
 | ADMF-04 | Phase 26 | Complete |
-| DASH-01 | Phase 26 | Pending |
-| DASH-02 | Phase 26 | Pending |
-| DASH-03 | Phase 26 | Pending |
-| DASH-04 | Phase 26 | Pending |
-| DASH-05 | Phase 26 | Pending |
+| DASH-01 | Phase 26 | Complete |
+| DASH-02 | Phase 26 | Complete |
+| DASH-03 | Phase 26 | Complete |
+| DASH-04 | Phase 26 | Complete |
+| DASH-05 | Phase 26 | Complete |
 | SALE-01 | Phase 27 | Pending |
 | SALE-02 | Phase 27 | Pending |
 | SALE-03 | Phase 27 | Pending |

@@ -8,7 +8,7 @@ progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 8
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,28 +18,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 26 — Admin Foundation (Plan 02 next)
+**Current focus:** Phase 27 — Sales Analytics and Inventory Alerts (Plan 01 next)
 
 ## Current Position
 
-Phase: 26 of 29 (Admin Foundation)
-Plan: 1 of 2 in current phase
+Phase: 26 of 29 (Admin Foundation) — COMPLETE
+Plan: 2 of 2 in current phase (phase complete)
 Status: In progress
-Last activity: 2026-02-28 — Completed Plan 26-01: route group restructure, admin layout, sidebar
+Last activity: 2026-02-28 — Completed Plan 26-02: admin fetch layer, dashboard overview page with KPI cards and mini-table
 
-Progress: [█░░░░░░░░░] 12% (v3.1 milestone, 1/8 plans complete)
+Progress: [██░░░░░░░░] 25% (v3.1 milestone, 2/8 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed (v3.1): 1
+- Total plans completed (v3.1): 2
 - Prior milestone avg: ~2-3 plans per phase
 
 **By Phase (v3.1):**
 
 | Phase | Plans | Status |
 |-------|-------|--------|
-| 26. Admin Foundation | 1/2 | In progress |
+| 26. Admin Foundation | 2/2 | Complete |
 | 27. Sales Analytics and Inventory Alerts | 0/2 | Not started |
 | 28. Book Catalog CRUD | 0/2 | Not started |
 | 29. User Management and Review Moderation | 0/2 | Not started |
@@ -49,6 +49,7 @@ Progress: [█░░░░░░░░░] 12% (v3.1 milestone, 1/8 plans comple
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 26-admin-foundation | P01 | 30min | 2 | 42 |
+| 26-admin-foundation | P02 | 3min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Progress: [█░░░░░░░░░] 12% (v3.1 milestone, 1/8 plans comple
 - `DataTable.tsx` built in Phase 28 is reused directly in Phase 29 — Phase 28 must precede Phase 29
 - TooltipProvider added to Providers component (providers.tsx) — required for shadcn sidebar icon-mode tooltips
 - /admin page redirects to /admin/overview (dashboard built in Plan 02)
+- adminKeys hierarchical query key factory in src/lib/admin.ts is the single source of query keys for all admin phases (27-29)
+- No shadcn table component installed — used HTML table with Tailwind classes for the best-sellers mini-table (sufficient for read-only 5-row display)
 
 ### Pending Todos
 
@@ -75,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 26-admin-foundation-01-PLAN.md — route group restructure, admin layout shell, AppSidebar with 5 nav items
+Stopped at: Completed 26-admin-foundation-02-PLAN.md — admin fetch layer (src/lib/admin.ts) and dashboard overview page (/admin/overview)
 Resume file: None
