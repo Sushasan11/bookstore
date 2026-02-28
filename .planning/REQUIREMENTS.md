@@ -54,9 +54,9 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 ### Inventory Alerts
 
-- [ ] **INVT-01**: Admin can view a low-stock books table sorted by stock ascending with color-coded status badges (red for out-of-stock, amber for low)
-- [ ] **INVT-02**: Admin can configure the stock threshold via an input field
-- [ ] **INVT-03**: Admin can click "Update Stock" on any row to open the stock update modal
+- [x] **INVT-01**: Admin can view a low-stock books table sorted by stock ascending with color-coded status badges (red for out-of-stock, amber for low)
+- [x] **INVT-02**: Admin can configure the stock threshold via an input field
+- [x] **INVT-03**: Admin can click "Update Stock" on any row to open the stock update modal
 
 ## Future Requirements (v3.2+)
 
@@ -104,9 +104,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SALE-02 | Phase 27 | Complete |
 | SALE-03 | Phase 27 | Complete |
 | SALE-04 | Phase 27 | Complete |
-| INVT-01 | Phase 27 | Pending |
-| INVT-02 | Phase 27 | Pending |
-| INVT-03 | Phase 27 | Pending |
+| INVT-01 | Phase 27 | Complete |
+| INVT-02 | Phase 27 | Complete |
+| INVT-03 | Phase 27 | Complete |
 | CATL-01 | Phase 28 | Pending |
 | CATL-02 | Phase 28 | Pending |
 | CATL-03 | Phase 28 | Pending |
