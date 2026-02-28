@@ -1,71 +1,48 @@
-# BookStore API
+# BookStore
 
-An online bookstore API where administrators manage a catalog of books (with details, pricing, and stock) and users can browse, search, purchase books through a cart/checkout flow, maintain wishlists, pre-book out-of-stock titles, leave verified-purchase reviews with ratings, and receive transactional emails. Built with FastAPI, PostgreSQL, SQLAlchemy (async), and managed with Poetry.
+A full-stack online bookstore with a **FastAPI** backend and **Next.js** customer-facing storefront. Users can browse an SEO-optimized catalog, search and filter books, sign in with email or Google OAuth, manage a shopping cart with optimistic updates, checkout, review order history, maintain wishlists, pre-book out-of-stock titles, and leave verified-purchase reviews with star ratings. Admins get a separate dashboard with sales analytics, inventory alerts, catalog management, user management, and review moderation.
+
+Monorepo structure: `backend/` (Python/FastAPI) and `frontend/` (Next.js/TypeScript).
 
 ## Table of Contents
 
+- [Architecture](#architecture)
 - [Design principles](#design-principles)
-- [Overview](#overview)
-- [Request lifecycle](#request-lifecycle)
-- [Notes about authentication](#notes-about-authentication)
-  - [JWT access tokens](#jwt-access-tokens)
-  - [Refresh token rotation](#refresh-token-rotation)
-  - [OAuth integration](#oauth-integration)
-  - [Timing-safe login](#timing-safe-login)
-- [Notes about the database layer](#notes-about-the-database-layer)
-  - [Async session management](#async-session-management)
-  - [Connection pooling](#connection-pooling)
-- [Notes about the catalog](#notes-about-the-catalog)
-  - [Full-text search](#full-text-search)
-  - [Genre filtering and sorting](#genre-filtering-and-sorting)
-- [Notes about checkout](#notes-about-checkout)
-  - [Stock locking and deadlock prevention](#stock-locking-and-deadlock-prevention)
-  - [Price snapshots](#price-snapshots)
-  - [Mock payment service](#mock-payment-service)
-- [Notes about reviews](#notes-about-reviews)
-  - [Purchase verification](#purchase-verification)
-  - [Soft deletes](#soft-deletes)
-  - [Rating aggregates](#rating-aggregates)
-- [Notes about pre-booking](#notes-about-pre-booking)
-  - [Restock notifications](#restock-notifications)
-- [Notes about email](#notes-about-email)
-  - [Post-commit safety](#post-commit-safety)
-  - [Template rendering](#template-rendering)
-- [Error handling](#error-handling)
+- [Frontend](#frontend)
+  - [Customer storefront](#customer-storefront)
+  - [Admin dashboard](#admin-dashboard)
+  - [Auth integration](#auth-integration)
+- [Backend](#backend)
+  - [Request lifecycle](#request-lifecycle)
+  - [Authentication](#authentication)
+  - [Database layer](#database-layer)
+  - [Catalog and search](#catalog-and-search)
+  - [Checkout](#checkout)
+  - [Reviews](#reviews)
+  - [Pre-booking](#pre-booking)
+  - [Email](#email)
+  - [Error handling](#error-handling)
 - [Database schema](#database-schema)
 - [API reference](#api-reference)
 - [Getting started](#getting-started)
+- [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
 
-## Design principles
-
-**Async throughout**
-
-Every I/O operation is non-blocking. FastAPI routes are async, SQLAlchemy uses the async driver `asyncpg`, and CPU-intensive work like Argon2 password hashing runs in a thread pool via `asyncio.to_thread()` to avoid blocking the event loop. This means the server can handle many concurrent requests on a single process.
-
-**Validate at the boundary, trust internally**
-
-Pydantic validates all incoming request data at the API boundary. Once past the router layer, services and repositories trust the data they receive. Database-level constraints (CHECK, UNIQUE, FOREIGN KEY) serve as a safety net, not the primary validation path.
-
-**Fail safely and explicitly**
-
-All errors are represented as structured `AppError` exceptions with a status code, human-readable detail, and a machine-readable code. Internal errors never leak stack traces. Emails that fail to send are logged and dropped silently — they never crash a request. Timing-safe comparisons prevent information leakage during login.
-
-**Minimize round-trips**
-
-Eager loading with `selectinload()` prevents N+1 query problems. Bulk operations like restock notifications use a single `UPDATE ... RETURNING` statement instead of loading rows one at a time. The JWT access token carries the user's role, so most requests don't need a DB lookup for authorization — only routes that check `is_active` hit the database.
-
-**Let PostgreSQL do what it's good at**
-
-Full-text search uses native `tsvector`/`tsquery` with GIN indexes instead of pulling data into Python. Unique constraints and CHECK constraints enforce invariants at the database level. `ON CONFLICT DO NOTHING` handles race conditions in cart creation. `SELECT FOR UPDATE` with sorted keys prevents deadlocks during checkout.
-
-## Overview
+## Architecture
 
 ```mermaid
 graph LR
-    Client([Client])
+    Browser([Browser])
 
-    subgraph Server["FastAPI Server"]
+    subgraph Frontend["Next.js Frontend"]
+        direction TB
+        SSR[SSR / ISR Pages]
+        NextAuth[NextAuth.js v5]
+        TQ[TanStack Query]
+        Admin[Admin Dashboard]
+    end
+
+    subgraph Backend["FastAPI Backend"]
         direction TB
         MW[Middleware]
         Auth[Auth & OAuth]
@@ -75,7 +52,7 @@ graph LR
         Reviews[Reviews]
         Wishlist[Wishlist]
         PreBook[Pre-Booking]
-        Admin[Admin Panel]
+        AdminAPI[Admin API]
         Email[Email Service]
     end
 
@@ -84,45 +61,80 @@ graph LR
         PG[(PostgreSQL)]
     end
 
-    Client -->|HTTP / JWT| MW
-    MW --> Auth & Catalog & Cart & Orders & Reviews & Wishlist & PreBook & Admin
-    Auth -->|Google / GitHub| OAuth{{OAuth Providers}}
-    Server --> PG
+    Browser -->|HTTP| Frontend
+    NextAuth -->|JWT Bridge| Auth
+    TQ -->|REST| Backend
+    SSR -->|Server Fetch| Backend
+    Auth -->|Google| OAuth{{OAuth Provider}}
+    Backend --> PG
     Orders -->|BackgroundTasks| Email
     PreBook -->|Restock Alert| Email
     Email -->|SMTP| MailServer{{Mail Server}}
 ```
 
-The application is organized as a set of **domain modules**, each with its own models, schemas, repository, service (when business logic warrants it), and router. All modules share a common core that provides configuration, security utilities, dependency injection, and error handling.
+The application follows a **monorepo** layout with two independent deployables:
 
 | Layer | Responsibility |
 |-------|---------------|
-| **Router** | HTTP concerns — request parsing, response serialization, status codes |
-| **Service** | Business rules — checkout orchestration, pre-booking logic, auth flows |
-| **Repository** | Data access — SQL queries, eager loading, bulk operations |
+| **Frontend** | Next.js App Router — SSR catalog pages, client-side interactivity, admin dashboard |
+| **Backend Router** | HTTP concerns — request parsing, response serialization, status codes |
+| **Backend Service** | Business rules — checkout orchestration, pre-booking logic, auth flows |
+| **Backend Repository** | Data access — SQL queries, eager loading, bulk operations |
 | **Core** | Cross-cutting — config, JWT/password utilities, dependency injection, exceptions |
 
-Each domain module lives in its own directory under `app/`:
+## Design principles
 
-```
-app/
-├── main.py              # App factory, middleware, exception handlers, router registration
-├── core/                # Config, security, dependencies, exceptions, OAuth
-├── db/                  # Async engine, session factory, declarative base
-├── users/               # Registration, login, refresh tokens, OAuth callbacks
-├── books/               # Catalog CRUD, genres, full-text search
-├── cart/                # Per-user cart with item management
-├── orders/              # Checkout orchestration, order history
-├── reviews/             # Verified-purchase reviews with ratings
-├── wishlist/            # Personal wishlists
-├── prebooks/            # Pre-booking for out-of-stock titles
-├── admin/               # User management (list, deactivate, reactivate)
-└── email/               # Jinja2 templates, fastapi-mail, background sending
-```
+**Async throughout** — Every I/O operation is non-blocking. FastAPI routes are async, SQLAlchemy uses `asyncpg`, and CPU-intensive work like Argon2 password hashing runs in a thread pool via `asyncio.to_thread()`.
 
-## Request lifecycle
+**Validate at the boundary, trust internally** — Pydantic validates all incoming request data at the API boundary. Once past the router layer, services and repositories trust the data they receive. Database-level constraints serve as a safety net, not the primary validation path.
 
-Every request follows this path through the application:
+**Fail safely and explicitly** — All errors are structured `AppError` exceptions with a status code, human-readable detail, and machine-readable code. Internal errors never leak stack traces. Timing-safe comparisons prevent information leakage during login.
+
+**Minimize round-trips** — Eager loading with `selectinload()` prevents N+1 query problems. The JWT access token carries the user's role, so most requests don't need a DB lookup for authorization.
+
+**Let PostgreSQL do what it's good at** — Full-text search uses native `tsvector`/`tsquery` with GIN indexes. `SELECT FOR UPDATE` with sorted keys prevents deadlocks during checkout. `ON CONFLICT DO NOTHING` handles race conditions in cart creation.
+
+**Optimistic UI** — Cart and wishlist mutations update the UI immediately via TanStack Query's optimistic updates, rolling back automatically on server error.
+
+## Frontend
+
+### Customer storefront
+
+The customer-facing storefront is a Next.js 15 application using the App Router with a `(store)` route group:
+
+- **Catalog** (`/catalog`) — SSR-rendered book grid with URL-persisted search, genre filter, and pagination. Each book card shows title, author, price, stock status, and a wishlist heart toggle.
+- **Book detail** (`/books/[id]`) — ISR page with JSON-LD structured data, Open Graph meta tags, breadcrumb navigation, rating display, review section, and action buttons (add to cart, wishlist, pre-book).
+- **Cart** (`/cart`) — Shopping cart with quantity steppers, optimistic updates, price totals, and a checkout dialog with order confirmation.
+- **Orders** (`/orders`) — Order history list with expandable order detail showing price-at-purchase snapshots.
+- **Wishlist** (`/wishlist`) — Wishlist with instant heart toggle and pre-booking for out-of-stock titles.
+- **Account** (`/account`) — Account hub with navigation to orders, wishlist, and active pre-bookings.
+- **Auth** (`/login`, `/register`) — Email/password and Google OAuth sign-in forms.
+
+### Admin dashboard
+
+The admin dashboard lives under `/admin` with its own sidebar layout, separate from the customer storefront:
+
+- **Overview** (`/admin/overview`) — KPI cards for revenue, order count, and AOV with period selector (Today/This Week/This Month) and color-coded delta badges. Low-stock count card linking to inventory. Top-5 best-sellers mini-table.
+- **Sales Analytics** (`/admin/sales`) — Revenue comparison bar chart (current vs prior period), summary stats, and top-sellers table with revenue/volume toggle and configurable row limits (5/10/25).
+- **Inventory Alerts** (`/admin/inventory`) — Books sorted by stock ascending with red (out-of-stock) and amber (low-stock) badges. Configurable threshold with debounced input. Stock update modal.
+- **Catalog Management** (`/admin/catalog`) — *(in progress)* Paginated catalog table with search/filter, add/edit/delete book forms, stock update modal.
+- **User Management** (`/admin/users`) — *(in progress)* Paginated user table with role/active filtering, deactivate/reactivate actions.
+- **Review Moderation** (`/admin/reviews`) — *(in progress)* Paginated review table with filters, sort by date/rating, single and bulk delete.
+
+Admin routes are protected with defense-in-depth: both `proxy.ts` (UX redirect) and the admin layout Server Component (security boundary) independently verify the admin role.
+
+### Auth integration
+
+NextAuth.js v5 handles frontend authentication with two providers:
+
+- **Credentials** — Email/password login against the FastAPI `/auth/login` endpoint
+- **Google OAuth** — Google sign-in via OpenID Connect
+
+The frontend stores an encrypted session cookie. The FastAPI JWT access token is embedded in the NextAuth session and passed as a Bearer token on all API requests. Token refresh is handled transparently.
+
+## Backend
+
+### Request lifecycle
 
 ```mermaid
 sequenceDiagram
@@ -136,9 +148,9 @@ sequenceDiagram
 
     C->>M: HTTP Request
     M->>D: SessionMiddleware (OAuth state)
-    D->>D: get_db() → open AsyncSession
-    D->>D: get_current_user() → decode JWT
-    D->>DB: get_active_user() → verify is_active
+    D->>D: get_db() -> open AsyncSession
+    D->>D: get_current_user() -> decode JWT
+    D->>DB: get_active_user() -> verify is_active
     D->>R: Inject session + user
     R->>S: Call service method
     S->>DB: Repository queries
@@ -149,12 +161,12 @@ sequenceDiagram
     E->>E: Send email (if enqueued)
 ```
 
-The key guarantee here is **ordering**: the database transaction commits *before* any background tasks run. This means an email confirmation is never sent for an order that failed to save. This is a structural property of how FastAPI's dependency injection works with `BackgroundTasks`, not something enforced by manual coordination.
+The database transaction commits *before* any background tasks run. An email confirmation is never sent for an order that failed to save.
 
 **Dependency injection chain:**
 
 ```python
-# No DB lookup — just decodes the JWT
+# No DB lookup - just decodes the JWT
 CurrentUser = Annotated[dict, Depends(get_current_user)]
 
 # Decodes JWT + verifies user is still active (1 DB round-trip)
@@ -164,245 +176,61 @@ ActiveUser = Annotated[dict, Depends(get_active_user)]
 AdminUser = Annotated[dict, Depends(require_admin)]
 ```
 
-The `ActiveUser` dependency adds one database query per request. This is intentional — it ensures that a deactivated user is locked out immediately, even if their JWT hasn't expired yet.
+### Authentication
 
-## Notes about authentication
+**JWT access tokens** — HS256-signed, 15-minute TTL. Payload contains `sub` (user ID), `role`, `jti`, `iat`, and `exp`. The role is embedded so authorization checks don't require a database lookup.
 
-### JWT access tokens
+**Refresh token rotation** — Opaque 512-bit strings with 7-day TTL. Every refresh issues a new token and revokes the old one. Tokens share a `token_family` UUID; if a revoked token is replayed (theft detected), the entire family is revoked.
 
-Access tokens are signed with HS256 and have a 15-minute TTL. The payload contains `sub` (user ID), `role`, `jti` (unique token ID), `iat`, and `exp`. The role is embedded in the token so authorization checks don't require a database lookup.
+**Google OAuth** — OpenID Connect via Authlib. User info comes from the token response. If a user with the same email exists, the OAuth account is linked to the existing user.
 
-```python
-# Token creation (synchronous — HS256 is fast)
-payload = {
-    "sub": str(user_id),
-    "role": role,
-    "jti": str(uuid.uuid4()),
-    "iat": now,
-    "exp": now + timedelta(minutes=15),
-}
-return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-```
+**Timing-safe login** — When a nonexistent email is used, a dummy Argon2 hash is verified to keep response time constant, preventing email enumeration.
 
-### Refresh token rotation
+### Database layer
 
-Refresh tokens are opaque 512-bit strings (not JWTs). They have a 7-day TTL. Every time a refresh token is used, a new one is issued and the old one is revoked. This is called **rotation**.
+The database session is managed as a FastAPI dependency — each request gets its own `AsyncSession`, committed on success, rolled back on exception. `expire_on_commit=False` prevents `MissingGreenlet` errors in async context.
 
-Tokens belong to a **family** — all tokens issued from the same login session share a `token_family` UUID. If a revoked token is ever presented (indicating it was stolen and the legitimate user already rotated it), the entire family is revoked, logging the user out of all devices in that session.
+Connection pool: 5 connections, 10 overflow, pre-ping health check, 30-minute recycle.
 
-```
-Login → token_A (family: abc-123)
-Refresh token_A → token_B (family: abc-123), token_A revoked
-Refresh token_B → token_C (family: abc-123), token_B revoked
+### Catalog and search
 
-If attacker replays token_A:
-  → token_A is already revoked
-  → revoke ALL tokens in family abc-123
-  → attacker and legitimate user both logged out
-```
+Full-text search uses PostgreSQL `tsvector`/`tsquery` with a GIN index on title and author. Search terms get `:*` prefix matching (e.g., "tolk" matches "tolkien"). When search is active, results sort by `ts_rank()` relevance.
 
-### OAuth integration
+Filters combine with AND semantics: search query, genre, and case-insensitive author substring. Sort options: title, price, publish date, created_at.
 
-Two OAuth providers are supported: Google (OpenID Connect) and GitHub (OAuth2).
+### Checkout
 
-Google uses OIDC, so user info comes directly from the token response — no additional API call needed. GitHub doesn't support OIDC, so after obtaining the access token, a separate call to `GET /user` and potentially `GET /user/emails` is needed to get the user's email (which may be private).
+**Stock locking** — `SELECT FOR UPDATE` on all books in the cart, locked in ascending ID order to prevent deadlocks. All stock is validated before any mutation; if any book has insufficient stock, the entire checkout fails atomically.
 
-OAuth accounts are stored in a separate `OAuthAccount` table linked to the user. If a user with the same email already exists (from email/password registration), the OAuth account is linked to the existing user rather than creating a duplicate.
+**Price snapshots** — Each `OrderItem` stores `unit_price` captured at purchase time. The book's `price` column is the current price; the order item preserves the historical price.
 
-### Timing-safe login
+**Mock payment** — 90% success rate simulation with a `force_payment_failure` flag for testing.
 
-When a user attempts to log in with an email that doesn't exist, the server still runs a password hash verification against a dummy hash. This ensures the response time is constant regardless of whether the email exists, preventing timing-based enumeration attacks.
+### Reviews
 
-```python
-DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$..."  # Pre-computed dummy
+- Purchase verification enforced (checks orders table for a confirmed order)
+- One review per user per book (409 with `existing_review_id` on duplicate)
+- Rating-only reviews supported (text is optional)
+- Soft deletes via `deleted_at` timestamp (owner or admin can delete)
+- `avg_rating` and `review_count` computed live from SQL aggregates
 
-user = await repo.get_by_email(email)
-if user is None:
-    await verify_password(password, DUMMY_HASH)  # Constant time
-    raise AppError(401, "Invalid credentials", "AUTH_INVALID_CREDENTIALS")
-```
+### Pre-booking
 
-## Notes about the database layer
+Users can waitlist out-of-stock books. When an admin restocks from 0, all `WAITING` pre-bookings are atomically updated to `NOTIFIED` via a single `UPDATE ... RETURNING` statement, and restock alert emails are enqueued.
 
-### Async session management
+### Email
 
-The database session is managed as a FastAPI dependency. Each request gets its own `AsyncSession`. On success, the session is committed; on exception, it's rolled back.
+Emails are sent via `BackgroundTasks` (post-commit guarantee). Templates use Jinja2 HTML with auto-generated plain-text fallbacks. Two templates: `order_confirmation.html` and `restock_alert.html`. Failed sends are logged but never crash the request.
 
-```python
-async def get_db() -> AsyncGenerator[AsyncSession]:
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-```
+### Error handling
 
-A critical configuration is `expire_on_commit=False` on the session factory. Without this, accessing any attribute on a model after commit would trigger a synchronous refresh, which raises `MissingGreenlet` in an async context. With this setting, committed objects retain their loaded state.
+All errors are `AppError` exceptions with `status_code`, `detail`, `code`, and optional `field`. Exception handlers are registered in precedence order:
 
-### Connection pooling
-
-The async engine is configured with a pool of 5 connections and an overflow of 10, for a maximum of 15 concurrent connections. Connections are health-checked before use (`pool_pre_ping=True`) and recycled after 30 minutes to prevent stale connections from causing errors.
-
-```python
-engine = create_async_engine(
-    DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=1800,
-)
-```
-
-## Notes about the catalog
-
-### Full-text search
-
-Book search uses PostgreSQL's native full-text search. Each book has a computed `search_vector` column (type `tsvector`) with a GIN index. The vector is built from the book's title and author.
-
-When a search query is provided, it's converted into a `tsquery` with prefix matching. Each word gets a `:*` suffix so that partial words match (e.g., "tolk" matches "tolkien"). Multiple words are combined with `&` (AND).
-
-```python
-def _build_tsquery(q: str) -> str:
-    tokens = re.split(r"\s+", q.strip())
-    clean = [re.sub(r"[^\w-]", "", t, flags=re.UNICODE) for t in tokens if t]
-    prefix_tokens = [f"{t}:*" for t in clean if t]
-    return " & ".join(prefix_tokens)
-
-# "lord rings"  →  "lord:* & rings:*"
-# "tolkien"     →  "tolkien:*"
-```
-
-When a search query is active, results are sorted by `ts_rank()` (relevance) instead of the user-specified sort order. This ensures the most relevant results appear first. The book's `id` is used as a tiebreaker for stable pagination.
-
-### Genre filtering and sorting
-
-Filters can be combined freely — search query, genre, and author work together with AND semantics. Author matching is case-insensitive substring (`ILIKE '%author%'`). Available sort orders are: title (A-Z), price (ascending), publish date (ascending), and created_at (newest first).
-
-## Notes about checkout
-
-### Stock locking and deadlock prevention
-
-The checkout flow uses pessimistic locking to prevent overselling. When a user checks out, all books in their cart are locked with `SELECT FOR UPDATE`. This prevents any other checkout from reading or modifying the same book rows until the transaction completes.
-
-To prevent deadlocks when two users check out overlapping sets of books simultaneously, book IDs are always locked in **ascending sorted order**:
-
-```python
-# Step 1: Sort book IDs to prevent deadlock
-book_ids = sorted(item.book_id for item in cart.items)
-
-# Step 2: Lock books in sorted order
-books = await order_repo.lock_books(book_ids)  # SELECT ... FOR UPDATE
-
-# Step 3: Validate ALL stock before any mutation
-for item in cart.items:
-    if book_map[item.book_id].stock_quantity < item.quantity:
-        insufficient.append(...)
-
-# Step 4: If all valid, decrement stock and create order
-```
-
-All stock is validated before any mutation happens. If any book has insufficient stock, the entire checkout fails atomically — no partial orders.
-
-### Price snapshots
-
-Each `OrderItem` stores a `unit_price` that is captured at the time of purchase. If a book's price changes after the order is placed, the order history still reflects what the user actually paid. The book's `price` column is the *current* price; `OrderItem.unit_price` is the *historical* price.
-
-### Mock payment service
-
-Payment processing uses a mock service with a 90% success rate. This simulates real-world payment failures without integrating an actual payment gateway. A `force_payment_failure` flag in the checkout request allows deterministic testing.
-
-```python
-class MockPaymentService:
-    async def charge(self, force_fail: bool = False) -> bool:
-        if force_fail:
-            return False
-        return random.random() > 0.10  # 90% success
-```
-
-## Notes about reviews
-
-### Purchase verification
-
-A user can only review a book they have purchased. This is enforced by checking the `orders` table for a confirmed order containing the book. Rating-only reviews are supported — the `text` field is optional.
-
-A user can only leave one review per book. If they attempt to create a duplicate, the response is a 409 with the `existing_review_id` so the client can redirect to an edit flow.
-
-### Soft deletes
-
-Reviews are never hard-deleted. Instead, a `deleted_at` timestamp is set. All queries filter with `WHERE deleted_at IS NULL`. This preserves review data for analytics while hiding it from the public API. Both the review owner and admins can soft-delete a review.
-
-### Rating aggregates
-
-The book detail endpoint includes `avg_rating` (rounded to 1 decimal) and `review_count`, computed on the fly from the reviews table. Only non-deleted reviews are included in the aggregates.
-
-```python
-select(
-    func.avg(Review.rating),
-    func.count(Review.id),
-).where(
-    Review.book_id == book_id,
-    Review.deleted_at.is_(None),
-)
-```
-
-## Notes about pre-booking
-
-Users can pre-book (waitlist) a book that is currently out of stock. The pre-booking is created with status `WAITING`. A user can only have one active pre-booking per book, enforced by a partial unique index (`WHERE status = 'waiting'`).
-
-### Restock notifications
-
-When an admin updates a book's stock from 0 to a positive number, all `WAITING` pre-bookings for that book are atomically updated to `NOTIFIED` in a single `UPDATE ... RETURNING` statement. The returned user IDs are used to enqueue restock alert emails.
-
-```python
-# Single bulk UPDATE — no N+1, no race conditions
-result = await session.execute(
-    update(PreBooking)
-    .where(
-        PreBooking.book_id == book_id,
-        PreBooking.status == PreBookStatus.WAITING,
-    )
-    .values(status=PreBookStatus.NOTIFIED, notified_at=datetime.now(UTC))
-    .returning(PreBooking.user_id)
-)
-user_ids = list(result.scalars().all())
-```
-
-## Notes about email
-
-### Post-commit safety
-
-Emails are sent via `BackgroundTasks`, which execute after the response is sent and after the database transaction is committed. This provides a structural guarantee: if the transaction rolls back, the email is never sent. This is not enforced by manual checks — it's a property of FastAPI's execution order.
-
-The email service itself catches all exceptions during sending. A failed email is logged but never crashes the background task or affects the user's response.
-
-### Template rendering
-
-Emails use Jinja2 HTML templates with auto-generated plain-text fallbacks. The plain text is created by stripping HTML tags from the rendered template, replacing block-level closing tags with spaces to preserve readability. Emails are sent as `multipart/alternative` so the client can choose HTML or plain text.
-
-Two templates exist: `order_confirmation.html` (sent after checkout) and `restock_alert.html` (sent when a waitlisted book is back in stock).
-
-## Error handling
-
-All application errors are represented as `AppError` exceptions with three fields:
-
-| Field | Purpose |
-|-------|---------|
-| `status_code` | HTTP status (400, 401, 404, 409, etc.) |
-| `detail` | Human-readable message |
-| `code` | Machine-readable code (e.g., `AUTH_TOKEN_EXPIRED`, `ORDER_CART_EMPTY`) |
-| `field` | Optional — which request field caused the error |
-
-Exception handlers are registered in precedence order:
-
-1. `DuplicateReviewError` → 409 with `existing_review_id`
-2. `AppError` → structured JSON with status code, detail, and code
-3. `HTTPException` → standard FastAPI/Starlette HTTP errors
-4. `RequestValidationError` → 422 with Pydantic validation details
-5. `Exception` → 500 with generic "Internal server error" (real error logged server-side)
+1. `DuplicateReviewError` -> 409 with `existing_review_id`
+2. `AppError` -> structured JSON
+3. `HTTPException` -> standard FastAPI errors
+4. `RequestValidationError` -> 422 with Pydantic details
+5. `Exception` -> 500 generic (real error logged server-side)
 
 ## Database schema
 
@@ -443,7 +271,7 @@ erDiagram
     }
     OAuthAccount {
         uuid id PK
-        string oauth_provider "google | github"
+        string oauth_provider "google"
         string oauth_account_id
         uuid user_id FK
     }
@@ -512,25 +340,23 @@ erDiagram
 ### Auth
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/auth/register` | — | Register with email/password |
-| POST | `/auth/login` | — | Login, returns access + refresh token |
-| POST | `/auth/refresh` | — | Rotate refresh token |
+| POST | `/auth/register` | -- | Register with email/password |
+| POST | `/auth/login` | -- | Login, returns access + refresh token |
+| POST | `/auth/refresh` | -- | Rotate refresh token |
 | POST | `/auth/logout` | Token | Revoke refresh token |
-| GET | `/auth/google` | — | Redirect to Google consent screen |
+| GET | `/auth/google` | -- | Redirect to Google consent screen |
 | GET | `/auth/google/callback` | OAuth | Handle Google OIDC callback |
-| GET | `/auth/github` | — | Redirect to GitHub authorization |
-| GET | `/auth/github/callback` | OAuth | Handle GitHub OAuth callback |
 
 ### Books & Genres
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/books` | — | Browse, search, filter, paginate catalog |
-| GET | `/books/{id}` | — | Book detail with rating aggregates |
+| GET | `/books` | -- | Browse, search, filter, paginate catalog |
+| GET | `/books/{id}` | -- | Book detail with rating aggregates |
 | POST | `/books` | Admin | Create book |
 | PUT | `/books/{id}` | Admin | Update book |
 | DELETE | `/books/{id}` | Admin | Delete book |
 | PATCH | `/books/{id}/stock` | Admin | Update stock (triggers restock alerts) |
-| GET | `/genres` | — | List all genres (alphabetical) |
+| GET | `/genres` | -- | List all genres (alphabetical) |
 | POST | `/genres` | Admin | Create genre |
 
 ### Cart & Checkout
@@ -548,8 +374,8 @@ erDiagram
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/books/{id}/reviews` | User | Create review (must have purchased) |
-| GET | `/books/{id}/reviews` | — | List reviews (paginated) |
-| GET | `/reviews/{id}` | — | Single review |
+| GET | `/books/{id}/reviews` | -- | List reviews (paginated) |
+| GET | `/reviews/{id}` | -- | Single review |
 | PATCH | `/reviews/{id}` | Owner | Update rating/text |
 | DELETE | `/reviews/{id}` | Owner/Admin | Soft-delete review |
 
@@ -574,27 +400,31 @@ erDiagram
 | PATCH | `/admin/users/{id}/deactivate` | Admin | Deactivate user (revokes all tokens) |
 | PATCH | `/admin/users/{id}/reactivate` | Admin | Reactivate user |
 | GET | `/admin/orders` | Admin | List all orders |
+| GET | `/admin/sales/summary` | Admin | Revenue summary with period comparison |
+| GET | `/admin/sales/top-books` | Admin | Top-selling books by revenue or volume |
+| GET | `/admin/inventory/low-stock` | Admin | Books below stock threshold |
+| GET | `/admin/reviews` | Admin | List all reviews (paginated, filterable) |
+| DELETE | `/admin/reviews/bulk` | Admin | Bulk-delete reviews by ID list |
 
 ### Health
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/health` | — | Application health check |
+| GET | `/health` | -- | Application health check |
 
 ## Getting started
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.13+
+- Node.js 20+
 - PostgreSQL 17
-- Poetry
+- Poetry (Python)
 - Docker (for database containers)
 
-### Setup
+### Backend setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/Sushasan11/bookstore.git
-cd bookstore
+cd backend
 
 # Install dependencies
 poetry install
@@ -606,8 +436,8 @@ cp .env.example .env
 # Start database containers
 docker compose up -d
 # This starts two PostgreSQL instances:
-#   bookstore_dev  (port 5434) — development database with persistent volume
-#   bookstore_test (port 5433) — test database (ephemeral, no volume)
+#   bookstore_dev  (port 5434) - development database with persistent volume
+#   bookstore_test (port 5433) - test database (ephemeral, no volume)
 
 # Run database migrations
 poetry run task migrate
@@ -618,7 +448,27 @@ poetry run task dev
 
 The API will be available at `http://localhost:8000` with interactive Swagger docs at `/docs`.
 
+### Frontend setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Generate TypeScript types from the backend OpenAPI spec
+# (requires the backend to be running)
+npm run generate-types
+
+# Start the development server
+npm run dev
+```
+
+The storefront will be available at `http://localhost:3000`.
+
 ### Available tasks
+
+**Backend** (from `backend/`):
 
 ```bash
 poetry run task dev              # Start uvicorn with hot reload
@@ -629,9 +479,19 @@ poetry run task lint             # Check code style (ruff)
 poetry run task format           # Auto-format code (ruff)
 ```
 
+**Frontend** (from `frontend/`):
+
+```bash
+npm run dev                      # Start Next.js dev server with hot reload
+npm run build                    # Production build
+npm run lint                     # ESLint check
+npm run generate-types           # Regenerate API types from OpenAPI spec
+```
+
 ### Running tests
 
 ```bash
+cd backend
 poetry run task test
 ```
 
@@ -641,13 +501,23 @@ Tests use a separate PostgreSQL instance (`bookstore_test`). Tables are created 
 
 | Layer | Technology |
 |-------|-----------|
+| **Frontend** | |
+| Framework | Next.js 16 (App Router, SSR/ISR) |
+| Language | TypeScript |
+| State | TanStack Query v5 |
+| UI Components | shadcn/ui + Radix UI |
+| Styling | Tailwind CSS v4 |
+| Auth | NextAuth.js v5 |
+| Charts | Recharts |
+| API Types | openapi-typescript (auto-generated from FastAPI spec) |
+| **Backend** | |
 | Framework | FastAPI |
 | ORM | SQLAlchemy 2.0 (async) |
 | Database | PostgreSQL 17 |
 | Async Driver | asyncpg |
 | Migrations | Alembic |
 | Auth | JWT (PyJWT, HS256) + Argon2 (pwdlib) |
-| OAuth | Authlib (Google OIDC, GitHub OAuth2) |
+| OAuth | Authlib (Google OIDC) |
 | Email | fastapi-mail + Jinja2 |
 | Validation | Pydantic v2 |
 | Config | pydantic-settings (.env) |
@@ -660,30 +530,53 @@ Tests use a separate PostgreSQL instance (`bookstore_test`). Tables are created 
 
 ```
 bookstore/
-├── app/
-│   ├── main.py              # App factory, middleware, exception handlers
-│   ├── core/
-│   │   ├── config.py        # Pydantic Settings (env-based, cached)
-│   │   ├── security.py      # JWT encode/decode, Argon2 hash/verify
-│   │   ├── deps.py          # Dependency injection (DbSession, CurrentUser, etc.)
-│   │   ├── exceptions.py    # AppError, DuplicateReviewError, handlers
-│   │   ├── oauth.py         # Authlib OAuth registry (Google, GitHub)
-│   │   └── health.py        # Health check endpoint
-│   ├── db/
-│   │   ├── base.py          # DeclarativeBase for all models
-│   │   └── session.py       # Async engine, session factory, pool config
-│   ├── users/               # Auth, registration, refresh tokens, OAuth
-│   ├── books/               # Catalog CRUD, genres, full-text search
-│   ├── cart/                # Per-user shopping cart
-│   ├── orders/              # Checkout orchestration, order history
-│   ├── reviews/             # Verified-purchase reviews, soft-delete, aggregates
-│   ├── wishlist/            # Personal wishlists
-│   ├── prebooks/            # Pre-booking with restock notifications
-│   ├── admin/               # User management (list, deactivate, reactivate)
-│   └── email/               # Email service, Jinja2 templates, background sending
-├── alembic/                 # Database migration scripts
-├── tests/                   # Async test suite (pytest)
-├── docker-compose.yml       # PostgreSQL containers (dev + test)
-├── pyproject.toml           # Poetry dependencies and task definitions
-└── .env.example             # Environment variable template
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # App factory, middleware, exception handlers
+│   │   ├── core/
+│   │   │   ├── config.py        # Pydantic Settings (env-based, cached)
+│   │   │   ├── security.py      # JWT encode/decode, Argon2 hash/verify
+│   │   │   ├── deps.py          # Dependency injection (DbSession, CurrentUser, etc.)
+│   │   │   ├── exceptions.py    # AppError, DuplicateReviewError, handlers
+│   │   │   ├── oauth.py         # Authlib OAuth registry (Google)
+│   │   │   └── health.py        # Health check endpoint
+│   │   ├── db/
+│   │   │   ├── base.py          # DeclarativeBase for all models
+│   │   │   └── session.py       # Async engine, session factory, pool config
+│   │   ├── users/               # Auth, registration, refresh tokens, OAuth
+│   │   ├── books/               # Catalog CRUD, genres, full-text search
+│   │   ├── cart/                # Per-user shopping cart
+│   │   ├── orders/              # Checkout orchestration, order history
+│   │   ├── reviews/             # Verified-purchase reviews, soft-delete, aggregates
+│   │   ├── wishlist/            # Personal wishlists
+│   │   ├── prebooks/            # Pre-booking with restock notifications
+│   │   ├── admin/               # User management, sales analytics, review moderation
+│   │   └── email/               # Email service, Jinja2 templates, background sending
+│   ├── alembic/                 # Database migration scripts
+│   ├── tests/                   # Async test suite (pytest)
+│   ├── docker-compose.yml       # PostgreSQL containers (dev + test)
+│   ├── pyproject.toml           # Poetry dependencies and task definitions
+│   └── .env.example             # Environment variable template
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (auth)/          # Login and register pages
+│   │   │   ├── (store)/         # Customer storefront (catalog, cart, orders, etc.)
+│   │   │   ├── admin/           # Admin dashboard (overview, sales, inventory, etc.)
+│   │   │   └── layout.tsx       # Root layout (providers shell)
+│   │   ├── components/
+│   │   │   ├── admin/           # Admin-specific components (sidebar, charts)
+│   │   │   ├── auth/            # Auth forms (login, register, Google button)
+│   │   │   ├── layout/          # Header, footer, cart badge, navigation
+│   │   │   └── ui/              # shadcn/ui primitives
+│   │   ├── lib/
+│   │   │   ├── api.ts           # Authenticated fetch wrapper
+│   │   │   ├── admin.ts         # Admin API functions and TanStack Query keys
+│   │   │   └── utils.ts         # Shared utilities
+│   │   ├── types/
+│   │   │   └── api.generated.ts # Auto-generated from OpenAPI spec
+│   │   └── auth.ts              # NextAuth.js configuration
+│   ├── package.json
+│   └── tsconfig.json
+└── README.md
 ```
