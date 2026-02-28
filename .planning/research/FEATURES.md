@@ -1,378 +1,373 @@
 # Feature Research
 
-**Domain:** Bookstore E-Commerce — v3.0 Next.js Customer Storefront
-**Researched:** 2026-02-27
-**Confidence:** HIGH for table stakes (well-established across Amazon, Shopify, major book retailers); MEDIUM for Next.js-specific rendering strategy recommendations (verified via official docs + community); LOW for specific conversion rate claims (vendor-reported figures)
+**Domain:** Bookstore Admin Dashboard — v3.1 Next.js Admin UI
+**Researched:** 2026-02-28
+**Confidence:** HIGH for table stakes (well-established patterns from Shopify, WooCommerce, e-commerce admin UX research); MEDIUM for specific component recommendations (shadcn/ui chart integration verified via official shadcn docs and community); LOW for any claims about AI-driven features (deferred, not applicable here)
 
-> **Scope note:** The FastAPI backend (v1.0–v2.1) already provides full API coverage:
-> catalog CRUD, JWT auth (email + Google/GitHub OAuth), FTS with filters, cart,
-> checkout (mock payment), order history, wishlist, pre-booking, email notifications,
-> verified-purchase reviews with ratings, and admin analytics/moderation.
-> This file focuses EXCLUSIVELY on the new v3.0 frontend features: what a customer-facing
-> Next.js 15 storefront must expose to users, how each feature should behave in the
-> browser, and what complexity that implies for implementation.
-> Admin dashboard UI is deferred to v3.1+.
+> **Scope note:** This file covers the v3.1 Admin Dashboard milestone ONLY.
+> The v3.0 customer storefront features are documented in the previous version of this file.
+> The FastAPI backend already provides all admin endpoints required:
+> - `GET /admin/analytics/sales/summary` (revenue, order_count, aov, delta_percentage by period)
+> - `GET /admin/analytics/sales/top-books` (ranked by revenue or volume)
+> - `GET /admin/analytics/inventory/low-stock` (books at/below configurable threshold)
+> - `GET /admin/users`, `PATCH /admin/users/{id}/deactivate`, `PATCH /admin/users/{id}/reactivate`
+> - `GET /admin/reviews`, `DELETE /admin/reviews/bulk`
+> - `POST/PUT/DELETE /books/{id}`, `PATCH /books/{id}/stock` (book catalog CRUD)
+>
+> This file describes what the FRONTEND must expose, how each section should behave,
+> and what complexity that implies for implementation.
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes
+### Table Stakes (Users Expect These)
 
-Features customers expect from any e-commerce storefront in 2026. Missing one makes the product feel broken or untrustworthy. These are the baseline for a shippable storefront.
+Features that any admin managing an e-commerce system expects as baseline. Missing one makes the admin panel feel incomplete or unusable.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Catalog browsing with cover images | Every bookstore — Amazon, Barnes & Noble, Booktopia — shows a book grid/list with cover, title, author, price, and stock status. No cover image = feels unfinished. | LOW | RSC: Server-rendered grid page. Paginate with page-based navigation (not infinite scroll — shoppers backtrack and bookmark; pagination is universally preferred for catalog UX per Baymard Institute). TanStack Query for client-side page transitions. Tailwind grid layout with shadcn Card. |
-| Book detail page with ratings display | Users navigate to a detail page before purchasing. Seeing average rating, review count, stock status, and description is non-negotiable — it is the main purchase-decision screen. | LOW-MED | RSC page: `generateMetadata()` for SEO, JSON-LD structured data (`Book` schema) for Google rich results. Display avg_rating + review count fetched from backend. "In Stock / Out of Stock / Pre-book available" state must be immediately visible. |
-| Full-text search with filters | Users search by title, author, or genre. Filter by genre and price range. No search = no product discovery beyond browsing. | MEDIUM | Client component: search input triggers debounced query, filter state managed in URL search params (enables direct linking and back-button). TanStack Query fetches results. Render server-side on initial load, hydrate client. Debounce: 300ms. |
-| Email + password authentication | Sign up, log in, log out. Mandatory. Without it, no cart, no orders, no wishlist, no reviews. | MEDIUM | NextAuth.js v5 credentials provider. JWT strategy (matches backend's JWT-based tokens). Login page with Zod validation. Error states: "invalid credentials", "email already registered". On login success, store access token in session, refresh token in httpOnly cookie. |
-| Google OAuth login | Most major storefronts offer at least one social login. Users expect "Sign in with Google" on any consumer-facing product in 2026. Reduces friction significantly — no password to remember. | MEDIUM | NextAuth.js v5 GoogleProvider. Backend `/auth/google` endpoint already exists. The frontend OAuth flow must send the Google token to the backend, receive backend JWTs, and store them in the NextAuth session. The challenge is the custom OAuth handoff (Google → NextAuth → FastAPI → store JWT) — this is the highest-complexity auth subtask. |
-| Shopping cart (add, update quantity, remove) | Cart is the core of the purchase flow. Users add books, adjust quantity, remove items. Cart state must persist across page navigations. | MEDIUM | Cart state lives server-side (existing backend `/cart` endpoints). TanStack Query mutations for add/update/remove. Optimistic updates on quantity changes for responsiveness. Cart count in navbar header driven by TanStack Query cache. No client-only localStorage cart — server is source of truth. |
-| Checkout flow | Complete a purchase. Show cart summary, confirm (mock) payment, see order confirmation. Without checkout, the product is not a store. | MEDIUM | Multi-step or single-page checkout. Mock payment = no real payment form, just a "Place Order" button. Show order total, shipping address field (or skip for digital goods), confirmation screen with order ID. POST to `/orders/checkout`. On success, invalidate cart cache, redirect to order confirmation page. |
-| Order history page | Users expect to see past orders. Required for trust — "What did I buy? When? For how much?" | LOW | RSC page fetching `/orders` with JWT auth. List: date, order total, book titles, status. Click through to individual order detail. Price-at-purchase snapshots already stored in backend. |
-| Authentication-gated routes | Cart, checkout, orders, wishlist, and reviews must require login. Accessing them without auth redirects to sign-in with a `callbackUrl`. | LOW | Next.js middleware with NextAuth session check. Redirect to `/auth/signin?callbackUrl=<original>`. After login, redirect back. Standard NextAuth.js middleware pattern. |
-| Responsive layout (mobile-first) | Mobile traffic represents 60%+ of e-commerce visits. A site that breaks on mobile loses more than half its audience. Mobile optimization is table stakes in 2026, not a differentiator. | LOW | Tailwind CSS responsive utilities (`sm:`, `md:`, `lg:` breakpoints). shadcn/ui components are built responsive. Navbar: hamburger menu on mobile. Grid: 1 col mobile → 2 col tablet → 3-4 col desktop. |
-| Loading and error states | Every data-fetching page needs a loading skeleton and an error boundary. Without these, network delays produce blank screens. | LOW | shadcn Skeleton component for loading states. Next.js `loading.tsx` and `error.tsx` per route segment. TanStack Query `isLoading` / `isError` states on client components. |
-| Sign out | Users must be able to log out from any authenticated page. | LOW | NextAuth `signOut()` in navbar. Clears session + cookies. Redirects to homepage. |
+#### 1. Dashboard Overview
 
-### Differentiators
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| KPI summary cards (revenue, orders, AOV) | Admins open the dashboard to get immediate operational awareness — top-line numbers at a glance. Every e-commerce admin panel (Shopify, WooCommerce, Magento) leads with KPI cards. | LOW | `GET /admin/analytics/sales/summary?period=today` |
+| Period selector (Today / This Week / This Month) | Revenue data is meaningless without a time context. Period toggle is universally present — three tabs or button group is standard. | LOW | Same endpoint, `period` query param |
+| Delta indicator (% change vs previous period) | Admins need trend direction, not just absolute numbers. A green/red delta badge next to each KPI is standard practice. | LOW | `delta_percentage` field already in response; backend handles null when prior period is zero |
+| Low-stock count badge / alert card | Inventory health is a top-priority operational metric. Admins need to know immediately if books are running out of stock. A count card linking to the inventory section is expected on every dashboard overview. | LOW | `GET /admin/analytics/inventory/low-stock` (count from `total_low_stock`) |
+| Navigation sidebar / top nav linking to each admin section | Admin panels require clear section navigation. Users must be able to jump between Overview, Catalog, Users, Reviews, and Inventory without hunting. | LOW | Frontend-only; no backend call |
 
-Features beyond the bare minimum that meaningfully improve the customer experience. Not universally expected but appreciated when present. They differentiate a polished storefront from a bare-bones one.
+#### 2. Sales Analytics Visualizations
+
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| Revenue trend chart (line or bar) | Admins expect to see revenue over time plotted visually. A number card alone is insufficient — the chart answers "is it growing or declining?" | MEDIUM | `GET /admin/analytics/sales/summary` for current/prior period values; note: backend returns period totals, NOT day-by-day timeseries — chart will compare two bars (current vs prior), not a continuous line |
+| Top-selling books table (ranked list) | Every e-commerce admin panel shows a "top products" section. Admins use it to understand demand patterns and make restocking decisions. | LOW | `GET /admin/analytics/sales/top-books?sort_by=revenue&limit=10` |
+| Switch between revenue and volume rankings | Two dimensions of "top" are meaningful: which books generate most revenue vs which have highest unit velocity. A toggle between the two is expected. | LOW | Same endpoint, `sort_by=revenue` or `sort_by=volume` |
+| Period-over-period comparison display | Showing only current period without prior context makes trends invisible. Side-by-side or delta display is expected. | LOW | `delta_percentage` from summary endpoint |
+
+#### 3. Book Catalog Management
+
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| Paginated catalog table (list all books with title, author, price, stock, genre) | Admins need to see all books in one place to find and manage them. A searchable, sortable table is standard admin pattern. | MEDIUM | `GET /books` (all existing query params available) |
+| Add new book form (modal or page) | Creating new catalog entries is a core admin task. | MEDIUM | `POST /books` |
+| Edit book form (inline or modal) | Updating price, description, cover URL, and other fields is routine. | MEDIUM | `PUT /books/{id}` |
+| Delete book with confirmation dialog | Prevents accidental permanent deletions. Confirmation pattern is universal. | LOW | `DELETE /books/{id}` (hard delete — no soft delete on books) |
+| Stock quantity update (set absolute value) | Stock management is critical for operations — admins adjust stock after receiving physical inventory. | LOW | `PATCH /books/{id}/stock` (triggers pre-booking notification emails if restocking from 0) |
+| Search/filter within catalog table | With a large catalog, admins need to find specific books quickly. Full-text search and genre filter match backend capabilities. | LOW | Same `GET /books` endpoint with `q`, `genre_id`, `author` params |
+
+#### 4. User Management
+
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| Paginated user list (email, role, active status, joined date) | Admins need visibility into who uses the platform. Paginated table with status badges is universal. | LOW | `GET /admin/users?page=N&per_page=20` |
+| Filter by role (user/admin) and active status | Finding specific user segments quickly is a basic operational need. | LOW | `role` and `is_active` query params on existing endpoint |
+| Deactivate user with confirmation | Account suspension is a standard moderation action. Confirmation prevents accidents. Backend is idempotent. | LOW | `PATCH /admin/users/{id}/deactivate` |
+| Reactivate user | Reversing a suspension is equally expected. | LOW | `PATCH /admin/users/{id}/reactivate` |
+| Status badge (Active / Inactive) | Color-coded status badges are the standard way to surface account state at a glance. | LOW | `is_active` field in user response |
+
+#### 5. Review Moderation
+
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| Paginated reviews table (book title, reviewer, rating, date, text snippet) | Admins moderating reviews need to scan many at once. A table layout with key metadata is expected. | MEDIUM | `GET /admin/reviews` |
+| Filter by book, user, and rating range | Finding problematic reviews (low-rated, specific book) requires filtering. Backend already supports all these params. | LOW | `book_id`, `user_id`, `rating_min`, `rating_max` params |
+| Sort by date or rating | Admins often want to see newest reviews (date desc) or worst reviews (rating asc) first. | LOW | `sort_by` and `sort_dir` params |
+| Single-review delete | Admins need to remove individual policy-violating reviews. | LOW | Use bulk delete endpoint with a single-item array (backend supports 1–50 IDs) |
+| Bulk delete with row selection checkboxes | When a spam campaign or bot posts multiple bad reviews, deleting them one by one is impractical. Checkbox selection + bulk action button is the expected pattern. | MEDIUM | `DELETE /admin/reviews/bulk` (up to 50 IDs per request) |
+
+#### 6. Inventory Alerts
+
+| Feature | Why Expected | Complexity | Backend Dependency |
+|---------|--------------|------------|--------------------|
+| Low-stock books list (book, stock count, threshold) | Admins need a clear list of which books need restocking. Sorted by stock ascending (lowest first) is the natural order. | LOW | `GET /admin/analytics/inventory/low-stock` |
+| Configurable threshold input | Different admins have different restock triggers. The backend supports any threshold >= 0. The UI should let admins set it without editing a URL. | LOW | `threshold` query param |
+| "Out of stock" items prominently highlighted | Zero-stock books are the most urgent. They should be visually distinct (red badge vs yellow for low stock). | LOW | `current_stock == 0` condition in frontend |
+| Quick link to edit stock from inventory list | When an admin sees a low-stock item, the next action is updating stock. A direct "Update Stock" button per row removes friction. | LOW | Links to catalog stock edit for that book_id |
+
+---
+
+### Differentiators (Competitive Advantage)
+
+Features beyond the bare minimum. These improve admin efficiency but are not universally expected for a v1 admin panel.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Wishlist management | Save books for later. Major book retailers (Amazon, Goodreads, The Book Depository) all offer wishlists. Users who wishlist are higher-intent buyers who return. Pre-booking and out-of-stock handling make this particularly useful in this system. | MEDIUM | Auth-gated. Heart/bookmark icon on book card and detail page. Optimistic toggle (instant UI feedback, roll back on error). TanStack Query mutation against `/wishlist/{book_id}`. Dedicated `/wishlist` page listing saved books with quick "Add to Cart" from wishlist. |
-| Pre-booking for out-of-stock books | When a book is out of stock, let users reserve their spot in the queue. Backend already handles email notification on restock. This is a genuine differentiator — most small storefronts just say "out of stock" with no recourse. | MEDIUM | On book detail page: if `stock_quantity == 0`, replace "Add to Cart" with "Pre-book". Show waitlist count ("N people waiting") if exposed by the API. Allow cancellation from a pre-bookings section in the account area. Surface backend restock notification as a confirmation message: "You'll get an email when this book is back." |
-| Verified-purchase reviews with star ratings | Displaying reviews on the book detail page builds trust. Only users who purchased can write reviews (already enforced by backend). Shoppers make better decisions with social proof. | MEDIUM | Read-only review display on book detail: average star rating (visual stars, not just number), review count, chronological list of reviews with reviewer name, rating, text, date. Write/edit/delete review form: visible only if user has purchased this book. 1–5 star interactive selector (shadcn does not ship a native star component — use a community extension or build a small custom one). Edit in-place with optimistic update. |
-| Book detail page SEO (structured data + Open Graph) | Public catalog pages can rank in search engines and render well when shared on social media. A bare metadata object is table stakes; rich structured data (`Book` JSON-LD schema) is a differentiator. | LOW | `generateMetadata()` returning title, description, Open Graph image. JSON-LD `Book` schema (`name`, `author`, `isbn`, `aggregateRating`). Statically rendered or ISR-cached book pages. |
-| URL-persisted search/filter state | Shareable, bookmarkable search results. "Search for fantasy books under $20" produces a URL that can be shared or bookmarked and reloads with the same results. Most basic implementations use component state that resets on navigation. | LOW-MED | Manage filter state in URL search params via `useSearchParams` + `useRouter`. On filter change, call `router.replace()`. On load, initialize filter state from params. Enables back-button navigation through filter history. |
-| Optimistic cart updates | Cart interactions (add, remove, quantity change) feel instant because the UI updates before the server response. If the server rejects the mutation, the UI rolls back with an error toast. | LOW-MED | TanStack Query `useMutation` with `onMutate` (set optimistic state), `onError` (rollback), `onSettled` (invalidate cache). shadcn Toast for error feedback. Already part of TanStack Query's documented pattern. |
-| Order confirmation page with order details | After checkout, show a clear confirmation: "Order #1234 confirmed. Books will be ready in X days." with the full order summary. Some storefronts just redirect to order history. A dedicated confirmation page is more reassuring. | LOW | Dedicated `/orders/[id]/confirmation` page. Fetch order by ID with auth. Show items, prices, total, and a "View all orders" link. |
-| Account page (profile + pre-bookings view) | Centralized area where users can see their active pre-bookings and manage their account. Provides a single destination for account management. | MEDIUM | Auth-gated `/account` page. Sections: active pre-bookings with cancel action, link to order history, link to wishlist. No profile editing required for v3.0 (backend does not expose PATCH /me endpoint in scope). |
+| Visual revenue comparison chart (current vs prior bar chart) | Turns the delta percentage into an intuitive visual. Admins understand "revenue is up 23%" much better when they see two bars side by side. shadcn/ui ships 53 pre-built chart components built on Recharts — a `BarChart` with two data series is <50 lines. | MEDIUM | shadcn Charts (`BarChart` with `ChartContainer`, `ChartTooltip`) built on Recharts. Two data points per period: current + prior. Not a time-series chart (backend doesn't expose day-by-day). |
+| Top-sellers mini-table on overview page | Gives admins demand intelligence without navigating to the analytics section. A "top 5 books this week" card on the overview is a strong UX addition. | LOW | Reuse `GET /admin/analytics/sales/top-books?limit=5` on overview page. |
+| Inline stock editing from inventory alert list | Instead of navigating to catalog to update stock, allow a number input directly in the inventory alert row. One click to update is significantly faster than navigating away. | MEDIUM | TanStack Query mutation against `PATCH /books/{id}/stock`. Optimistic update with rollback on error. |
+| Sticky admin sidebar with active route highlighting | Professional admin dashboards have a fixed sidebar that shows which section is active. Improves navigation orientation and feels polished. | LOW | Next.js `usePathname()` to determine active route. shadcn's `Sidebar` component or a custom nav list. |
+| Responsive table with horizontal scroll on mobile | Admin panels are primarily desktop tools, but if the admin checks stats on mobile, tables shouldn't break. | LOW | Wrap data tables in a `div` with `overflow-x-auto`. shadcn DataTable handles column visibility. |
+| Review text preview with expand/collapse | Review table rows show a truncated text snippet; clicking expands the full text inline. Avoids a separate detail view for quick moderation scanning. | LOW | Controlled state per row or shadcn `Collapsible`. |
 
-### Anti-Features
+---
 
-Features to explicitly not build in v3.0. These are commonly requested but create problems — either out-of-scope for the milestone, actively harmful to UX, or premature.
+### Anti-Features (Commonly Requested, Often Problematic)
 
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Forced account creation before cart | Forcing registration before adding to cart is a well-documented conversion killer. 23–28% of cart abandonments are caused by forced registration (Baymard Institute research). | Allow browsing and adding to cart as a guest concept, OR clearly surface the login prompt only at checkout, with a prominent "Guest checkout" path if the backend ever supports it. For v3.0: show a clear, non-intrusive "Sign in to save your cart" prompt rather than a hard block on cart viewing. |
-| Client-side-only cart (localStorage) | A localStorage cart breaks when users switch devices, clears on browser data wipe, and creates sync nightmares with the backend. | Server is source of truth. All cart operations go through the backend API. TanStack Query caches server state locally for responsiveness. |
-| Infinite scroll on catalog pages | Infinite scroll is problematic for shop browsing: users cannot bookmark their position, back-navigation loses scroll position, footers become inaccessible, and shoppers need to compare items across positions (they backtrack). Pagination wins for catalog UX. | Standard page-based pagination with visible page numbers. "Load more" button is acceptable as a compromise (preserves footer access). True infinite scroll is an anti-pattern for catalog browsing. |
-| Real-time stock count polling | Polling `/books/{id}` every few seconds to show live stock counts creates unnecessary API load and provides minimal user value for a low-traffic bookstore. | Show stock status (in stock / out of stock / low stock) fetched on page load. Revalidate on cart operations (when it actually matters). No continuous polling. |
-| Intrusive popups (email capture, newsletter) | Entry popups, exit-intent popups, and mid-browse modals are documented UX harms — higher bounce rates, frustration, and cart abandonment. NN/g research: popups interrupt task completion and force context switching. | No popups for v3.0. If newsletter signup is desired later, use an unobtrusive footer form or an in-page section at natural pause points (e.g., after order confirmation). |
-| Admin dashboard UI | Explicitly deferred to v3.1+ in PROJECT.md. Admin UI is a separate concern requiring different layouts, access control, and components. Building it now expands scope without customer benefit. | Admins use the API directly (Postman/curl) or await v3.1. |
-| GitHub OAuth on frontend | PROJECT.md explicitly defers GitHub OAuth to post-v3.0. Google + email are sufficient social login coverage for v3.0. | Email + Google OAuth covers the vast majority of users. GitHub OAuth can be added in a minor release without changing auth architecture. |
-| Review helpfulness voting ("Was this helpful?") | PROJECT.md explicitly defers this until review volume justifies it. Building a voting system without sufficient reviews to vote on is infrastructure without a use case. | Display reviews chronologically. Sort by most recent (default). Add helpfulness voting only when review volume is sufficient to make ranking meaningful. |
-| Real payment integration (Stripe, etc.) | PROJECT.md constraint: mock payment only. Real payment adds PCI compliance surface, webhook handling, idempotency keys, failed payment retry logic, and refund flows — a separate milestone's worth of work. | Mock checkout: "Place Order" button sends POST to `/orders/checkout`. Show order confirmation. Clearly label as "Demo — no real payment processed" in UI. |
-| Recommendation engine ("You might also like") | PROJECT.md out of scope. Requires sufficient transaction data for meaningful recommendations and a separate algorithmic layer. | Surface pre-booking demand and review ratings as organic signals of popularity. "Highly rated" and "In demand" badges on book cards are sufficient discovery aids without a full recommendation system. |
-| Client-side search (Fuse.js, etc.) | The backend already provides full-text search via PostgreSQL FTS. Rebuilding search logic on the client wastes effort, diverges from backend data, and cannot scale to catalog growth. | Use the existing `GET /books?search=` endpoint. TanStack Query caches results. The backend is the search engine. |
+Features that seem useful for an admin dashboard but create scope creep, UX problems, or premature complexity given the existing backend.
+
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| Day-by-day revenue time-series chart | Admins want to see revenue trends over multiple days. | The backend `GET /admin/analytics/sales/summary` returns period totals (today, week, month), NOT day-by-day data. Building a time-series chart requires a new backend endpoint. Adding a backend endpoint is out of scope for this frontend-only milestone. | Use a period-comparison bar chart (current vs prior period) with the existing two-point data. This is honest about what the backend provides and visually communicates trend direction. Add time-series as a v3.2 backend + frontend feature if needed. |
+| Real-time dashboard updates (WebSocket/polling) | Admins want "live" data. | PROJECT.md explicitly defers WebSocket infrastructure. Polling adds API load without significant benefit for a low-traffic bookstore where analytics data changes infrequently. | Manual refresh button + short-TTL TanStack Query cache (e.g., 60s staleTime). Data is fresh enough without continuous polling. |
+| Admin user creation / role promotion UI | Admins want to promote users to admin role or create admin accounts from the dashboard. | The backend has no endpoint for updating user roles or creating admin accounts from the admin UI. This would require new backend work. The current backend only supports deactivate/reactivate. | Out of scope. Admin accounts are created at the database level or via a backend script. Document this constraint in the UI (tooltip or help text). |
+| Bulk stock import (CSV upload) | Admins managing large catalogs want to upload stock changes via CSV. | Requires a new backend endpoint for CSV parsing and batch stock updates. Frontend-only milestone — no new backend endpoints. | Provide the per-book stock edit UI. CSV import can be a v4.0 feature when catalog scale justifies it. |
+| Review content flagging / pre-moderation queue | Flagging reviews for review before they go live. | PROJECT.md explicitly rejects pre-moderation: "pre-moderation suppresses authentic reviews." The correct model is reactive admin delete. A flagging queue adds complexity without improving moderation quality. | Keep reactive moderation: admins delete policy-violating reviews after they appear. The existing bulk delete handles cleanup efficiently. |
+| Sales forecasting / trend prediction | Admins want "AI insights" on future sales. | Requires ML infrastructure, historical data depth, and model serving — all out of scope for this project. Would be low-accuracy with the current data volume. | Display historical data clearly (top sellers, delta percentage). Let admins draw their own conclusions. |
+| Admin-to-user messaging | Admins want to contact users from the dashboard. | Requires a messaging backend, email templating beyond the existing transactional templates, and GDPR considerations. No backend support exists. | Admins can use the user's email address (displayed in the user table) to contact them via external email. |
+| Export to CSV / PDF | Admins want to export analytics data. | Adds significant frontend complexity (CSV serialization, print stylesheets or PDF generation library). The data volume at current scale doesn't justify this. | Admins can copy data from the table or use the browser's print function for a quick reference. Defer to v4.0 if demand is confirmed. |
+| Dark mode for admin panel only | Admin panels often skip dark mode to reduce scope. | The customer storefront already has dark mode (PROJECT.md). Extending dark mode to the admin panel requires Tailwind dark class coverage on all new admin components — significant but not impossible overhead. However, it adds no business value and is purely cosmetic for an internal tool. | Use the existing Tailwind dark mode system (it applies globally). If the storefront dark mode already works, admin pages will inherit the dark mode behavior with minimal extra effort since shadcn/ui components support dark mode by default. LOW risk — just don't need to actively design for it. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[NextAuth.js session (JWT stored in session)]
-    └──required by──> [All auth-gated routes] (cart, checkout, orders, wishlist, reviews, account)
-    └──required by──> [Google OAuth flow] (custom callback to backend /auth/google)
-    └──required by──> [TanStack Query authenticated fetches] (attach Authorization header)
+[Admin auth guard (require_admin middleware)]
+    └──required by──> [All admin sections] (dashboard, analytics, catalog mgmt, users, reviews, inventory)
 
-[Auth (email + Google OAuth)]
-    └──prerequisite for──> [Cart operations]
-    └──prerequisite for──> [Checkout]
-    └──prerequisite for──> [Order history]
-    └──prerequisite for──> [Wishlist management]
-    └──prerequisite for──> [Review creation/editing]
-    └──prerequisite for──> [Pre-booking]
-    └──prerequisite for──> [Account page]
+[Dashboard Overview page]
+    └──depends on──> [Sales summary API] (GET /admin/analytics/sales/summary)
+    └──depends on──> [Low-stock count] (GET /admin/analytics/inventory/low-stock, total_low_stock only)
+    └──optionally shows──> [Top sellers mini-table] (GET /admin/analytics/sales/top-books?limit=5)
 
-[Cart management]
-    └──prerequisite for──> [Checkout flow]
-    └──prerequisite for──> [Cart count in navbar] (shared cache)
+[Sales Analytics page]
+    └──depends on──> [Sales summary API] (current + prior period values for comparison chart)
+    └──depends on──> [Top books API] (GET /admin/analytics/sales/top-books)
+    └──period selector──> [Controls both summary and top-books calls]
 
-[Checkout flow]
-    └──prerequisite for──> [Order confirmation page]
-    └──enables──> [Verified-purchase review gate] (backend checks order history)
+[Book Catalog Management page]
+    └──depends on──> [GET /books] (list with pagination, search, filter)
+    └──add form──> [POST /books]
+    └──edit form──> [PUT /books/{id}]
+    └──delete action──> [DELETE /books/{id}]
+    └──stock update──> [PATCH /books/{id}/stock] (side effect: triggers pre-booking emails from backend)
 
-[Book detail page]
-    └──surfaces──> [Add to Cart button]
-    └──surfaces──> [Add to Wishlist button]
-    └──surfaces──> [Pre-book button] (conditional: when stock == 0)
-    └──surfaces──> [Reviews section] (read + write)
-    └──surfaces──> [Average rating display]
+[Inventory Alerts page]
+    └──depends on──> [GET /admin/analytics/inventory/low-stock]
+    └──stock update link──> [PATCH /books/{id}/stock] (shared with catalog management)
 
-[Order history]
-    └──prerequisite for──> [Review eligibility check] (have they purchased this book?)
-    └──surfaces──> [Link to order confirmation page]
+[User Management page]
+    └──depends on──> [GET /admin/users]
+    └──deactivate action──> [PATCH /admin/users/{id}/deactivate]
+    └──reactivate action──> [PATCH /admin/users/{id}/reactivate]
 
-[Catalog browsing / search]
-    └──entry point for──> [Book detail page]
-    └──entry point for──> [Add to Wishlist] (from grid card)
+[Review Moderation page]
+    └──depends on──> [GET /admin/reviews]
+    └──delete action──> [DELETE /admin/reviews/bulk] (used for both single and bulk deletes)
 
-[openapi-typescript generated types]
-    └──required by──> [All API calls] (type-safe request/response contracts)
-    └──dependency on──> [FastAPI OpenAPI spec at /openapi.json]
+[shadcn/ui Charts (BarChart)]
+    └──built on──> [Recharts] (already a transitive dependency via shadcn/ui)
+    └──used by──> [Sales Analytics visualization]
 
-[Wishlist management]
-    └──surfaces──> [Pre-booking option] (wishlist item that's now out-of-stock → pre-book CTA)
-
-[Pre-booking]
-    └──shown in──> [Account page pre-bookings section]
-    └──cancellable from──> [Account page]
+[TanStack Query mutations]
+    └──used by──> [Catalog CRUD actions, stock update, deactivate/reactivate, review bulk delete]
+    └──pattern──> [invalidate affected query on success, rollback on error]
 ```
 
 ### Dependency Notes
 
-- **JWT handoff is the critical integration point:** NextAuth.js v5 sessions must store the FastAPI-issued JWT (not the NextAuth-generated JWT). The credentials and OAuth providers must call the backend's `/auth/login` or `/auth/google` endpoint and extract the `access_token` and `refresh_token` from the response. All TanStack Query fetches attach this `access_token` as `Authorization: Bearer <token>`.
-- **Token refresh on expiry:** The backend issues short-lived access tokens (as per JWT pattern in PROJECT.md). The frontend must handle 401 responses by using the refresh token to get a new access token before retrying. This is most cleanly done in an Axios interceptor or a fetch wrapper — not per-component.
-- **`is_active` check means immediate lockout:** If an admin deactivates a user account, the backend returns 401 on the next authenticated request. The frontend must handle 401 → clear session → redirect to login, even mid-session. Do not cache the `is_active` status client-side.
-- **Pre-booking button conditional:** The "Pre-book" vs "Add to Cart" button state depends on `stock_quantity` returned from the book detail API. This value should not be cached aggressively — it changes after checkout events. Revalidate on focus or use a short TTL (60s) so users see updated stock on return.
-- **Review write form conditional:** The review creation form should only render if the user has purchased the book. The backend enforces this at the API level, but the frontend should check proactively to avoid showing a form that will always 403. Check `GET /orders?book_id={id}` or a dedicated endpoint to determine purchase eligibility before rendering the form.
-- **openapi-typescript generation step must run after backend changes:** The auto-generated types (from `GET /openapi.json`) need a `npm run generate:types` step in the monorepo. If this step is skipped after backend changes, the frontend TypeScript types will be stale and type errors will hide API contract changes.
+- **Admin guard is the foundation:** All six admin sections require the `require_admin` check. In Next.js, this is handled by the existing `proxy.ts` route protection pattern (checking session role). No new auth infrastructure needed — extend existing middleware.
+- **Stock update triggers side effects:** `PATCH /books/{id}/stock` may trigger restock notification emails to pre-bookers if stock transitions from 0 to > 0. The admin UI should communicate this: "Updating stock from 0 will notify pre-bookers." This is informational only — the backend handles the emails.
+- **Bulk delete endpoint handles singles:** The `DELETE /admin/reviews/bulk` endpoint accepts 1–50 IDs. The frontend can use it for both "delete this one review" (single-element array) and "delete selected reviews" (multi-element array). No need for a separate single-delete endpoint.
+- **Top-books endpoint is stateless:** No period context — it ranks all-time or by confirmed orders. The `sort_by` toggle changes the ranking dimension, not the time window. The UI should not imply time-period filtering on top-books (no period selector on top-books table).
+- **Revenue chart is a two-point comparison, not a timeseries:** The backend provides current period total + prior period implied from delta. The chart shows two bars: "This [period]" and "Last [period]." Do not imply day-by-day granularity.
+- **Book catalog list reuses the public endpoint:** `GET /books` is a public endpoint (no auth required for reading). The admin catalog table reuses this endpoint and adds the admin CRUD actions. No separate admin-only book list endpoint exists.
 
 ---
 
 ## MVP Definition
 
-### v3.0 Must Ship
+### v3.1 Must Ship
 
-All of the following constitute the v3.0 milestone deliverables. They represent full feature parity with user-facing backend endpoints.
+All six admin sections constitute the v3.1 milestone. All backend endpoints are already built. Frontend scope:
 
 **Foundation:**
-- [ ] Monorepo restructure (`backend/` + `frontend/` directories at repo root)
-- [ ] Next.js 15 app scaffolded with TypeScript, shadcn/ui, Tailwind CSS, TanStack Query
-- [ ] openapi-typescript types generated from FastAPI `/openapi.json`
-- [ ] NextAuth.js v5 configured with credentials + Google OAuth providers
-- [ ] JWT session storage with token refresh handling
-- [ ] Authenticated route middleware
+- [ ] Admin layout: sidebar navigation linking to Overview, Analytics, Catalog, Users, Reviews, Inventory
+- [ ] Admin route guard: extend existing proxy.ts or middleware to verify admin role for `/admin/*` routes
+- [ ] Shared admin data-fetching patterns: TanStack Query with admin JWT headers
 
-**Catalog & Discovery:**
-- [ ] Home page / catalog browse with paginated book grid (cover, title, author, price, stock status)
-- [ ] Search page with full-text search and genre/price filters (URL-persisted state)
-- [ ] Book detail page (description, price, stock status, average rating, review count)
-- [ ] `generateMetadata()` + JSON-LD structured data on book detail pages
+**Dashboard Overview:**
+- [ ] KPI cards: Revenue, Order Count, AOV — each with current value + delta badge
+- [ ] Period selector: Today / This Week / This Month button group
+- [ ] Low-stock alert card: count of books below threshold with link to Inventory section
+- [ ] Top-5 sellers mini-table (optional but HIGH value for overview completeness)
 
-**Auth Flows:**
-- [ ] Sign up (email + password) with validation
-- [ ] Sign in (email + password)
-- [ ] Sign in with Google OAuth (custom NextAuth → FastAPI handoff)
-- [ ] Sign out from any page
-- [ ] Protected route redirect to sign-in with callbackUrl
+**Sales Analytics:**
+- [ ] Period-comparison bar chart: current vs prior period revenue (shadcn/ui BarChart)
+- [ ] Summary stats: revenue, order count, AOV, delta — same data as overview but dedicated page
+- [ ] Top-sellers table with revenue/volume toggle (sort_by param)
+- [ ] Limit selector (top 5 / top 10 / top 20)
 
-**Cart & Checkout:**
-- [ ] Add to cart from book card and book detail page
-- [ ] Cart page (view items, update quantity, remove items, cart total)
-- [ ] Checkout page (order summary + "Place Order" button)
-- [ ] Order confirmation page (order ID, items, total)
-- [ ] Cart count badge in navbar (updates on cart changes)
+**Book Catalog Management:**
+- [ ] Paginated catalog table: title, author, price, genre, stock quantity, actions
+- [ ] Search input (debounced) and genre filter dropdown
+- [ ] Add book: form in modal or dedicated page (title, author, price, ISBN, genre, description, cover URL, publish date)
+- [ ] Edit book: same form pre-populated, accessible via row action
+- [ ] Delete book: confirmation dialog before hard delete
+- [ ] Update stock: number input modal accessible from row action
 
-**Order History:**
-- [ ] Order history list page (date, total, items summary)
-- [ ] Individual order detail page (full item list, price snapshots, status)
+**User Management:**
+- [ ] Paginated user table: email, role badge, active status badge, joined date, actions
+- [ ] Filter by role (All / User / Admin) and active status (All / Active / Inactive)
+- [ ] Deactivate: confirmation dialog + PATCH action; button disabled for admin accounts
+- [ ] Reactivate: PATCH action, available for inactive users
 
-**Wishlist:**
-- [ ] Toggle wishlist from book card and detail page (optimistic)
-- [ ] Wishlist page (saved books with "Add to Cart" and "Remove from Wishlist")
+**Review Moderation:**
+- [ ] Paginated review table: book title, reviewer display name, star rating, text snippet, date
+- [ ] Filter controls: book ID input, user ID input, rating range (min/max), sort by (date/rating), sort direction
+- [ ] Row-level delete: confirmation before DELETE /admin/reviews/bulk with single ID
+- [ ] Multi-row selection: checkboxes + "Delete Selected" bulk action button
+- [ ] Bulk delete confirmation: "Delete N reviews?" before submission
 
-**Reviews:**
-- [ ] Read-only reviews section on book detail page (star display, reviewer, text, date)
-- [ ] Write review form (visible only after purchase) with 1–5 star selector and optional text
-- [ ] Edit own review (in-place, pre-populated)
-- [ ] Delete own review with confirmation
+**Inventory Alerts:**
+- [ ] Threshold input (number field, default 10) with "Apply" button
+- [ ] Low-stock books table: title, author, current stock, threshold — sorted by stock ascending
+- [ ] Visual distinction: `stock == 0` rows highlighted in red/destructive; `stock > 0 but <= threshold` in amber/warning
+- [ ] Quick "Update Stock" link per row (opens stock update modal from catalog management)
 
-**Pre-booking:**
-- [ ] "Pre-book" button on out-of-stock book detail page
-- [ ] Cancel pre-booking from account area
-- [ ] Active pre-bookings list on account page
+### Add After v3.1 Validation (v3.2)
 
-**Account:**
-- [ ] Account page: active pre-bookings section
-- [ ] Account page: links to order history and wishlist
-
-### Add After v3.0 Validation (v3.x)
-
-- [ ] Admin dashboard UI — separate phase, v3.1+
-- [ ] GitHub OAuth — can be added as a minor addition once core OAuth pattern is proven
-- [ ] Review helpfulness voting — needs sufficient review volume first
-- [ ] "Notify me" subscription for stock alerts beyond pre-booking (backend email already handles pre-booking; this would be a separate pattern)
+- [ ] Day-by-day revenue timeseries chart — requires new backend endpoint (`GET /admin/analytics/sales/timeseries`)
+- [ ] Review text expand/collapse — low priority quality-of-life improvement
+- [ ] Inline stock editing from inventory list — reduces navigation friction
 
 ### Future Consideration (v4+)
 
-- [ ] Real payment gateway (Stripe) — separate milestone, adds PCI scope
-- [ ] Recommendation engine — requires transaction data history
-- [ ] Real-time stock notifications (WebSocket) — backend is email-only for restock; WebSocket would need infrastructure additions
-- [ ] Progressive Web App (PWA) — offline catalog access, install prompt
+- [ ] Sales forecasting / trend prediction — requires ML infrastructure
+- [ ] CSV export of analytics data — defer until admin data volume justifies it
+- [ ] Bulk stock import via CSV — requires new backend endpoint
+- [ ] Admin user role management UI — requires new backend endpoint
 
 ---
 
-## Rendering Strategy by Feature
+## Feature Prioritization Matrix
 
-The choice of rendering strategy (RSC vs. client component) is a critical implementation decision for each feature in Next.js 15.
+| Feature | Admin Value | Implementation Cost | Priority |
+|---------|-------------|---------------------|----------|
+| KPI cards on overview | HIGH | LOW | P1 |
+| Period selector | HIGH | LOW | P1 |
+| Admin route guard | HIGH | LOW | P1 |
+| Admin sidebar navigation | HIGH | LOW | P1 |
+| Low-stock count on overview | HIGH | LOW | P1 |
+| Revenue comparison chart | HIGH | MEDIUM | P1 |
+| Top-sellers table | HIGH | LOW | P1 |
+| Catalog table (list books) | HIGH | MEDIUM | P1 |
+| Add / edit book form | HIGH | MEDIUM | P1 |
+| Delete book (with confirmation) | HIGH | LOW | P1 |
+| Stock update modal | HIGH | LOW | P1 |
+| User table with status badges | HIGH | LOW | P1 |
+| Deactivate / reactivate user | HIGH | LOW | P1 |
+| Review moderation table | HIGH | MEDIUM | P1 |
+| Bulk delete reviews | HIGH | MEDIUM | P1 |
+| Inventory alert table | HIGH | LOW | P1 |
+| Threshold input on inventory | MEDIUM | LOW | P1 |
+| Revenue/volume toggle on top-sellers | MEDIUM | LOW | P2 |
+| Top-5 mini-table on overview | MEDIUM | LOW | P2 |
+| Inline stock edit from inventory | MEDIUM | MEDIUM | P2 |
+| Review text expand/collapse | LOW | LOW | P3 |
+| CSV export | LOW | HIGH | P3 |
 
-| Page / Feature | Rendering Strategy | Rationale |
-|---------------|-------------------|-----------|
-| Home / catalog browse | RSC + ISR (60s revalidate) | SEO-important, mostly static, low-frequency change; ISR keeps it fresh without per-request DB calls |
-| Book detail page | RSC + ISR (60s revalidate) | SEO critical (rich snippets, Open Graph); `generateMetadata()` only works in RSC; stock status may need shorter TTL |
-| Search results | Client component (TanStack Query) | User-driven, interactive filters, URL-persisted params; RSC for initial server render, hydrate client for interactivity |
-| Auth pages (sign in / sign up) | Client component | Form interaction, Zod validation, NextAuth session management |
-| Cart page | Client component (TanStack Query) | Highly dynamic, user-specific; no ISR possible; optimistic updates require client state |
-| Checkout | Client component | Form + mutation; no caching; server-side auth check in middleware |
-| Order history / detail | RSC with dynamic rendering | Auth-gated, user-specific; cannot be cached; RSC is still preferred to reduce client bundle |
-| Wishlist page | RSC with dynamic rendering | Auth-gated, user-specific |
-| Book detail — reviews section | Split: RSC for list, client for write form | Read list is server-renderable; write form requires client interactivity |
-| Account page | RSC with dynamic rendering | Auth-gated, low interactivity |
-| Pre-booking actions | Client component (mutation) | Requires user interaction and optimistic feedback |
-| Navbar cart count | Client component (TanStack Query) | Must update in real-time after cart mutations; shared cache |
+**Priority key:**
+- P1: Must have for v3.1 launch
+- P2: Should have — ship if time allows in same milestone
+- P3: Nice to have — defer to v3.2
 
 ---
 
 ## UX Behavior Specifications
 
-Precise expected behavior for key user flows, based on established e-commerce patterns.
+Precise expected behavior for each admin section, based on established e-commerce admin patterns (Shopify, WooCommerce) and backend constraints.
 
-### Catalog Browsing
-- Default sort: newest arrivals (or backend default)
-- Pagination: 20 books per page, visible page numbers, prev/next
-- Book card: cover image (Next.js `Image` with aspect ratio), title (truncated at 2 lines), author, price, average star rating (compact), stock badge ("In Stock" / "Low Stock" / "Out of Stock")
-- Out-of-stock books remain visible (pre-booking available)
+### Dashboard Overview
+- Default period on load: "today"
+- Delta badge: green arrow up for positive delta, red arrow down for negative, grey dash for null delta (no prior period data)
+- KPI cards: Revenue (formatted as currency, 2dp), Order Count (integer), AOV (formatted as currency, 2dp)
+- Low-stock card: shows `total_low_stock` count, links to `/admin/inventory` on click
+- Page does not auto-refresh; provide a manual "Refresh" button or rely on TanStack Query's `staleTime`
 
-### Search
-- Input: 300ms debounce before firing query
-- Filter sidebar or filter row: genre (multi-select), min/max price (range inputs)
-- State persisted in URL: `?q=fantasy&genre=1,3&min_price=5&max_price=25&page=2`
-- Empty results: "No books found for [query]" with clear filters CTA
-- Loading: skeleton cards (not spinner) during fetch
+### Sales Analytics
+- Period selector affects both KPI display and top-sellers ranking context display (even if top-sellers API is not period-scoped, show the selected period as context)
+- Revenue chart: two bars labeled "Current [period]" and "Previous [period]"
+- Chart tooltip on hover: exact revenue value
+- Top-sellers table: columns = Rank, Title, Author, Units Sold, Total Revenue; sortable by Revenue or Volume via toggle; configurable limit (5/10/25)
+- Empty state: "No orders found for this period" when revenue = 0
 
-### Book Detail Page
-- Hero: large cover image left, metadata right (title, author, ISBN, genre, description, price, stock status, rating)
-- Rating: visual stars (filled/half/empty) + "(N reviews)" count as anchor link to reviews section
-- Stock status: "In Stock", "Low Stock (N remaining)", "Out of Stock"
-- Primary CTA: "Add to Cart" (in stock) or "Pre-book" (out of stock) — mutually exclusive
-- Secondary CTA: "Add to Wishlist" (heart toggle, works regardless of stock)
-- Reviews section: below the fold; star distribution bar chart is a differentiator, skip for v3.0 MVP
-- Write review: visible below reviews list if purchase is verified; otherwise hidden
+### Book Catalog Management
+- Table columns: Cover (thumbnail), Title, Author, Genre, Price, Stock (with low-stock badge), Actions (Edit, Stock, Delete)
+- Search: 300ms debounced input, clears with × button
+- Add/Edit form fields: Title (required), Author (required), Price (required, number, min 0), ISBN (optional, validated), Genre (dropdown from GET /genres), Description (textarea), Cover Image URL (optional), Publish Date (optional date picker)
+- Delete confirmation: "Are you sure you want to delete '[title]'? This action cannot be undone."
+- Stock update modal: single number input (integer, min 0), label "Set stock quantity", confirm button. Show current stock in label: "Current stock: N"
+- After stock update from 0 → N: show info toast "Stock updated. Pre-booking notification emails will be sent."
 
-### Cart
-- Line items: cover thumbnail, title, author, unit price, quantity spinner (increment/decrement), remove button, subtotal
-- Quantity update: optimistic — spinner shows new value immediately; server error rolls back with toast
-- Cart total: updates reactively
-- Empty cart: illustration + "Browse books" CTA (not just blank)
-- Checkout CTA: prominent, disabled if cart is empty
+### User Management
+- Table columns: Email, Role (badge: "Admin" / "User"), Status (badge: "Active" / "Inactive"), Joined (date), Actions
+- Deactivate button: disabled and tooltip "Cannot deactivate admin accounts" when target is an admin (`role == 'admin'`)
+- Deactivate confirmation: "Deactivate [email]? Their sessions will be revoked immediately."
+- Reactivate: no confirmation needed (reversible, low-risk action) — immediate PATCH on click
+- Filter UI: two dropdowns (Role filter, Status filter) above the table, applied server-side via API params
 
-### Checkout
-- Single page (not multi-step — reduces friction for mock payment)
-- Show cart summary (read-only), order total
-- "Place Order" button → POST `/orders/checkout` → redirect to confirmation page
-- On success: invalidate cart cache (cart becomes empty)
-- On failure: show error inline, do not redirect
+### Review Moderation
+- Table columns: Checkbox, Book Title, Reviewer, Rating (star display, compact), Text (truncated to 80 chars), Date, Actions (Delete)
+- Row selection: individual checkboxes + "Select all on this page" header checkbox
+- Bulk delete button: visible when ≥1 row selected; label "Delete (N) Reviews"
+- Bulk delete confirmation modal: "You are about to permanently delete N reviews. This cannot be undone."
+- Backend bulk delete is best-effort (silently skips already-deleted IDs) — after delete, show "Deleted N reviews" success toast using actual `deleted_count` from response
+- Filter bar: collapsible or always-visible row above table with Book ID, User ID, Min/Max Rating inputs, Sort By dropdown, Sort Direction toggle
+- Empty state: "No reviews match the current filters"
 
-### Order Confirmation
-- Show order ID, timestamp, list of items purchased, total paid
-- "Continue Shopping" and "View Order History" CTAs
-- This page is the natural trigger point for "Eligible to leave a review in N days" — skip for v3.0
-
-### Wishlist
-- Toggle (add/remove) is optimistic from any page
-- Wishlist page: same card as catalog but with "Add to Cart" and "Remove" actions
-- If a wishlisted book goes out of stock, show "Out of Stock — Pre-book now" CTA inline on wishlist card (connects wishlist to pre-booking flow)
-
-### Pre-booking
-- Only visible when `stock_quantity == 0`
-- After pre-booking: button changes to "Pre-booked — Cancel" state
-- "You'll receive an email when this book is back in stock" confirmation message
-- Cancel from account page or from book detail page if already pre-booked
-
-### Reviews
-- Star selector: 1–5 interactive stars (hover preview, click to set)
-- Text: optional textarea (no minimum character count — backend doesn't require it)
-- Submit: show loading state; on success, optimistically insert review; on 409 (already reviewed), show "You've already reviewed this book — edit your existing review"
-- Edit: inline form pre-filled with existing rating + text
-- Delete: confirmation dialog before deleting
-
-### Authentication Flow
-- Credentials: email + password, Zod validation on client before submit
-- Google OAuth: "Continue with Google" button, standard OAuth popup or redirect
-- Error states: "Invalid email or password", "Email already in use", "Google account not linked" (if backend returns specific errors)
-- After sign-in: redirect to `callbackUrl` if present, otherwise to home
-- Session expiry: on 401 from any authenticated request, clear session and redirect to sign-in
+### Inventory Alerts
+- Threshold input: numeric input above the table, default value 10, "Apply" button triggers refetch with new threshold
+- Table columns: Title, Author, Current Stock, Status (badge), Actions (Update Stock)
+- Status badge: "Out of Stock" (red/destructive) when `current_stock == 0`; "Low Stock" (amber/warning) when `0 < current_stock <= threshold`
+- Table sorted ascending by `current_stock` (backend already returns this order)
+- "Update Stock" action per row: opens same stock update modal as catalog management
+- Total count display: "N books at or below threshold of T units"
+- Empty state: "All books are well-stocked (no books at or below [threshold] units)"
 
 ---
 
-## Competitor Feature Comparison
+## Existing Backend Endpoints by Admin Section
 
-| Feature | Amazon Books | Goodreads | Barnes & Noble | Our v3.0 |
-|---------|-------------|-----------|----------------|----------|
-| Catalog browse with pagination | Yes | Yes | Yes | Yes (RSC + ISR) |
-| Full-text search + filters | Yes (advanced) | Yes (basic) | Yes | Yes (backend FTS) |
-| Book detail with ratings | Yes | Yes | Yes | Yes |
-| Email auth | Yes | Yes | Yes | Yes (NextAuth credentials) |
-| Google/social OAuth | Yes | Yes (Google, Facebook) | No | Yes (Google only) |
-| Guest checkout | Yes | N/A | Yes | Not in v3.0 (backend requires auth) |
-| Cart with quantity management | Yes | N/A | Yes | Yes |
-| Mock/demo checkout | N/A | N/A | N/A | Yes (differentiator for demo) |
-| Order history | Yes | N/A | Yes | Yes |
-| Wishlist | Yes | Reading lists | Yes | Yes |
-| Pre-booking (out-of-stock) | Yes (backorder) | N/A | Yes (pre-order) | Yes (unique: email notification on restock) |
-| Verified-purchase reviews | Yes | No (any user) | Partial | Yes (enforced by backend) |
-| Star ratings on detail page | Yes | Yes | Yes | Yes |
-| SEO (structured data + OG) | Yes | Yes | Yes | Yes (`Book` JSON-LD) |
-| Admin dashboard | Yes | Yes | Yes | v3.1+ |
+All endpoints are already implemented and tested. Frontend consumes these directly.
 
----
-
-## Existing System Integration Points
-
-Where new frontend features attach to the already-built FastAPI backend.
-
-| Frontend Feature | Backend Endpoint | Notes |
-|-----------------|-----------------|-------|
-| Catalog browse | `GET /books?page=N&per_page=20` | RSC fetch with ISR |
-| Book detail | `GET /books/{id}` | Includes avg_rating, review_count from live SQL aggregates |
-| Search + filter | `GET /books?search=&genre_id=&min_price=&max_price=&page=` | FTS already implemented in backend |
-| Sign up | `POST /auth/register` | Returns tokens on success |
-| Sign in (email) | `POST /auth/login` | Returns access_token + refresh_token |
-| Google OAuth | `POST /auth/google` (backend) + NextAuth GoogleProvider | Custom callback: send Google token to backend, store backend JWT |
-| Token refresh | `POST /auth/refresh` | Called automatically on 401 |
-| Cart view | `GET /cart` | Auth-gated |
-| Add to cart | `POST /cart/items` | Body: `{book_id, quantity}` |
-| Update cart | `PATCH /cart/items/{book_id}` | Body: `{quantity}` |
-| Remove from cart | `DELETE /cart/items/{book_id}` | |
-| Checkout | `POST /orders/checkout` | Triggers order confirmation email (backend BackgroundTasks) |
-| Order history | `GET /orders?page=N` | Auth-gated, paginated |
-| Order detail | `GET /orders/{id}` | Auth-gated |
-| Wishlist view | `GET /wishlist` | Auth-gated |
-| Add to wishlist | `POST /wishlist/{book_id}` | |
-| Remove from wishlist | `DELETE /wishlist/{book_id}` | |
-| Reviews list | `GET /books/{id}/reviews` | Public (no auth required for reading) |
-| Create review | `POST /books/{id}/reviews` | Auth-gated + verified purchase check |
-| Edit review | `PATCH /books/{id}/reviews/{review_id}` | Auth-gated + owner check |
-| Delete own review | `DELETE /books/{id}/reviews/{review_id}` | Auth-gated + owner check |
-| Pre-book | `POST /pre-bookings` | Body: `{book_id}` |
-| Cancel pre-booking | `DELETE /pre-bookings/{id}` | Auth-gated + owner check |
-| View pre-bookings | `GET /pre-bookings` | Auth-gated, shows user's active pre-bookings |
+| Admin Section | Action | Backend Endpoint | Notes |
+|--------------|--------|-----------------|-------|
+| Overview | Load KPIs | `GET /admin/analytics/sales/summary?period={today\|week\|month}` | Returns revenue, order_count, aov, delta_percentage |
+| Overview | Load low-stock count | `GET /admin/analytics/inventory/low-stock?threshold=10` | Use total_low_stock field only |
+| Overview | Top-5 sellers | `GET /admin/analytics/sales/top-books?sort_by=revenue&limit=5` | Optional but recommended |
+| Analytics | Revenue comparison | `GET /admin/analytics/sales/summary?period={period}` | Chart uses revenue + delta to compute prior value |
+| Analytics | Top sellers table | `GET /admin/analytics/sales/top-books?sort_by={revenue\|volume}&limit={N}` | All-time ranking, not period-scoped |
+| Catalog | List books | `GET /books?page=N&per_page=20&q=&genre_id=` | Public endpoint, no admin auth needed for reads |
+| Catalog | Add book | `POST /books` | Admin only; body: BookCreate schema |
+| Catalog | Edit book | `PUT /books/{id}` | Admin only; body: BookUpdate (all fields optional) |
+| Catalog | Delete book | `DELETE /books/{id}` | Admin only; hard delete; 204 on success |
+| Catalog | Update stock | `PATCH /books/{id}/stock` | Admin only; body: {quantity: int}; triggers pre-booking emails if from 0 |
+| Catalog | List genres | `GET /genres` | Public; used to populate genre dropdown in add/edit form |
+| Users | List users | `GET /admin/users?page=N&per_page=20&role=&is_active=` | Sorted by created_at DESC |
+| Users | Deactivate | `PATCH /admin/users/{id}/deactivate` | 403 if target is admin; idempotent |
+| Users | Reactivate | `PATCH /admin/users/{id}/reactivate` | 404 if not found; idempotent |
+| Reviews | List reviews | `GET /admin/reviews?page=N&per_page=20&book_id=&user_id=&rating_min=&rating_max=&sort_by=date&sort_dir=desc` | All non-deleted reviews |
+| Reviews | Delete (single or bulk) | `DELETE /admin/reviews/bulk` | Body: {review_ids: [1, 2, ...]}; max 50; best-effort |
+| Inventory | Low-stock list | `GET /admin/analytics/inventory/low-stock?threshold=N` | Returns items sorted by current_stock ASC |
 
 ---
 
 ## Sources
 
-- [Next.js 15 in eCommerce — RigbyJS](https://www.rigbyjs.com/blog/nextjs-15-in-ecommerce) — rendering strategies and server component adoption in e-commerce context (MEDIUM confidence — industry blog, aligns with Next.js official docs)
-- [Vercel Next.js Commerce (GitHub)](https://github.com/vercel/commerce) — reference implementation of headless storefront with App Router, RSC, and streaming by the Next.js team (HIGH confidence — official Vercel reference)
-- [Next.js App Router Docs — Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components) — official guidance on component rendering boundaries and "use client" directive (HIGH confidence — official documentation)
-- [Next.js Metadata API Docs](https://nextjs.org/docs/app/getting-started/metadata-and-og-images) — `generateMetadata()` and JSON-LD structured data in App Router (HIGH confidence — official documentation)
-- [NextAuth.js v5 — Migrating to v5](https://authjs.dev/getting-started/migrating-to-v5) — configuration changes, JWT strategy, and App Router integration (HIGH confidence — official Auth.js documentation)
-- [Setting Up Auth.js v5 with Next.js 15 — CodeVoweb](https://codevoweb.com/how-to-set-up-next-js-15-with-nextauth-v5/) — practical implementation patterns for credentials + OAuth in Next.js 15 (MEDIUM confidence — community guide, recent 2026)
-- [Full-Stack Type Safety with FastAPI + Next.js + OpenAPI — Abhay Ramesh](https://abhayramesh.com/blog/type-safe-fullstack) — openapi-typescript workflow for FastAPI → Next.js type generation (MEDIUM confidence — developer blog, aligns with PROJECT.md decision)
-- [TanStack Query + Next.js App Router — Storieasy](https://www.storieasy.com/blog/integrate-tanstack-query-with-next-js-app-router-2025-ultimate-guide) — server-side prefetch with hydration, mutation patterns for cart (MEDIUM confidence — recent community guide)
-- [15 Ecommerce Checkout & Cart UX Best Practices — Design Studio](https://www.designstudiouiux.com/blog/ecommerce-checkout-ux-best-practices/) — checkout UX patterns, cart abandonment factors, one-page vs multi-step (MEDIUM confidence — UX industry publication)
-- [Infinite Scroll vs Pagination — NinjaTables](https://ninjatables.com/infinite-scroll-vs-pagination/) — why pagination is preferred for e-commerce catalog browsing (MEDIUM confidence — aligns with Baymard Institute guidance)
-- [Wishlist UX Best Practices — Yotpo](https://www.yotpo.com/ecommerce-product-page-guide/wishlists/) — wishlist feature design, connection to out-of-stock and restock notification flows (MEDIUM confidence — e-commerce platform vendor, slight promotional bias)
-- [E-Commerce Wishlist UX — thestory.is](https://thestory.is/en/journal/designing-wishlists-in-e-commerce/) — wishlist UX design patterns and expected behaviors (MEDIUM confidence — UX publication)
-- [Dark Patterns in E-Commerce — Eleken](https://www.eleken.co/blog-posts/dark-patterns-examples) — anti-features to avoid: forced registration, intrusive popups, etc. (MEDIUM confidence — UX consultancy publication citing Princeton research)
-- [Baymard Institute — Product Page UX Best Practices 2025](https://baymard.com/blog/current-state-ecommerce-product-page-ux) — authoritative e-commerce UX research on book detail page expectations (HIGH confidence — leading e-commerce UX research institution)
+- [shadcn/ui Charts — Official Documentation](https://ui.shadcn.com/charts) — confirms charts are built on Recharts, 53 pre-built components, copy-paste pattern (HIGH confidence — official shadcn documentation)
+- [shadcn/ui Data Table — Official Docs](https://ui.shadcn.com/docs/components/data-table) — TanStack Table integration, row selection, column visibility, server-side pagination (HIGH confidence — official documentation)
+- [10 Best E-commerce Dashboard Examples — Rows.com](https://rows.com/blog/post/ecommerce-dashboard) — KPI card patterns, period selectors, chart types for e-commerce (MEDIUM confidence — industry blog)
+- [Must-Have Ecommerce Dashboard Examples — Databox](https://databox.com/dashboard-examples/ecommerce) — operational metrics and visualization patterns (MEDIUM confidence — analytics platform vendor, slight promotional bias)
+- [Admin Dashboard UI/UX Best Practices 2025 — Medium/Carlos Smith](https://medium.com/@CarlosSmith24/admin-dashboard-ui-ux-best-practices-for-2025-8bdc6090c57d) — badge patterns, table UX, action-oriented design principles (MEDIUM confidence — community publication)
+- [Status Indicator Pattern — IBM Carbon Design System](https://carbondesignsystem.com/patterns/status-indicator-pattern/) — authoritative guidance on status badges in tables (HIGH confidence — enterprise design system)
+- [The Right Way to Design Table Status Badges — UX Movement](https://uxmovement.substack.com/p/why-youre-designing-table-status) — badge differentiation and priority signaling (MEDIUM confidence — UX publication)
+- [Building a Next.js Dashboard with Dynamic Charts — Cube Blog](https://cube.dev/blog/building-nextjs-dashboard-with-dynamic-charts-and-ssr) — Next.js + Recharts patterns, SSR considerations for analytics (MEDIUM confidence — developer blog)
+- [How to Build an Admin Dashboard with shadcn/ui — freeCodeCamp](https://www.freecodecamp.org/news/build-an-admin-dashboard-with-shadcnui-and-tanstack-start/) — concrete implementation patterns (MEDIUM confidence — community resource)
+- [sadmann7/tablecn — GitHub](https://github.com/sadmann7/tablecn) — reference implementation of shadcn DataTable with server-side sort/filter/pagination (HIGH confidence — widely-referenced community reference, 3k+ stars)
+- [Shopify Admin UI patterns](https://shopify.dev/docs/apps/design-guidelines/overview) — authoritative reference for e-commerce admin UX conventions (HIGH confidence — official Shopify developer documentation)
 
 ---
 
-*Feature research for: BookStore v3.0 — Next.js Customer Storefront*
-*Researched: 2026-02-27*
+*Feature research for: BookStore v3.1 — Admin Dashboard Frontend*
+*Researched: 2026-02-28*

@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** BookStore v3.0 — Next.js 15 Customer Storefront
-**Domain:** E-commerce storefront frontend integration with existing FastAPI backend
-**Researched:** 2026-02-27
+**Project:** BookStore v3.1 — Admin Dashboard Frontend
+**Domain:** E-commerce admin dashboard added to an existing Next.js 15 + FastAPI bookstore application
+**Researched:** 2026-02-28
 **Confidence:** HIGH
 
 ## Executive Summary
 
-BookStore v3.0 adds a Next.js 15 customer-facing storefront to a fully built FastAPI backend (v2.1, 13,743 LOC, 18 phases, 306 passing tests). This is an integration project, not a greenfield build. The backend already provides every required API endpoint — catalog with FTS, JWT auth (email + Google OAuth), cart, checkout (mock payment), orders, wishlist, pre-booking, reviews, and email notifications. The frontend's job is to expose all of this to customers through a polished, SEO-optimized interface. The recommended approach: Next.js 15 App Router with Server Components for public catalog pages (SEO), Client Components + TanStack Query for interactive features (cart, checkout, wishlist, reviews), and NextAuth.js v5 as a JWT bridge between the browser session and FastAPI's token system.
+The v3.1 milestone is a frontend-only admin dashboard that surfaces an already-complete FastAPI backend. All six admin sections (Overview, Sales Analytics, Book Catalog CRUD, User Management, Review Moderation, Inventory Alerts) have fully-implemented, tested backend endpoints — the implementation risk is entirely in the frontend. Because the dashboard is additive to a shipped v3.0 storefront, the dominant architectural challenge is cleanly separating the admin layout from the customer storefront without breaking existing customer URLs. The correct pattern is to extract the customer Header/Footer into a `(store)/` App Router route group, leaving the root layout as a Providers-only shell and placing the new `admin/` section at the same level with its own sidebar layout. This is a one-time restructure that must happen in the first phase before any admin feature page is built.
 
-The build order is dictated by hard dependencies: monorepo restructure and frontend foundation must come first (CORS, type generation, layout shell), auth integration second (nothing else works without tokens in the session), then catalog and search (public pages with highest SEO value), then cart and checkout (core transaction flow), then orders and account, then wishlist and pre-booking, and finally reviews. Google OAuth is the highest-complexity single task because it requires a two-step token exchange (Google id_token — FastAPI JWT) that most tutorials do not document. The custom backend JWT handoff in NextAuth.js callbacks is the most critical integration point; if it is wrong, every authenticated endpoint returns 401.
+The recommended frontend additions are minimal: two net-new packages (Recharts via the shadcn chart CLI, and `@tanstack/react-table`) on top of libraries already installed in v3.0 (react-hook-form, zod, TanStack Query, sonner, shadcn/ui). Admin pages should be Client Components using TanStack Query — not Server Components — because interactive filtering, optimistic mutations, and toast feedback require client state, and admin pages are auth-gated so SEO is irrelevant. The backend already supports pagination, filtering, and sorting on all admin endpoints, meaning the frontend can implement server-driven tables throughout without loading unbounded result sets into the browser.
 
-The primary risks are concentrated in two areas: authentication plumbing (5 distinct pitfalls documented) and the monorepo restructure (3 pitfalls). Auth risks — CORS misconfiguration, NextAuth session not carrying the FastAPI token, refresh token race conditions with single-use opaque tokens, deactivated user sessions persisting, and Google token not being exchanged for a FastAPI token — all have clear prevention strategies documented in PITFALLS.md. The monorepo restructure risk is mitigated by doing the move in a single commit that updates all path references simultaneously. A critical security note: Next.js < 15.2.3 has a CVE-2025-29927 middleware bypass; the project must use >= 15.2.3.
+The two non-negotiable risks are security and chart hydration. CVE-2025-29927 (CVSS 9.1) allows Next.js middleware bypass in versions below 15.2.3, so role checks must be independently verified in every admin layout Server Component — not only in `proxy.ts`. Recharts (the engine under shadcn charts) triggers hydration errors in Next.js 15 production builds when server-pre-rendered; every chart component must be wrapped with `next/dynamic` and `{ ssr: false }`. Both must be resolved in Phase 26 (the first phase) before any feature pages are built.
 
 ---
 
@@ -19,230 +19,150 @@ The primary risks are concentrated in two areas: authentication plumbing (5 dist
 
 ### Recommended Stack
 
-The frontend stack is entirely new; the FastAPI/PostgreSQL/SQLAlchemy 2.0/Alembic backend is unchanged. Next.js 15.x (not 16.x — too new) with the App Router is the correct choice because public catalog and book detail pages require SSR for SEO, and App Router provides first-class layout nesting without a third-party router. TypeScript 5.x is required because the type-safe API client (openapi-fetch + openapi-typescript) provides zero value without it. All UI is built on shadcn/ui with Tailwind CSS v4, which is now the shadcn CLI default and eliminates the `tailwind.config.ts` file in favor of a CSS-first `@theme` directive.
+The v3.0 stack (Next.js 15, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS v4, NextAuth.js v5, react-hook-form, zod, zustand, sonner, lucide-react) is locked and unchanged. The v3.1 admin dashboard requires exactly two net-new runtime dependencies:
 
-The data layer splits cleanly: TanStack Query v5 handles server state (all FastAPI API calls, caching, mutations, optimistic updates) for Client Components; Server Components fetch directly using `apiClient` with no TanStack Query involved. Zustand v5 handles the one piece of client-only state that fits neither pattern — the shopping cart display before checkout (though the backend is the true source of truth). react-hook-form + Zod v4 handles all forms. The flat monorepo structure (no Turborepo, no workspaces) is correct for exactly two apps in different languages with zero shared packages.
+- **recharts ^2.15.x** (installed via `npx shadcn@latest add chart`) — the charting engine under shadcn's `ChartContainer` and `ChartTooltip` primitives. Must use ^2.15.x, not v3, because shadcn's chart.tsx targets the v2 stable API. Requires a `"react-is": "^19.0.0"` npm override for React 19 compatibility.
+- **@tanstack/react-table ^8.21.3** — headless table logic (sort, filter, pagination, row selection) composable with the existing shadcn `Table` component. Same TanStack family as the already-installed TanStack Query; no version coupling between them.
 
-**Core technologies:**
-- **Next.js 15.x:** App Router SSR/RSC for SEO-critical catalog pages; built-in middleware for auth route guards
-- **TypeScript 5.x:** Required for openapi-typescript type-safe API client; catches API contract drift at compile time
-- **next-auth 5.0.0-beta.x:** App Router-native session management; JWT bridge to FastAPI's token system; production-ready despite beta label (18+ months community adoption)
-- **openapi-typescript 7.x + openapi-fetch 0.17.x:** Auto-generated TypeScript types from FastAPI's `/openapi.json`; zero runtime cost; eliminates manual type maintenance
-- **TanStack Query 5.x:** Server state caching, mutations, and optimistic updates for all Client Components; HydrationBoundary for server-prefetched data
-- **shadcn/ui + Tailwind CSS 4.x:** Component library with Tailwind v4 CSS-first config; Radix UI primitives for accessibility
-- **react-hook-form 7.x + Zod 4.x:** Form management and validation; Zod v4 is stable and 14x faster than v3
-- **Zustand 5.x:** Cart display state only; must use context-provider pattern (not module-level global) for SSR safety
-- **Node.js 20 LTS:** Required by Next.js 15; prefer 20 over 22 for stability
+Everything else needed for admin forms (react-hook-form, zod, @hookform/resolvers), notifications (sonner), and icons (lucide-react) is already installed. Tremor, MUI DataGrid, Chart.js, AG Grid, and Recharts v3 are explicitly ruled out: they either conflict with the existing shadcn/ui system, introduce unnecessary bundle weight, or lack stable integration with the current stack.
+
+**Core technologies for v3.1:**
+- **recharts ^2.15.x**: Data visualization via shadcn chart primitives — requires react-is override; avoid v3 until shadcn PR #8486 merges
+- **@tanstack/react-table ^8.21.3**: Headless table behavior for sort, filter, pagination, and row selection; pairs with shadcn Table component for markup
+- **react-hook-form + zod (already installed)**: Admin book CRUD forms with Zod v4 schema validation; no install needed
+- **TanStack Query (already installed)**: Server data fetching, mutation feedback, cache invalidation; all admin pages are Client Components using `useQuery` and `useMutation`
+- **shadcn/ui + Tailwind CSS v4 (already installed)**: All admin UI primitives — Card, Table, Dialog, Badge, Input, Skeleton, AlertDialog — shared between storefront and admin
 
 ### Expected Features
 
-The full feature set is determined by the existing backend API coverage — every endpoint that exists should be surfaced to the customer. The key distinction is between table stakes (a broken or untrustworthy storefront without them) and differentiators (features that elevate the experience).
+All features map directly to backend endpoints that are already built and tested. The frontend must expose six distinct admin sections with no backend changes required.
 
-**Must have (table stakes):**
-- Catalog browsing with paginated book grid (cover, title, author, price, stock status) — RSC + ISR
-- Book detail page with average rating, review count, stock status, description — RSC + ISR + generateMetadata()
-- Full-text search with genre/price filters — URL-persisted state (bookmarkable, back-button safe)
-- Email + password authentication — sign up, sign in, sign out, protected route redirects
-- Google OAuth login — custom NextAuth + FastAPI token exchange handoff
-- Shopping cart (add, update quantity, remove) — server as source of truth, optimistic updates
-- Checkout flow — single-page, mock payment, "Place Order" button, POST to /orders/checkout
-- Order history and order detail pages — auth-gated RSC pages
-- Authentication-gated routes — Next.js middleware + auth() validation in Server Components
-- Responsive mobile-first layout — Tailwind breakpoints, shadcn components
-- Loading skeletons and error boundaries — loading.tsx and error.tsx per route segment
+**Must have (table stakes — all P1 for v3.1):**
+- Dashboard overview: KPI cards (revenue, order count, AOV) with delta badges and period selector (Today/This Week/This Month)
+- Low-stock count badge on overview linking to Inventory section
+- Revenue comparison bar chart (current vs prior period — two bars, NOT a timeseries; backend only provides period totals)
+- Top-sellers table with revenue/volume toggle and configurable row limit (5/10/25)
+- Paginated catalog table with debounced search, genre filter, and Add/Edit/Delete/Update Stock actions
+- Book add/edit form with full field set (title, author, price, ISBN, genre, description, cover URL, publish date)
+- Delete book with confirmation dialog ("this action cannot be undone")
+- Stock update modal with pre-booking notification awareness (toast: "Pre-booking notification emails will be sent" if stock was 0)
+- Paginated user table with role and active-status filters, deactivate/reactivate per row (deactivate disabled for admin-role users)
+- Paginated review moderation table with filter bar (book ID, user ID, rating range, sort), single-review delete, and bulk delete with checkbox selection
+- Inventory alerts table: configurable threshold input, stock-level color coding (red for out-of-stock, amber for low), Update Stock link per row
+- Admin sidebar navigation with active route highlighting and "Back to Storefront" link
+- Admin route guard: role check in middleware AND in admin/layout.tsx Server Component
 
-**Should have (differentiators):**
-- Wishlist with optimistic toggle — heart icon on card and detail page, dedicated wishlist page
-- Pre-booking for out-of-stock books — "Pre-book" replaces "Add to Cart" when stock == 0
-- Verified-purchase reviews with star ratings — read display on book detail, write/edit/delete after purchase
-- Book detail SEO with JSON-LD Book schema — Open Graph + structured data for rich search results
-- URL-persisted search/filter state — shareable, bookmarkable search URLs
-- Optimistic cart updates — instant UI feedback with rollback on server error
-- Order confirmation page — dedicated post-checkout confirmation, not just redirect to order history
-- Account page — active pre-bookings with cancel action, links to orders and wishlist
+**Should have (differentiators — P2, ship if time allows in v3.1):**
+- Top-5 sellers mini-table on Overview page (high informational value, reuses existing endpoint with limit=5)
+- Revenue/volume toggle on top-sellers (already described above — confirmed P1 in FEATURES.md prioritization matrix)
+- Sticky sidebar with active route highlighting (minimal cost, significantly improves orientation)
 
-**Defer (v3.x / v4+):**
-- Admin dashboard UI — explicitly deferred to v3.1+ in PROJECT.md; separate layouts, access control, components
-- GitHub OAuth on frontend — PROJECT.md defers; email + Google covers the majority of users
-- Review helpfulness voting — needs sufficient review volume before ranking is meaningful
-- Real payment gateway (Stripe) — adds PCI scope; separate milestone
-- Recommendation engine — requires transaction history data
-- Real-time stock notifications (WebSocket) — backend is email-only for restock
+**Defer to v3.2:**
+- Day-by-day revenue timeseries chart — requires a new backend endpoint (`GET /admin/analytics/sales/timeseries`) not present in v3.1
+- Review text expand/collapse — quality-of-life improvement, not a blocker
+- Inline stock editing directly from the Inventory Alerts table
 
-**Anti-features to explicitly avoid:**
-- Infinite scroll on catalog pages — use pagination; infinite scroll breaks bookmarking, back-navigation, and comparison browsing
-- Client-only localStorage cart — server is the source of truth; TanStack Query caches for responsiveness
-- Forced registration before cart — show a non-intrusive "Sign in to save your cart" prompt; do not hard-block cart viewing
-- Real-time stock polling — show stock status on page load; no continuous polling
-- Intrusive popups — no email capture popups, exit-intent modals, or newsletter overlays
+**Defer to v4+:**
+- Sales forecasting — requires ML infrastructure
+- CSV export of analytics data — data volume does not justify at current scale
+- Bulk stock import via CSV — requires new backend endpoint
+- Admin user role management UI — requires new backend endpoint
+
+**Critical scope constraint:** The revenue chart must be a two-bar comparison (current period vs prior period), not a continuous timeseries. The backend `GET /admin/analytics/sales/summary` returns period totals and a `delta_percentage` — it does not expose day-by-day data. A timeseries chart would require a new backend endpoint and is explicitly deferred to v3.2.
 
 ### Architecture Approach
 
-The architecture is a direct API consumer: Next.js frontend calls FastAPI REST endpoints directly (no BFF proxy layer), with CORS enabled on the backend for the Next.js origin. NextAuth.js v5 acts exclusively as a JWT bridge — it does not own the user database, does not have a database adapter, and does not issue its own tokens. FastAPI is the auth authority. The session cookie stores FastAPI-issued access and refresh tokens, encrypted by NextAuth's `NEXTAUTH_SECRET`. All API calls from both Server Components and Client Components attach the FastAPI access token as `Authorization: Bearer <token>`. Only two backend changes are required to support the frontend: CORS middleware (explicit origins, not wildcard) and a Google `id_token` exchange endpoint at `/auth/google/callback`.
+The admin dashboard integrates into the existing App Router structure via a route group restructure and one new section. The root `layout.tsx` is stripped to Providers-only (no Header/Footer). Existing customer pages move into a `(store)/` route group with its own `layout.tsx` that adds the customer Header and Footer — approximately 10 file moves with no URL changes (route groups are transparent in URLs). The new `admin/` section sits alongside `(store)/` with its own `layout.tsx` providing AdminSidebar and AdminHeader. This is the only correct App Router pattern for multi-section apps with completely different chrome in each section.
 
-The rendering strategy divides cleanly by page type: public catalog and book detail pages are Server Components with ISR (60s revalidate) for SEO and caching; interactive user-specific pages (cart, checkout, wishlist, reviews) are Client Components; auth-gated read pages (orders, account) prefer RSC with dynamic rendering to minimize client bundle. The "push interactivity to the leaves" rule must be applied consistently — page-level files must not acquire `"use client"`, or server-rendered data fetching moves to the client and SEO value is lost.
+Admin data fetching uses Client Components throughout with TanStack Query hooks that call a new `src/lib/admin.ts` module mirroring the existing `src/lib/catalog.ts` pattern. All admin query keys are prefixed with `"admin"` to prevent cache collisions with the customer-facing `["books"]` and `["reviews"]` caches. When an admin mutates a book, both the admin catalog key and the customer books key are invalidated so the customer storefront reflects the change immediately.
 
 **Major components:**
-1. **Next.js App Router pages** — route structure, layouts, RSC data fetching; two route groups: `(auth)` for login/register, `(store)` for catalog, cart, orders, wishlist
-2. **NextAuth.js v5 config** — Credentials provider + Google provider; `jwt` callback stores FastAPI tokens; `session` callback exposes them to client; `jwt` callback handles token refresh with a 60s expiry buffer
-3. **openapi-fetch API client** — typed HTTP client using generated schema; single client instance in `src/lib/api/client.ts`; types regenerated from `/openapi.json` after any backend Pydantic model change
-4. **TanStack Query layer** — `QueryClientProvider` at root layout; `HydrationBoundary` + `prefetchQuery` pattern for server-prefetched data; `useMutation` + `invalidateQueries` for writes; explicit `staleTime` on all queries to prevent double-fetch
-5. **Zustand cart store** — `createStore` wrapped in React context (not module-level global) to prevent SSR request bleedover; `persist` middleware to `localStorage` for cart count display
-6. **shadcn/ui component layer** — components copied into `src/components/ui/`; fully owned, no version conflicts; Tailwind v4 CSS-first config in `globals.css`
-
-**Key architectural decisions:**
-- No BFF proxy — FastAPI is already a well-designed API; proxying doubles the surface area without benefit
-- No database adapter for NextAuth — sessions are stateless encrypted JWT cookies; FastAPI's DB owns user state
-- openapi-typescript v7 over manual types — auto-generation from live spec; stale type CI check enforced
-- next-auth v5 beta over v4 stable — v4 requires App Router shims; v5 is App Router-native
-- Flat monorepo over Turborepo — no shared JS packages between Python backend and TS frontend; Turborepo adds complexity without benefit
+1. **`admin/layout.tsx` (Server Component)**: Admin shell with independent role verification (`auth()` + redirect), AdminSidebar, AdminHeader — the real security boundary, not middleware
+2. **`src/lib/admin.ts`**: All admin API fetch functions using the existing `apiFetch` wrapper with Bearer token injection; mirrors `src/lib/catalog.ts` structure
+3. **`admin/_components/DataTable.tsx`**: Reusable TanStack Table + shadcn Table integration with pagination, sortable columns, and row selection; built in Phase 28, reused in Phase 29
+4. **`admin/_components/StatCard.tsx`**: KPI card with current value, label, and delta percentage badge (green up-arrow / red down-arrow / grey dash)
+5. **`admin/_components/RevenueChart.tsx`**: shadcn BarChart wrapped in `next/dynamic` with `{ ssr: false }` — the mandatory pattern for all Recharts components
+6. **`src/proxy.ts` (modified)**: Adds `/admin` to `protectedPrefixes` plus a separate `adminPrefixes` role check for UX-level redirect (not the primary security boundary)
 
 ### Critical Pitfalls
 
-1. **CORS wildcard + credentials breaks all auth** — `allow_origins=["*"]` with `allow_credentials=True` is rejected by every browser; use explicit origin list from environment variables; server logs show 200 OK while browser blocks every credentialed request (deceptive failure mode)
+1. **Chart SSR hydration errors (CRITICAL)** — Recharts accesses `window` at import time, causing "Hydration failed" errors in Next.js 15 production builds (works in dev, breaks in prod — deceptive failure mode). Every component that renders Recharts must be wrapped in `next/dynamic({ ssr: false, loading: () => <Skeleton /> })`. Establish this pattern in Phase 26 before any chart component is written.
 
-2. **NextAuth session does not carry FastAPI access token by default** — `authorize()` return value is not automatically available via `useSession()`; must explicitly map `accessToken` and `refreshToken` through both the `jwt` callback (into the cookie) and the `session` callback (onto the session object); without this, every FastAPI call sends `Authorization: Bearer undefined`
+2. **Middleware-only admin gate is bypassable (CRITICAL — CVE-2025-29927, CVSS 9.1)** — Sending `x-middleware-subrequest` header bypasses Next.js middleware in versions below 15.2.3. Defense requires two independent layers: (1) upgrade to Next.js 15.2.3+, and (2) verify `session.user.role === "admin"` inside `admin/layout.tsx` as a Server Component using `auth()`. The middleware check in `proxy.ts` is a UX redirect; the layout check is the real security boundary.
 
-3. **Google OAuth sends Google token to FastAPI instead of FastAPI token** — NextAuth Google provider receives a Google `access_token`, not a FastAPI JWT; must exchange the Google `id_token` for a FastAPI JWT via `/auth/google/callback` in the `jwt` callback; store the FastAPI token, never the Google token; two separate OAuth systems that do not auto-connect
+3. **Customer layout bleeding into admin (HIGH)** — Root `layout.tsx` applies to all routes; nested layouts are additive, not overriding. The customer Header/Footer must move to `(store)/layout.tsx` before any admin page is built. Doing this restructure later forces re-touching every existing storefront route to move it into the route group.
 
-4. **Refresh token race condition with single-use opaque tokens** — multiple browser tabs can simultaneously trigger refresh when the access token expires; FastAPI's family-based theft detection treats the second refresh (using the now-revoked token) as a stolen token and revokes the entire family, logging the user out; mitigation: add a 60s buffer before expiry in the `jwt` callback so refresh is triggered only once per expiry window
+4. **Stale data after CRUD mutations (MEDIUM)** — TanStack Query does not auto-invalidate after mutations. Every `useMutation` must include `onSuccess: () => queryClient.invalidateQueries(...)` with the correct namespaced key array. Establish shared `QUERY_KEYS` constants in Phase 28 (first CRUD phase) so all subsequent phases copy the same pattern.
 
-5. **Deactivated users retain valid NextAuth session** — NextAuth middleware only checks session cookie validity, not FastAPI `is_active` status; deactivated users can navigate protected pages until their session expires; mitigation: handle 401 from any FastAPI API call by calling `signOut()` — treat FastAPI 401 as a session invalidation signal
-
-6. **API type drift after FastAPI schema changes** — `openapi-typescript` generates types once; after any Pydantic model change, types go stale; TypeScript continues to compile (stale types still satisfy the compiler) but runtime breaks silently; mitigation: enforce `npm run generate-types && git diff --exit-code src/types/api.generated.ts` in CI
-
-7. **Monorepo restructure breaks backend CI** — moving FastAPI from root to `backend/` breaks all path references in CI workflows, docker-compose, alembic.ini, and pytest config; mitigation: move all files and update all config references in a single commit; verify all 306 backend tests pass before adding any frontend CI
-
-8. **Server/Client component boundary — `"use client"` at page level loses SSR** — adding a hook to a catalog page file forces `"use client"` on the page itself, moving data fetching to the client and losing SEO value; mitigation: extract all interactive elements to focused leaf Client Components; pages stay as Server Components
+5. **Recharts `ResponsiveContainer` renders at zero height (MEDIUM)** — `height="100%"` fails when the parent has no explicit height in a flex/grid context. Always set an explicit `h-*` class or pixel value on the parent div, or pass `height={256}` directly to `ResponsiveContainer`. Address as an explicit checklist item in Phase 27 (Sales Analytics).
 
 ---
 
 ## Implications for Roadmap
 
-Based on combined research, the build order is dictated by hard dependency chains. Auth is the gateway to every authenticated feature. The catalog is the entry point to everything else. The dependency graph from FEATURES.md maps directly to a 7-phase frontend build.
+Based on combined research, the admin dashboard decomposes into four implementation phases ordered by dependency. The ARCHITECTURE.md build order (Phases A through G) has been consolidated into four milestones that group work by shared patterns and shared risk.
 
-### Phase 19: Monorepo Restructure + Frontend Foundation
+### Phase 26: Admin Foundation — Layout, Route Protection, and Overview
 
-**Rationale:** Everything else depends on this. The repo structure, CORS configuration, API type generation, and TanStack Query provider must exist before any feature work can begin. Backend CI must continue to pass after the restructure — verify before proceeding.
+**Rationale:** Three critical prerequisites must be resolved before any feature page is built: (1) route group restructuring to prevent customer chrome from bleeding into admin, (2) CVE-2025-29927 defense-in-depth with layout-level role check, and (3) the `next/dynamic` SSR-disable pattern for charts must be documented and proven before charts are added in Phase 27. Bundling these with the Overview page validates the entire foundation end-to-end before moving on.
 
-**Delivers:** Working monorepo with `backend/` and `frontend/` directories; Next.js 15 app scaffolded with TypeScript, shadcn/ui, Tailwind v4, TanStack Query provider, and root layout shell; CORS enabled on FastAPI backend; openapi-typescript types generated from `/openapi.json`; CI configured for both workspaces with separate environment variable sets.
+**Delivers:** Working admin shell (sidebar, header, route protection), KPI cards with period selector and delta badges, low-stock count card, `src/lib/admin.ts` with all fetch functions, TanStack Query admin key namespace established (`["admin", ...]` prefix), `next/dynamic` chart wrapper pattern documented.
 
-**Addresses features from FEATURES.md:** Foundation checklist (monorepo restructure, Next.js scaffold, openapi-typescript, TanStack Query provider, layout shell)
+**Features from FEATURES.md:** KPI summary cards, period selector, delta badges, low-stock count card on overview, admin sidebar navigation, admin route guard.
 
-**Avoids pitfalls from PITFALLS.md:**
-- CORS: explicit origin list, not wildcard (Pitfall 1)
-- openapi-typescript v7 to avoid Pydantic v2 `never` type generation (Pitfall 6)
-- Monorepo path references updated in one commit; backend CI verified before proceeding (Pitfall 12)
-- Separate `backend/.env` and `frontend/.env.local`; CI uses secrets, not file loading (Pitfall 16)
-- `NEXT_PUBLIC_` naming discipline established from day one — secrets never get the prefix (Pitfall 10)
-- `await cookies()` / `await headers()` patterns established for Next.js 15 (Pitfall 11)
+**Avoids:** CVE-2025-29927 middleware bypass (layout-level `auth()` check), customer layout bleed (route group restructure), chart hydration errors (establishes `ssr: false` pattern before first chart), admin cache key collision (establishes key namespace convention).
 
-### Phase 20: Auth Integration
+**Research flag:** No additional research needed. Route groups and nested layouts are official Next.js App Router docs. Auth.js RBAC patterns are documented. Direct codebase inspection of `proxy.ts` and `auth.ts` in ARCHITECTURE.md confirms the exact integration points.
 
-**Rationale:** The single largest integration complexity in the project. Every authenticated feature (cart, orders, wishlist, reviews, pre-booking) requires the auth plumbing to be correct. The Google OAuth token exchange (NextAuth → FastAPI) is the hardest single task; doing it early prevents rework. Middleware-based route guards depend on a working NextAuth session.
+### Phase 27: Sales Analytics and Inventory Alerts
 
-**Delivers:** NextAuth.js v5 with Credentials provider (email + password → FastAPI `/auth/login`), Google OAuth provider (Google id_token → FastAPI `/auth/google/callback`), JWT session storing FastAPI access and refresh tokens, token refresh with 60s expiry buffer, middleware route guards, login/signup/logout pages, 401-triggered signOut handler.
+**Rationale:** Both sections are read-only (no mutations) and data-light — they build on analytics API calls already established in Phase 26. Sales Analytics introduces the only net-new library (Recharts via shadcn charts) and validates the chart SSR pattern under real data. Inventory Alerts is the simplest admin page (server returns pre-sorted data; no TanStack Table needed) and is a natural pairing since both sections share the analytics endpoint prefix. Grouping them avoids a separate minimal phase for Inventory.
 
-**Addresses features from FEATURES.md:** All auth flows (sign up, sign in, Google OAuth, sign out, protected route redirect with callbackUrl)
+**Delivers:** Revenue comparison bar chart (two-period BarChart using shadcn ChartContainer + Recharts BarChart), top-sellers table with revenue/volume toggle, Inventory Alerts table with configurable threshold input and color-coded stock badges (red for out-of-stock, amber for low).
 
-**Avoids pitfalls from PITFALLS.md:**
-- Explicit `jwt` and `session` callback token mapping (Pitfall 2)
-- Google `id_token` exchange for FastAPI JWT (Pitfall 13)
-- 60s buffer before refresh + RefreshAccessTokenError handling (Pitfall 4)
-- FastAPI 401 triggers `signOut()` to handle `is_active` lockout (Pitfall 3)
+**Uses from STACK.md:** `recharts ^2.15.x` via `npx shadcn@latest add chart`, `ChartContainer`, `ChartTooltip`. Simple shadcn `Table` for inventory — no TanStack Table needed since server pre-sorts the data.
 
-**Research flag:** NEEDS RESEARCH — the Google OAuth token exchange between NextAuth and a custom FastAPI backend is not a standard documented pattern; implement in a focused sub-task with explicit code review against the prevention examples in PITFALLS.md.
+**Avoids:** Zero-height `ResponsiveContainer` trap (explicit parent height is a plan checklist item), building a timeseries chart when the backend only provides period totals (chart is two bars: current vs prior period).
 
-### Phase 21: Catalog and Search
+**Research flag:** No additional research needed. shadcn/ui chart docs are official. The two-bar comparison chart is a straightforward BarChart configuration with two data series.
 
-**Rationale:** The highest-SEO-value pages. Book catalog and detail pages must be Server Components with ISR to be indexed by search engines. This phase establishes the rendering pattern (RSC + HydrationBoundary + Client leaf components) that all subsequent pages follow. URL-persisted search state enables bookmarkable/shareable search URLs.
+### Phase 28: Book Catalog CRUD
 
-**Delivers:** Home/catalog page (paginated book grid, RSC + ISR), book detail page (generateMetadata, JSON-LD Book schema, avg rating, stock status, Open Graph), search page with genre/price filters (URL-persisted via useSearchParams), pagination, loading skeletons, error boundaries.
+**Rationale:** Catalog management introduces the two most complex admin patterns: full TanStack Table (sort, filter, pagination) and form-based CRUD (react-hook-form + zod for add/edit). Building this before User Management and Review Moderation means `DataTable.tsx`, `BookForm.tsx`, and `ConfirmDialog.tsx` are established as shared components that Phase 29 simply reuses. The stock update mutation also establishes and validates the cache invalidation pattern (`QUERY_KEYS` constants + `invalidateQueries` on success) that all subsequent mutation-heavy pages copy.
 
-**Addresses features from FEATURES.md:** Catalog browse, book detail, full-text search with filters, SEO differentiator, URL-persisted filter state
+**Delivers:** Paginated catalog table with debounced search and genre filter, add book form (modal or dedicated page), edit book form (pre-populated), delete with confirmation dialog, stock update modal with pre-booking notification toast, cross-cache invalidation (admin catalog key + customer books key on any book mutation).
 
-**Avoids pitfalls from PITFALLS.md:**
-- No `"use client"` on page files; interactive elements extracted to leaf Client Components (Pitfall 7)
-- HydrationBoundary + prefetchQuery pattern for server-prefetched catalog data (Pitfall 9)
-- ThemeProvider setup with `suppressHydrationWarning` on `<html>` and `mounted` guard (Pitfall 8)
+**Implements from ARCHITECTURE.md:** `DataTable.tsx` (TanStack Table + shadcn Table integration), `BookForm.tsx` (react-hook-form + zodResolver), `ConfirmDialog.tsx` (shadcn AlertDialog), `AdminPagination.tsx`, `QUERY_KEYS` constants module.
 
-**Research flag:** Standard patterns — App Router RSC patterns and TanStack Query advanced SSR are thoroughly documented in official docs and the Vercel Commerce reference implementation. No additional research needed.
+**Avoids:** Stale data after mutations (invalidates both `["admin", "catalog"]` and `["books"]` on book changes), unbounded table data load (server-side pagination from day one — `?page=N&per_page=20` on every catalog fetch).
 
-### Phase 22: Cart and Checkout
+**Research flag:** No additional research needed. react-hook-form + zod patterns are well-documented in official docs and already used in v3.0 storefront. TanStack Table v8 has official shadcn data-table docs and the `sadmann7/tablecn` reference implementation (3k+ stars).
 
-**Rationale:** The core transaction flow. Cart must be built before checkout (checkout consumes cart state). Cart operations demonstrate the full optimistic update pattern (useMutation + onMutate + onError rollback + onSettled invalidation) that wishlist operations will reuse. The cart count badge in the navbar must update reactively — establishing the shared query cache pattern.
+### Phase 29: User Management and Review Moderation
 
-**Delivers:** Add to cart from catalog and detail page, cart page (view items, update quantity, remove, cart total), checkout page (order summary, "Place Order" button), order confirmation page (order ID, items, total), cart count badge in navbar with reactive updates, optimistic quantity updates with toast rollback.
+**Rationale:** Both sections are table-heavy with per-row and bulk actions. With `DataTable.tsx` already built in Phase 28, both pages are primarily configuration of an established component (different columns, different filter params, different action buttons). Review Moderation adds one new capability beyond User Management: multi-row selection and bulk delete. Grouping them avoids two separate phases for nearly identical patterns. Their backend endpoints (user deactivate/reactivate, review bulk delete) are simpler than book CRUD.
 
-**Addresses features from FEATURES.md:** Full cart management, checkout flow, order confirmation page, optimistic cart updates
+**Delivers:** Paginated user table with role/status filters, deactivate/reactivate with confirmation dialogs (deactivate button disabled for admin-role targets), status badges; paginated review table with full filter bar (book ID, user ID, rating range, sort direction), single-review delete, bulk delete with checkbox selection and confirmation modal ("Delete N reviews? This cannot be undone"), selection state reset after bulk delete.
 
-**Avoids pitfalls from PITFALLS.md:**
-- `invalidateQueries({ queryKey: ["cart"] })` in `onSettled` of every cart mutation (Pitfall 14)
-- Checkout initiation can be Server Action; any payment callback logic must be a Route Handler, not a Server Action (Pitfall 15)
+**Avoids:** Bulk delete without confirmation (AlertDialog required before `DELETE /admin/reviews/bulk`), selection checkboxes remaining checked after deletion (clear `selectedIds` in `onSuccess`), double-click mutations (action buttons disabled via `mutation.isPending`), role check bypassed on deactivate (backend returns 403 for admin targets; frontend also disables the button client-side).
 
-**Research flag:** Standard patterns — TanStack Query optimistic update pattern is well-documented. No additional research needed.
-
-### Phase 23: Orders and Account
-
-**Rationale:** Order history is a trust-building feature and unlocks the review eligibility check (backend enforces verified purchase; frontend checks order history to decide whether to show the review form). Account page centralizes user navigation and is required for pre-booking cancellation. Both are auth-gated RSC pages with low interactivity.
-
-**Delivers:** Order history list page (date, total, items summary, paginated), individual order detail page (full item list, price snapshots, status), account page (active pre-bookings section, links to order history and wishlist).
-
-**Addresses features from FEATURES.md:** Order history, order detail, account page, links between sections
-
-**Avoids pitfalls from PITFALLS.md:**
-- These are auth-gated RSC pages — no `"use client"` at page level; TanStack Query used only for mutations (Pitfall 7)
-
-**Research flag:** Standard patterns — auth-gated RSC pages with dynamic rendering are straightforward. No additional research needed.
-
-### Phase 24: Wishlist and Pre-booking
-
-**Rationale:** Wishlist and pre-booking are tightly related — the wishlist page surfaces "Out of Stock — Pre-book now" CTAs for wishlisted books that are unavailable. The optimistic toggle pattern (wishlist heart icon) is identical to the cart add pattern from Phase 22; implementation is straightforward given the established mutation + invalidation pattern.
-
-**Delivers:** Wishlist toggle (optimistic) from book card and detail page, dedicated wishlist page with "Add to Cart" and remove actions, pre-book button on out-of-stock book detail pages, pre-booking cancellation from account page, active pre-bookings list, "You'll receive an email when back in stock" confirmation message.
-
-**Addresses features from FEATURES.md:** Full wishlist management, pre-booking flow, out-of-stock → pre-book CTA, pre-booking cancellation
-
-**Avoids pitfalls from PITFALLS.md:**
-- Stock status (`stock_quantity == 0`) should use a short staleTime (60s) — revalidate on cart operations so pre-book/add-to-cart button stays current (noted in FEATURES.md dependency notes)
-
-**Research flag:** Standard patterns — same mutation + optimistic update patterns as cart. No additional research needed.
-
-### Phase 25: Reviews
-
-**Rationale:** Reviews are last because they depend on the full auth + order history infrastructure (verified purchase check requires order data) and the book detail page (read-only review list is displayed there). The interactive star selector requires a custom component (shadcn does not ship a native star rating component). Review write/edit/delete are the most complex client-side interactions in the project.
-
-**Delivers:** Read-only reviews section on book detail page (star display, reviewer name, rating, text, date), write review form (visible only after purchase verification), interactive 1–5 star selector (custom component), edit own review (in-place, pre-populated), delete own review (confirmation dialog), 409 handling ("You've already reviewed this — edit your existing review").
-
-**Addresses features from FEATURES.md:** All review CRUD features, verified-purchase gate UI, star display
-
-**Avoids pitfalls from PITFALLS.md:**
-- Review write form should only render after confirming purchase eligibility via `GET /orders?book_id={id}` — avoid showing a form that will always 403 (noted in FEATURES.md dependency notes)
-
-**Research flag:** Needs attention — the star rating selector requires a custom component since shadcn/ui does not ship one natively. Research community extensions or plan a small custom implementation before this phase starts.
+**Research flag:** No additional research needed. Both sections follow the DataTable pattern established in Phase 28. The bulk delete flow is a standard TanStack Query `useMutation` with selection state management.
 
 ### Phase Ordering Rationale
 
-- **Foundation before auth:** CORS must be correct before any browser-based auth test can succeed; type generation must exist before any API calls can be written type-safely.
-- **Auth before everything authenticated:** Cart, orders, wishlist, reviews, and pre-booking all require a working session with FastAPI tokens. Auth is the critical path.
-- **Catalog before cart:** The catalog is the entry point for adding items to the cart; establishing the RSC + ISR rendering pattern in the catalog phase avoids retrofit work.
-- **Cart before orders:** Checkout creates orders; order confirmation is the post-checkout landing page. The cart phase delivers the full transaction loop before orders/account builds on top of it.
-- **Orders before reviews:** Review write eligibility requires order history; building orders first avoids rework in the reviews phase.
-- **Wishlist + pre-booking together:** These features are tightly coupled at the UI level (wishlist surfaces pre-book CTAs for out-of-stock items); co-implementing them avoids a partial wishlist page in an intermediate state.
-- **Reviews last:** Maximum dependency on prior phases; the custom star selector is the only genuinely novel UI component in the project.
+- Phase 26 must precede all others: route group restructuring cannot be deferred — doing it after Phase 27 or 28 would require moving all admin feature pages into a different directory mid-build.
+- Phase 27 can proceed in parallel with early Phase 28 work (BookForm development is independent of the chart library), but the analytics page itself requires the chart SSR pattern proven in Phase 26 first.
+- Phase 28 must precede Phase 29: `DataTable.tsx` built in Phase 28 is directly consumed by Phase 29 user and review pages; building Phase 29 first would require duplicating or stubbing the component.
+- Phase 29 is last: it has no downstream consumers and introduces no new component patterns beyond Phase 28.
 
 ### Research Flags
 
-Phases needing deeper research during planning:
-- **Phase 20 (Auth):** Google OAuth token exchange with custom FastAPI backend is not widely documented; plan a dedicated sub-task using the code patterns in PITFALLS.md as the implementation spec; review the NextAuth.js GitHub discussions linked in PITFALLS.md sources before coding.
-- **Phase 25 (Reviews):** Star rating selector component is not in shadcn/ui; evaluate community extensions vs. a small custom component before the phase begins.
+All four phases follow fully documented patterns. No `/gsd:research-phase` step is needed during planning.
 
-Phases with standard patterns (skip `/gsd:research-phase`):
-- **Phase 19 (Foundation):** Next.js scaffold + CORS + openapi-typescript setup is thoroughly documented in official docs and STACK.md.
-- **Phase 21 (Catalog):** RSC + ISR + HydrationBoundary patterns have official Next.js docs and the Vercel Commerce reference implementation.
-- **Phase 22 (Cart):** TanStack Query mutation + optimistic update pattern is fully documented with examples.
-- **Phase 23 (Orders/Account):** Auth-gated RSC pages with dynamic rendering are straightforward Next.js patterns.
-- **Phase 24 (Wishlist/Pre-booking):** Same mutation patterns as cart; no novel patterns required.
+- **Phase 26:** Route groups, NextAuth role checks, proxy.ts extension — all covered by official Next.js and Auth.js docs. Direct codebase inspection in ARCHITECTURE.md confirms exact integration points.
+- **Phase 27:** shadcn chart components and Recharts BarChart — fully documented in official shadcn/ui chart docs. Two-bar comparison is a simple configuration.
+- **Phase 28:** react-hook-form + zod + TanStack Table — all documented in official sources. `sadmann7/tablecn` provides a concrete reference implementation.
+- **Phase 29:** Composition of Phase 28 patterns — no new libraries or patterns introduced.
 
 ---
 
@@ -250,20 +170,22 @@ Phases with standard patterns (skip `/gsd:research-phase`):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All versions verified against official docs, npm, and release notes as of 2026-02-27; Next.js 15.x stability confirmed; next-auth v5 production readiness assessed via community adoption (18+ months); Tailwind v4 confirmed as shadcn CLI default |
-| Features | HIGH (table stakes), MEDIUM (rendering strategy specifics) | Table stakes verified against Amazon, Barnes & Noble, Goodreads, and Baymard Institute UX research; rendering strategy recommendations are from official Next.js docs and Vercel Commerce reference; conversion rate claims from vendor sources are LOW confidence and not relied upon |
-| Architecture | HIGH | Architecture derives directly from official Next.js App Router docs, NextAuth.js v5 docs, TanStack Query advanced SSR guide, and direct codebase inspection of the existing FastAPI backend; two-system OAuth flow verified against NextAuth GitHub discussions |
-| Pitfalls | HIGH | 16 pitfalls documented; all critical pitfalls verified against official docs or confirmed GitHub issues; CORS + credentials incompatibility is official FastAPI CORS docs; NextAuth token threading is NextAuth.js callback documentation; `cookies()` async requirement is Next.js 15 official migration docs; Google token exchange race is a confirmed GitHub discussion |
+| Stack | HIGH | Two net-new packages verified against official docs and npm. Version constraints (recharts ^2.15.x, react-is override) confirmed via shadcn/ui React 19 compatibility docs. Recharts v3 vs v2 decision confirmed via shadcn PR #8486 status. |
+| Features | HIGH | All backend endpoints confirmed to exist via direct codebase inspection. Feature set derived from official Shopify admin UX guidelines, IBM Carbon Design System badge patterns, and direct API inspection. Anti-features are justified by documented backend constraints, not assumptions. |
+| Architecture | HIGH | Based on direct codebase inspection of `proxy.ts`, `auth.ts`, `layout.tsx`, and existing lib modules. Route group pattern is official Next.js App Router documentation. Component boundaries and data flow confirmed by working v3.0 codebase. |
+| Pitfalls | HIGH | CVE-2025-29927 sourced from NVD (CVSS 9.1) and ProjectDiscovery technical analysis. Chart SSR hydration issue sourced from shadcn/ui issue tracker (#5661) and Recharts GitHub (#2918). TanStack Query mutation/invalidation patterns are official documentation. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **next-auth v5 beta stability:** The "beta" label is a documentation lag, not a quality signal — but if next-auth releases a stable v5.x between research and implementation, upgrade immediately and recheck breaking changes. Monitor the Auth.js GitHub for releases.
-- **Star rating component for reviews:** No decision made on community extension vs. custom implementation. This must be resolved before Phase 25 begins. A 5-star interactive selector is approximately 30–50 lines of custom React if built from scratch, which is acceptable scope for a single component.
-- **`POST /auth/google/callback` backend endpoint:** ARCHITECTURE.md confirms this endpoint must be added to the FastAPI backend as one of only two backend changes. Verify the endpoint exists or plan its creation as the first task of Phase 20, before any frontend auth work.
-- **ISR revalidation TTL for book detail pages:** 60s revalidate is recommended for catalog and book detail pages. Stock status changes after a checkout event — if a book sells out mid-ISR window, the "Add to Cart" button may display for up to 60s after the book goes out of stock. For v3.0 this is an acceptable trade-off; revisit before launch.
-- **`generateStaticParams` for book detail pages:** Skipping static generation is acceptable in early phases (every book detail page will be SSR on first request), but should be revisited before production launch for catalog performance and CDN caching.
+- **Revenue chart data shape validation:** The backend returns `delta_percentage` and current-period revenue, but not the prior-period revenue as a raw value. The prior period must be computed as `current_revenue / (1 + delta_percentage / 100)`. Validate this formula against a live API response before implementing `RevenueChart.tsx`. When `delta_percentage` is null (no prior period data), render only the current period bar.
+
+- **Next.js version verification:** PITFALLS.md flags CVE-2025-29927 requiring Next.js 15.2.3+. Verify the current `frontend/package.json` version before Phase 26 starts. If below 15.2.3, include the version upgrade as the first task in Phase 26.
+
+- **`(store)/` route group migration scope:** Approximately 10 file moves are required to place customer pages inside the `(store)/` directory. During Phase 26 planning, enumerate the exact files to move and identify any import paths or path aliases that reference the old locations to ensure a clean, single-commit migration.
+
+- **Recharts v3 future migration:** shadcn/ui PR #8486 for Recharts v3 support is open but unmerged as of research date. Ship with recharts ^2.15.x. Add a note to the v3.2 backlog to evaluate migration once the PR merges.
 
 ---
 
@@ -271,42 +193,39 @@ Phases with standard patterns (skip `/gsd:research-phase`):
 
 ### Primary (HIGH confidence)
 
-- [Next.js 15 release post](https://nextjs.org/blog/next-15) — version choice and App Router stability
-- [Auth.js v5 migration guide](https://authjs.dev/getting-started/migrating-to-v5) — NextAuth.js v5 App Router-native integration
-- [Auth.js refresh token rotation guide](https://authjs.dev/guides/refresh-token-rotation) — official JWT callback + refresh pattern
-- [TanStack Query v5 Advanced SSR / Next.js App Router](https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr) — HydrationBoundary + prefetchQuery + dehydrate pattern
-- [shadcn/ui Tailwind v4 docs](https://ui.shadcn.com/docs/tailwind-v4) — CSS-first Tailwind v4 config; shadcn CLI defaults
-- [shadcn/ui Next.js installation](https://ui.shadcn.com/docs/installation/next) — exact install sequence
-- [openapi-typescript GitHub](https://github.com/openapi-ts/openapi-typescript) — v7.13.0 confirmed; Pydantic v2 anyOf support
-- [openapi-fetch docs](https://openapi-ts.dev/openapi-fetch/) — typed HTTP client companion
-- [Zod v4 release notes](https://zod.dev/v4) — stable May 2025; hookform/resolvers support
-- [Zustand Next.js App Router guide](https://zustand.docs.pmnd.rs/guides/nextjs) — context-provider pattern for SSR safety
-- [FastAPI CORS Tutorial](https://fastapi.tiangolo.com/tutorial/cors/) — wildcard + credentials incompatibility documented officially
-- [Next.js Dynamic APIs are Asynchronous](https://nextjs.org/docs/messages/sync-dynamic-apis) — `await cookies()` requirement in Next.js 15
-- [Next.js Common App Router Mistakes (Vercel blog)](https://vercel.com/blog/common-mistakes-with-the-next-js-app-router-and-how-to-fix-them) — server/client boundary and `"use client"` overuse
-- [TanStack Query Advanced Server Rendering](https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr) — HydrationBoundary double-fetch prevention
-- [Vercel Next.js Commerce (GitHub)](https://github.com/vercel/commerce) — official reference implementation for headless storefront with App Router
-- [Baymard Institute — Product Page UX Best Practices 2025](https://baymard.com/blog/current-state-ecommerce-product-page-ux) — catalog UX decisions (pagination over infinite scroll, forced registration avoidance)
-- [Next.js Metadata API Docs](https://nextjs.org/docs/app/getting-started/metadata-and-og-images) — generateMetadata() and JSON-LD structured data
-- [CVE-2025-29927 — Next.js middleware bypass](https://nextjs.org/docs/messages/middleware-upgrade-guide) — use >= 15.2.3
+- [shadcn/ui Chart docs](https://ui.shadcn.com/charts) — chart component API, Recharts integration, 53 pre-built chart components
+- [shadcn/ui React 19 compatibility](https://ui.shadcn.com/docs/react-19) — react-is override requirement for Recharts + React 19
+- [TanStack Table v8 docs](https://tanstack.com/table/v8/docs/installation) — headless table API, sort/filter/pagination/selection models
+- [shadcn/ui Data Table docs](https://ui.shadcn.com/docs/components/data-table) — TanStack Table + shadcn Table integration pattern
+- [sadmann7/tablecn GitHub (3k+ stars)](https://github.com/sadmann7/tablecn) — reference implementation for shadcn DataTable with server-side operations
+- [CVE-2025-29927 NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-29927) — CVSS 9.1 middleware bypass affecting Next.js <15.2.3
+- [ProjectDiscovery CVE-2025-29927 analysis](https://projectdiscovery.io/blog/nextjs-middleware-authorization-bypass) — x-middleware-subrequest header exploit mechanism
+- [Next.js App Router — Route Groups](https://nextjs.org/docs/app/building-your-application/routing/route-groups) — `(folder)` transparent URL grouping for separate layouts
+- [Next.js App Router — Layouts](https://nextjs.org/docs/app/building-your-application/routing/layouts-and-templates) — nested layout composition
+- [Next.js App Router — Private Folders](https://nextjs.org/docs/app/building-your-application/routing/colocation#private-folders) — `_components` excluded from routing
+- [Auth.js RBAC Guide](https://authjs.dev/guides/role-based-access-control) — session role checks in middleware and Server Components
+- [Auth.js — Middleware](https://authjs.dev/getting-started/session-management/protecting) — `auth()` in middleware + Server Components for layered protection
+- [TanStack Query — Query Invalidation](https://tanstack.com/query/v4/docs/react/guides/query-invalidation) — cache invalidation after mutations
+- [TanStack Query — Query Keys](https://tanstack.com/query/latest/docs/framework/react/guides/query-keys) — namespacing to avoid cache collisions
+- Direct codebase inspection: `frontend/src/proxy.ts`, `frontend/src/auth.ts`, `frontend/src/app/layout.tsx`, `frontend/src/lib/api.ts`, `backend/app/admin/` routers — source of truth for integration points
 
 ### Secondary (MEDIUM confidence)
 
-- [NextAuth.js v5 — Using FastAPI discussion (GitHub #8064)](https://github.com/nextauthjs/next-auth/discussions/8064) — community-verified FastAPI + NextAuth.js integration pattern
-- [Next Auth Google OAuth with custom backend (GitHub #8884)](https://github.com/nextauthjs/next-auth/discussions/8884) — Google token exchange pattern for custom backends
-- [Various issues with refresh token rotation (NextAuth GitHub #3940)](https://github.com/nextauthjs/next-auth/discussions/3940) — race condition with single-use refresh tokens
-- [Auth.js v5 production readiness discussion (GitHub #9511)](https://github.com/nextauthjs/next-auth/discussions/9511) — community assessment of v5 beta stability
-- [shadcn/ui Next.js 15 dark mode issue #5552](https://github.com/shadcn-ui/ui/issues/5552) — ThemeProvider hydration error confirmed in Next.js 15
-- [Achieving Full-Stack Type Safety with FastAPI, Next.js, and OpenAPI Spec](https://abhayramesh.com/blog/type-safe-fullstack) — openapi-typescript workflow for FastAPI → Next.js
-- [Managing type safety challenges using FastAPI + Next.js (Vinta Software)](https://www.vintasoftware.com/blog/type-safety-fastapi-nextjs-architecture) — type drift prevention workflow
-- [Setting Up Auth.js v5 with Next.js 15 (CodeVoweb)](https://codevoweb.com/how-to-set-up-next-js-15-with-nextauth-v5/) — practical credentials + OAuth implementation patterns
-- [Infinite Scroll vs Pagination (NinjaTables)](https://ninjatables.com/infinite-scroll-vs-pagination/) — pagination UX evidence for catalog browsing
+- [shadcn/ui issue #5661](https://github.com/shadcn-ui/ui/issues/5661) — Chart hydration regression in Next.js 15 + React 19; dynamic import fix
+- [recharts/recharts issue #2918](https://github.com/recharts/recharts/issues/2918) — ResponsiveContainer SSR pattern
+- [shadcn/ui PR #8486](https://github.com/shadcn-ui/ui/pull/8486) — Recharts v3 update (unmerged as of research date; reason for staying on v2)
+- [Shopify Admin UI guidelines](https://shopify.dev/docs/apps/design-guidelines/overview) — authoritative e-commerce admin UX conventions
+- [IBM Carbon Design System — Status Indicator Pattern](https://carbondesignsystem.com/patterns/status-indicator-pattern/) — badge design in admin tables
+- [10 Best E-commerce Dashboard Examples — Rows.com](https://rows.com/blog/post/ecommerce-dashboard) — KPI card and period-selector patterns
+- [Databox — Must-Have Ecommerce Dashboard Examples](https://databox.com/dashboard-examples/ecommerce) — operational metric patterns (slight promotional bias)
+- [freeCodeCamp — Build an Admin Dashboard with shadcn/ui](https://www.freecodecamp.org/news/build-an-admin-dashboard-with-shadcnui-and-tanstack-start/) — concrete implementation patterns
 
-### Tertiary (LOW confidence)
+### Tertiary (LOW confidence — used for UX conventions only)
 
-- Vendor-reported conversion rate claims (Baymard Institute, Yotpo) — not relied upon for feature decisions; directional only
+- [Admin Dashboard UI/UX Best Practices 2025 — Medium](https://medium.com/@CarlosSmith24/admin-dashboard-ui-ux-best-practices-for-2025-8bdc6090c57d) — badge and table UX patterns (community publication, not validated against authoritative sources)
+- [The Right Way to Design Table Status Badges — UX Movement](https://uxmovement.substack.com/p/why-youre-designing-table-status) — badge differentiation principles
 
 ---
 
-*Research completed: 2026-02-27*
+*Research completed: 2026-02-28*
 *Ready for roadmap: yes*

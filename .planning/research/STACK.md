@@ -1,354 +1,219 @@
-# Technology Stack
+# Stack Research
 
-**Project:** BookStore v3.0 — Customer Storefront (Next.js Frontend)
-**Researched:** 2026-02-27
-**Scope:** NEW frontend additions only. Backend stack (FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail) is unchanged and not re-researched.
+**Domain:** Admin Dashboard Frontend — Next.js 15 + shadcn/ui additions for v3.1
+**Researched:** 2026-02-28
+**Confidence:** HIGH (charting, tables, forms all verified against official sources)
+
+> **Scope:** This file covers ONLY the new libraries needed for the v3.1 Admin Dashboard milestone. The existing validated stack (Next.js 15/16, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS v4, NextAuth.js v5, react-hook-form, zod, zustand) is NOT re-researched here — it is locked and shipped in v3.0. See the v3.0 STACK.md in git history for full baseline details.
 
 ---
 
-## What This File Answers
+## What v3.1 Needs That v3.0 Doesn't Have
 
-The backend is complete and validated across 18 phases. This file covers only the frontend stack additions and the integration points where frontend meets backend.
+| Gap | Solution | Why New |
+|-----|----------|---------|
+| Revenue/sales charts | shadcn/ui chart component (Recharts) | No charts in v3.0 storefront |
+| Paginated data tables with sort/filter/bulk actions | `@tanstack/react-table` + shadcn Table | No data-grid use case in v3.0 |
+| Admin CRUD forms (add/edit books) | Already installed: react-hook-form + zod | Confirmed: package.json already has these |
+| Dashboard KPI cards | shadcn/ui Card (already installed) | No new lib needed |
 
 ---
 
 ## Recommended Stack
 
-### Core Framework
+### Core Technologies
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Next.js | 15.x (latest 15.x) | Full-stack React framework | SSR for public catalog pages (SEO), App Router for nested layouts (auth/guest shells), built-in middleware for route guards. |
-| React | 19.x (bundled with Next.js 15) | UI runtime | Ships with Next.js 15 — no separate install. |
-| TypeScript | 5.x | Type safety | Required. openapi-typescript generates TS types from FastAPI OpenAPI spec; without TypeScript the type-safe API client provides zero value. |
-| Node.js | 20.x LTS | Runtime | Required by Next.js 15. Use 20 LTS over 22 for stability during active development. |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| recharts | ^2.15.x (via shadcn chart CLI) | Data visualization engine | shadcn/ui's chart component wraps Recharts. Using it via `npx shadcn@latest add chart` installs Recharts as a direct dep and copies the `ChartContainer`/`ChartTooltip` primitives into `src/components/ui/chart.tsx`. You own the components, no abstraction lock-in. |
+| @tanstack/react-table | ^8.21.3 | Headless table logic (sort, filter, pagination, row selection) | The shadcn/ui data-table pattern is explicitly built on TanStack Table v8. Provides all table behavior headlessly — renders nothing, you provide the shadcn Table component markup. Same TanStack family as the already-installed TanStack Query. |
 
-**Why Next.js 15, not 16:** Next.js 16.1 released December 2025 and is too new for this build cycle. 15.x is the production-stable choice. Next.js 16.x will be available to upgrade to after v3.0 ships if desired.
+### Supporting Libraries
 
-**Why Next.js over Vite SPA:** Book catalog pages (`/books`, `/books/[id]`) need server-side rendering for search-engine indexing — a Vite SPA renders client-only. App Router provides first-class layout nesting (shared header, route-level auth shells) without a third-party router.
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| react-hook-form | ^7.71.x (ALREADY INSTALLED) | Admin book CRUD forms | Book add/edit forms with file-like text inputs (title, author, genre, price, stock). Already in package.json — no install needed. |
+| zod | ^4.x (ALREADY INSTALLED) | Admin form schema validation | Define book schema once, get TypeScript types + runtime validation. Already in package.json — no install needed. |
+| @hookform/resolvers | ^5.2.2 (ALREADY INSTALLED) | RHF-to-Zod bridge | `zodResolver(bookSchema)` in `useForm`. Supports Zod v4. Already in package.json — no install needed. |
+| sonner | ^2.x (ALREADY INSTALLED) | Toast notifications for admin actions | "Book saved", "User deactivated", "Reviews deleted (3)". Already installed — no install needed. |
+| lucide-react | ^0.575.x (ALREADY INSTALLED) | Icons for admin UI | TrendingUp for revenue, Users for user management, BookOpen for catalog. Already installed. |
 
----
+### Development Tools
 
-### Auth
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| next-auth | 5.0.0-beta.x (latest beta) | Session management, OAuth flow | v5 is App Router-native. v4 (4.24.13 stable) requires `getServerSession` shims for RSC — documented workarounds, not a clean fit. v5's universal `auth()` function works in Server Components, Route Handlers, and middleware without shims. |
-
-**On the "beta" label:** next-auth v5 has been in production use across large projects for 18+ months. The community consensus (including the maintainers) is that it is production-ready. No critical unresolved bugs block this use case. The package is actively maintained for security patches by the Auth.js team (now under the better-auth umbrella). LOW confidence on official "stable" designation; MEDIUM-HIGH confidence on production readiness based on community adoption.
-
-**Critical integration point — custom backend JWT:**
-NextAuth.js does NOT replace FastAPI's JWT system. The pattern:
-
-1. `CredentialsProvider` sends email+password to `POST /auth/login` → receives `access_token` + `refresh_token` from FastAPI.
-2. `GoogleProvider` sends the OAuth code to `POST /auth/google` → receives same FastAPI-issued tokens.
-3. Both tokens stored in NextAuth's encrypted server-side session cookie (never exposed to browser JS).
-4. `jwt()` callback checks expiry and calls `POST /auth/refresh` to rotate before the access token expires.
-5. `session()` callback exposes only what client components need (user info, access token for API calls).
-
-**Known race condition in v5 refresh:** When multiple browser tabs trigger simultaneous refresh, the `jwt()` callback may receive a stale token. Mitigation: keep FastAPI access tokens short-lived (15 min is already the backend default). Accept occasional 401 → re-login rather than implementing complex distributed locking. Acceptable for v3.0.
-
----
-
-### API Type Generation
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| openapi-typescript | 7.x (7.13.0) | Generate TypeScript types from FastAPI OpenAPI spec | FastAPI exports OpenAPI 3.1 at `/openapi.json`. openapi-typescript v7 supports OpenAPI 3.1 fully. Zero runtime cost — pure type generation only. |
-| openapi-fetch | 0.17.x | Type-safe HTTP client using generated types | Companion to openapi-typescript. 6 KB, uses native `fetch`. Provides fully typed `GET`, `POST`, `PUT`, `DELETE`, `PATCH` — request params, body, and response types all inferred from generated schema. Eliminates manual `as` type casts when calling FastAPI endpoints. |
-
-**Workflow:**
-```bash
-# Add to frontend/package.json scripts:
-"generate:api": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/schema.d.ts"
-```
-Run once at project bootstrap, and again after any FastAPI Pydantic model change. FastAPI server must be running to serve the spec.
-
-**Why not openapi-generator:** openapi-generator produces full SDK boilerplate (classes, interceptors, runtime dependencies). openapi-typescript produces only type definitions — lighter, zero runtime dependency, and composable with any fetch client.
-
----
-
-### Server State
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @tanstack/react-query | 5.x (5.90.x) | Async server-state, caching, mutations | Handles cache invalidation for cart/wishlist mutations, background refetch of catalog data, pagination, and loading/error states. Eliminates manual `useEffect`/`useState` data-fetching patterns in Client Components. |
-| @tanstack/react-query-devtools | 5.x | Dev-mode cache inspector | devDependency only; displays cache state in browser during development. |
-
-**Integration with App Router:** Server Components fetch data directly with `apiClient` (no TanStack Query). Client Components that need reactivity — cart badge, wishlist toggle, review submit/edit — use `useQuery` and `useMutation`. Use `HydrationBoundary` + `dehydrate` to prefetch on the server and stream hydrated state to the client, avoiding a double-fetch waterfall.
-
----
-
-### UI Components
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| shadcn/ui | CLI-managed (no version — components are copied into project) | Accessible component library | Components are copied into `src/components/ui/` and fully owned. No versioned peer-dep conflicts. Built on Radix UI primitives (keyboard navigation, ARIA, focus management by default). Ships pre-styled with Tailwind CSS. |
-| Tailwind CSS | 4.x | Utility-first CSS | shadcn CLI now defaults to Tailwind v4 for new projects. All shadcn components updated for v4. Tailwind v4 removes `tailwind.config.js` in favor of CSS-first `@theme` directive — simpler setup for a new project. |
-| @radix-ui/* | Latest (installed by shadcn CLI per-component) | Headless UI primitives | Do not install manually. The shadcn CLI installs exactly what each component needs. |
-| lucide-react | Latest | Icon set | Default icon library for shadcn components. |
-| class-variance-authority | Latest (via shadcn) | Component variant styling | Installed by shadcn CLI. |
-| clsx + tailwind-merge | Latest (via shadcn) | Class merging utility | Installed as `cn()` in `src/lib/utils.ts` by shadcn CLI. |
-
-**Tailwind v4 note:** v4 uses `@import "tailwindcss"` in `globals.css` and `@theme` blocks for customization — there is no `tailwind.config.ts` file. The `npx shadcn@latest init` command configures this automatically. This is the correct path for a new project starting in 2026.
-
----
-
-### Form Handling
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| react-hook-form | 7.x (7.71.x) | Uncontrolled form management | The default form library for shadcn/ui. Minimal re-renders (uncontrolled inputs vs. controlled). Used for: login, registration, checkout, review create/edit. |
-| @hookform/resolvers | Latest | Zod-to-RHF bridge | Connects Zod schemas to react-hook-form via the `zodResolver` option. Supports Zod v4. |
-| zod | 4.x (4.1.x) | Schema validation | v4 stable released May 2025. 14x faster string parsing vs v3. Built-in JSON Schema output (no external conversion library needed). Use for: client-side form validation, API response shape assertion, environment variable validation. |
-
-**Why Zod v4 over v3:** v4 is stable, faster, and the current default. No breaking changes that affect this project's usage patterns. `@hookform/resolvers` supports Zod v4 with the identical `zodResolver` import.
-
----
-
-### Client-Side State
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| zustand | 5.x (5.0.11) | Global client-only state | For UI state that belongs neither in TanStack Query (server data) nor the URL: shopping cart contents before checkout. v5 drops React <18 support and uses native `useSyncExternalStore` — cleaner SSR behavior. |
-
-**Strict scope for Zustand:**
-- Auth state → NextAuth `useSession()`
-- Server data (catalog, orders, wishlist) → TanStack Query
-- Cart contents before checkout → Zustand with `persist` middleware to `localStorage`
-
-**App Router SSR requirement:** Do NOT define the Zustand store as a module-level global. Use `createStore` (vanilla) wrapped in a React context provider. This is required to prevent request bleedover between users during server rendering. The official Zustand docs have a Next.js guide specifically for this.
-
----
-
-### Development Tooling
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| ESLint | 9.x | Linting | Ships with `create-next-app`. Uses flat config format (ESLint 9 default). |
-| Prettier | 3.x | Formatting | Add `prettier-plugin-tailwindcss` to auto-sort Tailwind utility classes. |
-
----
-
-## Monorepo Structure
-
-**Approach:** Flat monorepo — no Turborepo, no Nx, no npm/pnpm workspaces. This project has exactly two apps (Python backend, Next.js frontend) in different languages with zero shared code packages. Turborepo's build pipeline caching and task graph offer no benefit at this scale.
-
-```
-bookstore/                        # repo root
-├── backend/                      # existing FastAPI project (moved from root)
-│   ├── app/
-│   ├── tests/
-│   ├── alembic/
-│   ├── alembic.ini
-│   ├── pyproject.toml
-│   ├── poetry.lock
-│   └── docker-compose.yml
-├── frontend/                     # NEW: Next.js 15 customer storefront
-│   ├── src/
-│   │   ├── app/                  # App Router: pages and layouts
-│   │   │   ├── (auth)/           # Route group: login, register (no nav)
-│   │   │   ├── (store)/          # Route group: catalog, cart, orders, wishlist
-│   │   │   └── layout.tsx        # Root layout with SessionProvider, QueryClientProvider
-│   │   ├── components/
-│   │   │   ├── ui/               # shadcn components (CLI-managed)
-│   │   │   └── [feature]/        # Feature-specific components
-│   │   ├── lib/
-│   │   │   ├── api/
-│   │   │   │   ├── client.ts     # openapi-fetch client instance
-│   │   │   │   └── schema.d.ts   # Generated by openapi-typescript (gitignored or committed)
-│   │   │   └── auth/
-│   │   │       └── config.ts     # NextAuth configuration (providers, callbacks)
-│   │   ├── hooks/                # Custom React hooks (useCart, useWishlist, etc.)
-│   │   └── stores/               # Zustand stores (cart.ts)
-│   ├── public/
-│   ├── package.json
-│   ├── next.config.ts
-│   ├── globals.css               # Tailwind v4 entry (@import "tailwindcss", @theme blocks)
-│   └── tsconfig.json
-├── README.md
-└── .env.example                  # Documents both backend and frontend env vars
-```
-
-**Backend restructure:** Existing FastAPI files move from repo root into `backend/`. The `docker-compose.yml` moves to `backend/` (or is updated at root to reference `backend/` paths). No Python code changes — only path relocation.
-
----
-
-## Integration Points
-
-### CORS
-
-FastAPI needs CORS enabled for the Next.js origin. Add to `backend/app/main.py`:
-
-```python
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # dev; use env var in prod
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
-
-### API Client
-
-```typescript
-// frontend/src/lib/api/client.ts
-import createClient from "openapi-fetch";
-import type { paths } from "./schema";  // generated by openapi-typescript
-
-export const apiClient = createClient<paths>({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
-});
-```
-
-`NEXT_PUBLIC_API_URL` is a build-time variable. In development it defaults to `http://localhost:8000`. In production it points to the deployed FastAPI service URL.
-
-### Auth Token Injection
-
-Pass the FastAPI access token per-request from the NextAuth session. In Server Components:
-
-```typescript
-import { auth } from "@/lib/auth/config";
-
-const session = await auth();
-const { data, error } = await apiClient.GET("/books/{id}", {
-  params: { path: { id: bookId } },
-  headers: { Authorization: `Bearer ${session?.accessToken}` },
-});
-```
-
-In Client Components, access the session via `useSession()` from next-auth/react and thread the token through a custom hook that wraps `apiClient`.
-
-### Dev Proxy (Optional)
-
-Next.js rewrites can proxy API calls to avoid CORS complexity in development:
-
-```typescript
-// frontend/next.config.ts
-async rewrites() {
-  return [
-    { source: "/api/v1/:path*", destination: "http://localhost:8000/api/v1/:path*" }
-  ];
-}
-```
-
-This is optional — direct cross-origin calls with CORS configured above work correctly. The proxy approach avoids CORS entirely if preferred.
-
-### GitHub OAuth Exclusion
-
-GitHub OAuth is explicitly out of scope for v3.0 (per PROJECT.md). NextAuth GoogleProvider only. The FastAPI backend has GitHub OAuth; do not wire it up on the frontend in this milestone.
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| shadcn CLI (`npx shadcn@latest add`) | Install chart + table primitives | Use `add chart` and `add data-table` (or `add table` + build manually). Components copied to `src/components/ui/` — you own them. |
 
 ---
 
 ## Installation
 
-```bash
-# 1. Scaffold Next.js 15 in frontend/
-npx create-next-app@15 frontend \
-  --typescript \
-  --tailwind \
-  --eslint \
-  --app \
-  --src-dir \
-  --no-turbopack    # Turbopack still experimental for some edge cases
+Only two net-new packages are required. Everything else is already in `frontend/package.json`.
 
+```bash
 cd frontend
 
-# 2. Auth
-npm install next-auth@beta
+# 1. Add shadcn chart component (copies chart.tsx, installs recharts as dep)
+npx shadcn@latest add chart
 
-# 3. Server state
-npm install @tanstack/react-query
-npm install -D @tanstack/react-query-devtools
+# 2. Add TanStack Table (headless table logic)
+npm install @tanstack/react-table
 
-# 4. API types + client
-npm install openapi-fetch
-npm install -D openapi-typescript
+# 3. Add shadcn table primitive (if not already added — provides the HTML table components)
+npx shadcn@latest add table
 
-# 5. Forms + validation
-npm install react-hook-form @hookform/resolvers zod
+# React 19 + recharts compatibility override (REQUIRED — see Version Compatibility section)
+# Add to frontend/package.json "overrides" field:
+# "react-is": "^19.0.0"
+```
 
-# 6. Client-side state (cart)
-npm install zustand
-
-# 7. shadcn/ui init (configures Tailwind v4, installs Radix UI deps, creates globals.css)
-npx shadcn@latest init
-# Select: New York style, default color, CSS variables: yes
-
-# 8. Add initial shadcn component set
-npx shadcn@latest add button input label card badge avatar
-npx shadcn@latest add form dialog sheet toast sonner
-npx shadcn@latest add skeleton select textarea separator
-
-# 9. Formatter
-npm install -D prettier prettier-plugin-tailwindcss
-
-# 10. Generate API types (FastAPI must be running at localhost:8000)
-npm run generate:api
+**Resulting net-new dependencies in package.json:**
+```json
+{
+  "dependencies": {
+    "recharts": "^2.15.x",
+    "@tanstack/react-table": "^8.21.3"
+  },
+  "overrides": {
+    "react-is": "^19.0.0"
+  }
+}
 ```
 
 ---
 
 ## Alternatives Considered
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Auth | next-auth v5 beta | next-auth v4 stable | v4 built for Pages Router; App Router integration requires documented shims. v5 is App Router-native. |
-| Auth | next-auth v5 | Clerk | External vendor, subscription cost, and requires a custom backend proxy to integrate with the existing FastAPI JWT system. Adds a non-trivial vendor dependency. |
-| API Client | openapi-fetch + openapi-typescript | axios + manual TypeScript types | Manual types drift from Pydantic models on every backend change. openapi-typescript regenerates types from the live spec automatically. |
-| API Client | openapi-fetch | openapi-generator (full SDK) | openapi-generator produces runtime boilerplate (classes, interceptors). openapi-fetch is 6 KB with zero runtime — just typed `fetch`. |
-| Forms | react-hook-form | Formik | react-hook-form is the shadcn/ui default; uses uncontrolled inputs (better performance); smaller bundle. |
-| Client State | zustand | Redux Toolkit | RTK is over-engineered for a single cart store. Zustand is ~3 KB vs Redux ~50 KB. RTK's patterns add indirection without benefit at this scope. |
-| Client State | zustand | React Context | Context causes full subtree re-renders on any state change. The cart count in the header renders on every page — Context would re-render the entire layout on every add-to-cart. |
-| CSS | Tailwind v4 | Tailwind v3 | v4 is now the shadcn CLI default for new projects. v3 works but requires `--legacy-peer-deps` with newer React and adds maintenance overhead. Starting fresh in 2026 — use the current default. |
-| Framework | Next.js 15.x | Next.js 16.x | 16.x released December 2025 — too new. 15.x is the LTS-equivalent stable track. |
-| Monorepo Tool | None (flat structure) | Turborepo | No shared packages between frontend (TypeScript) and backend (Python). Turborepo's task caching benefits apply to JavaScript monorepos with shared libraries. No benefit here. |
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| shadcn/ui charts (Recharts-backed) | Tremor | If you need a full pre-built dashboard UI in hours with minimal customization. Tremor bundles 40+ dashboard components (KPI cards, charts, filters) but weighs ~200KB gzipped vs ~50KB for the shadcn approach. This project already has shadcn/ui — don't add a competing component system. |
+| shadcn/ui charts (Recharts-backed) | Recharts directly (no shadcn wrapper) | If you need chart behavior not supported by the shadcn primitives. Since shadcn copies the chart.tsx component into your project, you can always eject and use raw Recharts APIs when needed. |
+| shadcn/ui charts (Recharts-backed) | Victory / Nivo | Both are excellent, but have no shadcn integration. Would require custom theming to match the existing Tailwind v4 design tokens. Recharts is the path of least resistance given the existing stack. |
+| @tanstack/react-table | AG Grid (Community) | If you need 1000+ row virtual scrolling, Excel-like editing, or server-side Excel export. AG Grid Community is free but 50KB+ and opinionated about styling. The admin tables here (paginated, ~20 rows/page) do not need this. |
+| @tanstack/react-table | react-data-grid | Better for spreadsheet-style editable cells. Not the use case here — admin needs sort/filter/bulk-delete, not inline editing. |
+| react-hook-form + zod (already installed) | Native form + Server Actions | Next.js 15 Server Actions can handle forms without a form library. RHF is already installed and provides client-side validation UX that Server Actions alone don't give before submission. Keep the existing pattern. |
 
 ---
 
-## What NOT to Add
+## What NOT to Use
 
-| Avoid | Why |
-|-------|-----|
-| **Stripe or payment SDK** | Mock payment only per PROJECT.md. No real payment gateway in v3.0. |
-| **Admin dashboard routes** | Explicitly out of scope for v3.0. Admin UI deferred to v3.1+. |
-| **GitHub OAuth (frontend)** | Out of scope per PROJECT.md — email + Google sufficient for v3.0. |
-| **WebSocket / SSE** | No real-time features in v3.0. Restock alerts are email-only (backend handles). |
-| **i18n (next-intl, react-i18next)** | Single-language bookstore. Not mentioned in requirements. |
-| **Storybook** | UI components are shadcn/ui primitives — Storybook overhead not justified for a single-milestone frontend build. |
-| **Cypress / Playwright E2E** | Not planned in requirements. Unit + integration tests via Jest/Vitest cover component behavior. Defer E2E until v4.0. |
-| **next-auth database adapter** | Sessions stored in encrypted JWT cookie (stateless). No DB adapter needed — FastAPI's DB handles user state. |
-| **SWR** | TanStack Query is already chosen. Do not introduce a competing data-fetching layer. |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| **Tremor** | Duplicate component system alongside existing shadcn/ui. Would require maintaining two design systems. Tailwind v4 incompatibilities documented in community issues. | shadcn/ui chart component + custom KPI cards with shadcn Card |
+| **Chart.js / react-chartjs-2** | No shadcn integration. Requires manual theming to match Tailwind design tokens. Recharts composes with React JSX — Chart.js uses a canvas imperative API, harder to customize. | Recharts via shadcn chart |
+| **@tanstack/react-table v7 (react-table)** | v7 is deprecated. v8 is the current API. Do not use legacy `react-table` package name. | `@tanstack/react-table` v8 |
+| **MUI DataGrid / Material UI** | Entire MUI design system conflicts with existing shadcn/ui + Tailwind. Bundle bloat, theme conflicts, React 19 peer-dep warnings documented on MUI GitHub. | @tanstack/react-table with shadcn Table component |
+| **Recharts v3 with shadcn/ui** | shadcn's official chart.tsx targets Recharts v2 stable. A PR (#8486) for Recharts v3 is open but not merged. Ship with stable Recharts v2 — the migration to v3 is intentionally minimal when it stabilizes. | Recharts ^2.15.x (the version shadcn CLI installs) |
+
+---
+
+## Stack Patterns by Variant
+
+**For KPI/metric cards (revenue summary, order count, AOV):**
+- Use shadcn `Card` + `CardHeader` + `CardContent` (already installed)
+- No new library needed — pure layout with Tailwind
+
+**For revenue line/area charts:**
+- Use `npx shadcn@latest add chart` → gives `ChartContainer`, `ChartTooltip`
+- Compose with Recharts `<AreaChart>`, `<LineChart>`, `<BarChart>` directly
+- The `ChartContainer` handles responsive sizing and CSS variable theming
+
+**For top-sellers table (ranked list, revenue/volume columns):**
+- Simple: shadcn `Table` component with manual mapping — no TanStack Table needed if no sort/filter
+- If sort is required: add `@tanstack/react-table` with `useReactTable` + `getSortedRowModel()`
+
+**For review moderation (paginated, filter by book/user/rating, bulk delete):**
+- Full TanStack Table: `useReactTable` with `getPaginationRowModel()`, `getSortedRowModel()`, `getFilteredRowModel()`, `getRowSelectionModel()`
+- Row selection → "Delete selected (N)" button triggers bulk delete mutation via TanStack Query `useMutation`
+
+**For user management (paginated, role/active filter, deactivate action):**
+- Full TanStack Table: same pattern as review moderation but no bulk selection needed — per-row action buttons
+
+**For low-stock inventory alerts (threshold filter, ordered by stock ASC):**
+- Simple shadcn `Table` — server already returns sorted/filtered data; no client-side TanStack Table needed
+
+---
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| recharts ^2.15.x | React 19.2.3 | Requires `"overrides": { "react-is": "^19.0.0" }` in package.json. Without this override, npm/pnpm will warn about the `react-is` peer dependency conflict. shadcn docs explicitly call this out for React 19 projects. |
+| @tanstack/react-table ^8.21.3 | React 19.2.3 | Supported. Note: may not be compatible with the React Compiler (still experimental), but this project does not use the React Compiler. |
+| recharts ^2.15.x | Tailwind v4 | Recharts renders SVG — no Tailwind class conflicts. Colors pulled from CSS variables set in `ChartContainer` config, which maps to `@theme` tokens defined in `globals.css`. |
+| @tanstack/react-table ^8.21.3 | @tanstack/react-query ^5.90.x | Different packages in the TanStack suite — no version coupling. Query handles server data fetching; Table handles UI rendering of that data. Combine: fetch with `useQuery`, pass `data` to `useReactTable`. |
+| react-hook-form ^7.71.x | zod ^4.x | @hookform/resolvers ^5.2.2 bridges the two. Confirmed: resolver v5 auto-detects Zod v3 vs v4 at runtime. Some bundler-specific import issues reported with Zod v4 subpath imports — use `import { z } from 'zod'` (root import), not `'zod/v4'`. |
+
+---
+
+## Integration with Existing Stack
+
+### TanStack Query + TanStack Table Pattern
+
+The two TanStack libraries compose cleanly. Fetch server-paginated data with `useQuery`, pass it to `useReactTable`:
+
+```typescript
+// hooks/use-reviews-table.ts
+const { data, isLoading } = useQuery({
+  queryKey: ["admin", "reviews", filters],
+  queryFn: () => fetchAdminReviews(filters),
+});
+
+const table = useReactTable({
+  data: data?.reviews ?? [],
+  columns,
+  getCoreRowModel: getCoreRowModel(),
+  getPaginationRowModel: getPaginationRowModel(),
+  getSortedRowModel: getSortedRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+  onRowSelectionChange: setRowSelection,
+  state: { rowSelection },
+});
+```
+
+Bulk delete: collect `table.getSelectedRowModel().rows`, extract IDs, call `useMutation` → `DELETE /admin/reviews/bulk`.
+
+### shadcn Chart + TanStack Query Pattern
+
+```typescript
+// components/admin/revenue-chart.tsx
+const { data } = useQuery({
+  queryKey: ["admin", "sales", period],
+  queryFn: () => fetchSalesSummary(period),
+});
+
+// Pass data.daily_revenue to <AreaChart data={...} />
+// ChartContainer applies CSS variable colors from shadcn theme
+```
+
+### shadcn Table Component vs TanStack Table
+
+shadcn's `Table` component (`npx shadcn@latest add table`) provides the styled HTML `<table>`, `<thead>`, `<tbody>` etc. TanStack Table provides the logic (sorting state, pagination state, row selection). They combine — TanStack drives the state, shadcn Table provides the markup:
+
+```typescript
+// TanStack provides: table.getHeaderGroups(), table.getRowModel()
+// shadcn provides: <Table>, <TableHeader>, <TableRow>, <TableCell>
+// You write: the loop that maps TanStack model → shadcn components
+```
 
 ---
 
 ## Sources
 
-- [Next.js 15 release post](https://nextjs.org/blog/next-15) — HIGH confidence
-- [Next.js 16 upgrade guide](https://nextjs.org/docs/app/guides/upgrading/version-16) — HIGH confidence (confirmed 16.x exists; chose 15.x intentionally)
-- [Auth.js v5 migration guide](https://authjs.dev/getting-started/migrating-to-v5) — HIGH confidence
-- [Auth.js v5 Next.js reference](https://authjs.dev/reference/nextjs) — HIGH confidence
-- [Auth.js refresh token rotation guide](https://authjs.dev/guides/refresh-token-rotation) — HIGH confidence
-- [Auth.js v5 production readiness discussion](https://github.com/nextauthjs/next-auth/discussions/9511) — MEDIUM confidence (community assessment)
-- [TanStack Query v5 Advanced SSR / Next.js App Router](https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr) — HIGH confidence
-- [TanStack Query v5 npm](https://www.npmjs.com/package/@tanstack/react-query) (v5.90.21 confirmed current) — HIGH confidence
-- [shadcn/ui Tailwind v4 docs](https://ui.shadcn.com/docs/tailwind-v4) — HIGH confidence
-- [shadcn/ui Next.js installation](https://ui.shadcn.com/docs/installation/next) — HIGH confidence
-- [shadcn/ui React 19 compatibility](https://ui.shadcn.com/docs/react-19) — HIGH confidence
-- [openapi-typescript GitHub releases](https://github.com/openapi-ts/openapi-typescript) (v7.13.0 confirmed) — HIGH confidence
-- [openapi-fetch docs](https://openapi-ts.dev/openapi-fetch/) (v0.17.x confirmed) — HIGH confidence
-- [Zod v4 release notes](https://zod.dev/v4) (stable May 2025, v4.1.x current) — HIGH confidence
-- [react-hook-form with shadcn/ui](https://ui.shadcn.com/docs/forms/react-hook-form) — HIGH confidence
-- [react-hook-form v7.71.x on npm](https://github.com/react-hook-form/react-hook-form/releases) — HIGH confidence
-- [Zustand v5 announcement](https://pmnd.rs/blog/announcing-zustand-v5) (v5.0.11 current) — HIGH confidence
-- [Zustand Next.js App Router guide](https://zustand.docs.pmnd.rs/guides/nextjs) — HIGH confidence
-- [FastAPI client generation docs](https://fastapi.tiangolo.com/advanced/generate-clients/) — HIGH confidence
-- [Next.js rewrites docs](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites) — HIGH confidence
+- [shadcn/ui Chart docs](https://ui.shadcn.com/docs/components/radix/chart) — HIGH confidence (official)
+- [shadcn/ui React 19 compatibility](https://ui.shadcn.com/docs/react-19) — HIGH confidence (documents recharts react-is override requirement)
+- [recharts npm latest (2.15.x / 3.x)](https://www.npmjs.com/package/recharts) — HIGH confidence
+- [recharts 3.0 migration guide](https://github.com/recharts/recharts/wiki/3.0-migration-guide) — HIGH confidence (confirmed v3 exists but shadcn/ui not yet updated to use it)
+- [shadcn/ui PR #8486 — recharts v3 update](https://github.com/shadcn-ui/ui/pull/8486) — MEDIUM confidence (WIP, not merged as of research date)
+- [TanStack Table v8 docs](https://tanstack.com/table/v8/docs/installation) — HIGH confidence (official)
+- [@tanstack/react-table npm 8.21.3](https://www.npmjs.com/package/@tanstack/react-table) — HIGH confidence
+- [shadcn/ui data-table docs](https://ui.shadcn.com/docs/components/radix/data-table) — HIGH confidence (official pattern: TanStack Table + shadcn Table)
+- [react-hook-form v7.71.x npm](https://www.npmjs.com/package/react-hook-form) — HIGH confidence
+- [@hookform/resolvers v5.2.2 npm](https://www.npmjs.com/package/@hookform/resolvers) — HIGH confidence (Zod v4 support confirmed)
+- [Zod v4 stable release notes](https://zod.dev/v4) — HIGH confidence
+- [shadcn/ui forms docs](https://ui.shadcn.com/docs/forms/react-hook-form) — HIGH confidence (official)
 
 ---
 
-*Stack research for: BookStore v3.0 Customer Storefront (Next.js frontend)*
-*Researched: 2026-02-27*
+*Stack research for: BookStore v3.1 Admin Dashboard (frontend additions)*
+*Researched: 2026-02-28*
