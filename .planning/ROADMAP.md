@@ -61,7 +61,7 @@
 - [x] **Phase 21: Catalog and Search** — SSR catalog, book detail pages with SEO, full-text search with URL-persisted filters (completed 2026-02-27)
 - [x] **Phase 22: Cart and Checkout** — Full cart management with optimistic updates, checkout flow, order confirmation (completed 2026-02-27)
 - [x] **Phase 23: Orders and Account** — Order history, order detail, account page with navigation (completed 2026-02-27)
-- [ ] **Phase 24: Wishlist and Pre-booking** — Wishlist with optimistic toggle, pre-booking for out-of-stock titles
+- [x] **Phase 24: Wishlist and Pre-booking** — Wishlist with optimistic toggle, pre-booking for out-of-stock titles (completed 2026-02-28)
 - [ ] **Phase 25: Reviews** — Read/write/edit/delete reviews on book detail page with verified-purchase gate
 
 ## Phase Details
@@ -152,9 +152,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 24-01-PLAN.md — Wishlist hook + heart toggle on BookCard/ActionButtons + Pre-book button
-- [ ] 24-02-PLAN.md — Wishlist page, pre-bookings on account page, navigation update
-- [ ] 24-03-PLAN.md — Human verification of all WISH and PREB requirements
+- [x] 24-01-PLAN.md — Wishlist hook + heart toggle on BookCard/ActionButtons + Pre-book button
+- [x] 24-02-PLAN.md — Wishlist page, pre-bookings on account page, navigation update
+- [x] 24-03-PLAN.md — Human verification of all WISH and PREB requirements
 
 ### Phase 25: Reviews
 **Goal**: Users can read reviews on book detail pages and write, edit, or delete their own reviews on books they purchased
@@ -194,5 +194,5 @@ Plans:
 | 21. Catalog and Search | 4/4 | Complete    | 2026-02-27 | - |
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | 2/2 | Complete    | 2026-02-27 | - |
-| 24. Wishlist and Pre-booking | 2/3 | In Progress|  | - |
+| 24. Wishlist and Pre-booking | 3/3 | Complete   | 2026-02-28 | 2026-02-28 |
 | 25. Reviews | v3.0 | 0/? | Not started | - |
