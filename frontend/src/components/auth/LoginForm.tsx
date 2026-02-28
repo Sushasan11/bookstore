@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,7 +35,13 @@ export function LoginForm() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        router.push(callbackUrl)
+        // Admin users always go to admin dashboard, ignoring callbackUrl
+        const session = await getSession()
+        if (session?.user?.role === 'admin') {
+          router.push('/admin/overview')
+        } else {
+          router.push(callbackUrl)
+        }
       }
     } catch {
       setError('Something went wrong. Please try again.')
