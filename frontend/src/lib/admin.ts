@@ -101,3 +101,23 @@ export async function fetchLowStock(
     { headers: { Authorization: `Bearer ${accessToken}` } }
   )
 }
+
+/**
+ * Update a book's stock quantity.
+ * Backend: PATCH /books/{book_id}/stock with { quantity: int (>= 0) }
+ * Admin-only endpoint. Triggers restock alerts if quantity goes from 0 to positive.
+ */
+export async function updateBookStock(
+  accessToken: string,
+  bookId: number,
+  quantity: number
+): Promise<void> {
+  return apiFetch<void>(
+    `/books/${bookId}/stock`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity }),
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  )
+}
