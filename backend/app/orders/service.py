@@ -52,6 +52,15 @@ class OrderService:
         books = await self.order_repo.lock_books(book_ids)
         book_map = {b.id: b for b in books}
 
+        # Step 3b: Detect books deleted after being added to cart
+        missing_ids = set(book_ids) - set(book_map.keys())
+        if missing_ids:
+            raise AppError(
+                409,
+                "Some items in your cart are no longer available",
+                "ORDER_ITEMS_UNAVAILABLE",
+            )
+
         # Step 4: Validate stock for ALL items before any mutation
         insufficient: list[InsufficientStockItem] = []
         for item in cart.items:

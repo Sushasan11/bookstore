@@ -219,7 +219,9 @@ export function useCart() {
     },
     onError: (err) => {
       if (err instanceof ApiError) {
-        if (err.status === 409) {
+        if (err.status === 409 && (err.data as Record<string, unknown>)?.code === 'ORDER_ITEMS_UNAVAILABLE') {
+          toast.error('Some items in your cart are no longer available. Please review your cart.')
+        } else if (err.status === 409) {
           toast.error('Some items are out of stock. Please review your cart.')
         } else if (err.status === 402) {
           toast.error('Payment failed. Please try again.')
