@@ -36,7 +36,11 @@ class Order(Base):
         index=True,
     )
     status: Mapped[OrderStatus] = mapped_column(
-        SAEnum(OrderStatus, name="orderstatus"),
+        SAEnum(
+            OrderStatus,
+            name="orderstatus",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+        ),
         nullable=False,
         default=OrderStatus.CONFIRMED,
     )
