@@ -2,10 +2,15 @@ import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchBook, fetchBooks, fetchGenres } from '@/lib/catalog'
+import { fetchReviews } from '@/lib/reviews'
+import type { components } from '@/types/api.generated'
 import { BreadcrumbNav } from './_components/BreadcrumbNav'
 import { BookDetailHero } from './_components/BookDetailHero'
 import { ActionButtons } from './_components/ActionButtons'
 import { MoreInGenre } from './_components/MoreInGenre'
+import { ReviewsSection } from './_components/ReviewsSection'
+
+type ReviewListResponse = components['schemas']['ReviewListResponse']
 
 export const revalidate = 3600 // Revalidate once per hour
 
@@ -49,6 +54,14 @@ export default async function BookDetailPage({ params }: PageProps) {
     relatedBooks = related.items
       .filter(b => b.id !== book.id)
       .slice(0, 6)
+  }
+
+  // Fetch reviews server-side for initial data (graceful fallback on error)
+  let initialReviews: ReviewListResponse = { items: [], total: 0, page: 1, size: 50 }
+  try {
+    initialReviews = await fetchReviews(book.id)
+  } catch {
+    // Show empty state — don't crash the page
   }
 
   // Build JSON-LD Book schema (schema.org)
@@ -98,6 +111,7 @@ export default async function BookDetailPage({ params }: PageProps) {
             </p>
           </div>
         )}
+        <ReviewsSection bookId={book.id} initialReviews={initialReviews} />
         {relatedBooks.length > 0 && (
           <MoreInGenre books={relatedBooks} genreName={genre?.name} />
         )}

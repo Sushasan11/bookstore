@@ -34,11 +34,11 @@ export function RatingDisplay({ avgRating, reviewCount }: RatingDisplayProps) {
   const reviewLabel = `${reviewCount} review${reviewCount !== 1 ? 's' : ''}`
 
   return (
-    <div
-      className="flex items-center gap-2 mt-2 cursor-pointer"
+    <a
+      href="#reviews"
+      className="flex items-center gap-2 mt-2 cursor-pointer hover:underline"
       title={`${avgRating.toFixed(1)} out of 5 stars — ${reviewLabel}`}
     >
-      {/* TODO: Phase 25 — link to reviews section */}
       <span className="flex items-center text-lg leading-none" aria-label={`${avgRating.toFixed(1)} out of 5 stars`}>
         {Array.from({ length: fullStars }, (_, i) => (
           <StarIcon key={`full-${i}`} filled />
@@ -51,6 +51,6 @@ export function RatingDisplay({ avgRating, reviewCount }: RatingDisplayProps) {
       <span className="text-sm text-muted-foreground">
         {avgRating.toFixed(1)} ({reviewLabel})
       </span>
-    </div>
+    </a>
   )
 }
