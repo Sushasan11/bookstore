@@ -165,7 +165,11 @@ Plans:
   2. A user who purchased a book sees a "Write a Review" form with an interactive 1-5 star selector
   3. A user who already reviewed a book sees their review in an editable state with the existing rating and text pre-populated
   4. User can delete their own review after confirming a deletion prompt, and the review disappears from the page
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 25-01-PLAN.md — Reviews data layer (useReviews hook, API functions) + StarSelector + ReviewCard components
+- [ ] 25-02-PLAN.md — ReviewsSection + ReviewForm, page.tsx wiring, RatingDisplay anchor, human verification
 
 ## Progress
 
