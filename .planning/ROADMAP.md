@@ -199,4 +199,4 @@ Plans:
 | 22. Cart and Checkout | 5/5 | Complete    | 2026-02-27 | 2026-02-27 |
 | 23. Orders and Account | 2/2 | Complete    | 2026-02-27 | - |
 | 24. Wishlist and Pre-booking | 3/3 | Complete    | 2026-02-28 | 2026-02-28 |
-| 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
+| 25. Reviews | v3.0 | Complete    | 2026-02-28 | 2026-02-28 |
