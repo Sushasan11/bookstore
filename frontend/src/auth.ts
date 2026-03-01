@@ -174,19 +174,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user, account }) {
       // -----------------------------------------------------------------------
-      // First sign-in via Credentials: user object is populated
-      // -----------------------------------------------------------------------
-      if (user) {
-        token.accessToken = user.accessToken
-        token.refreshToken = user.refreshToken
-        token.accessTokenExpiry = user.accessTokenExpiry
-        token.userId = user.id ?? ""
-        token.role = user.role ?? "user"
-        return token
-      }
-
-      // -----------------------------------------------------------------------
       // First sign-in via Google: exchange Google id_token for FastAPI tokens
+      // Must be checked BEFORE the `user` block because Google sign-in
+      // populates both `user` and `account` — we need the id_token exchange.
       // -----------------------------------------------------------------------
       if (account?.provider === "google" && account.id_token) {
         const res = await fetch(`${API}/auth/google/token`, {
@@ -207,6 +197,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accessTokenExpiry = Date.now() + 14 * 60 * 1000
         token.userId = userId
         token.role = role
+        return token
+      }
+
+      // -----------------------------------------------------------------------
+      // First sign-in via Credentials: user object is populated
+      // -----------------------------------------------------------------------
+      if (user) {
+        token.accessToken = user.accessToken
+        token.refreshToken = user.refreshToken
+        token.accessTokenExpiry = user.accessTokenExpiry
+        token.userId = user.id ?? ""
+        token.role = user.role ?? "user"
         return token
       }
 
