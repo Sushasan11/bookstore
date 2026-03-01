@@ -47,10 +47,10 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 ### Review Moderation
 
-- [ ] **REVW-01**: Admin can view a paginated review table showing book title, reviewer, rating, text snippet, and date
-- [ ] **REVW-02**: Admin can filter reviews by book, user, rating range, and sort by date or rating
-- [ ] **REVW-03**: Admin can delete a single review with confirmation
-- [ ] **REVW-04**: Admin can select multiple reviews via checkboxes and bulk-delete them with confirmation
+- [x] **REVW-01**: Admin can view a paginated review table showing book title, reviewer, rating, text snippet, and date
+- [x] **REVW-02**: Admin can filter reviews by book, user, rating range, and sort by date or rating
+- [x] **REVW-03**: Admin can delete a single review with confirmation
+- [x] **REVW-04**: Admin can select multiple reviews via checkboxes and bulk-delete them with confirmation
 
 ### Inventory Alerts
 
@@ -117,10 +117,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-02 | Phase 29 | Complete |
 | USER-03 | Phase 29 | Complete |
 | USER-04 | Phase 29 | Complete |
-| REVW-01 | Phase 29 | Pending |
-| REVW-02 | Phase 29 | Pending |
-| REVW-03 | Phase 29 | Pending |
-| REVW-04 | Phase 29 | Pending |
+| REVW-01 | Phase 29 | Complete |
+| REVW-02 | Phase 29 | Complete |
+| REVW-03 | Phase 29 | Complete |
+| REVW-04 | Phase 29 | Complete |
 
 **Coverage:**
 - v3.1 requirements: 28 total

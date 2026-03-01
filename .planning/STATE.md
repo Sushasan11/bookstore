@@ -44,16 +44,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 29 — User Management and Review Moderation (in progress, Plan 01 complete)
+**Current focus:** Phase 29 — User Management and Review Moderation (complete)
 
 ## Current Position
 
-Phase: 29 of 29 (User Management and Review Moderation) — In progress
-Plan: 1 of 2 complete in current phase
-Status: In progress
-Last activity: 2026-03-01 — Completed Plan 29-01: Extended admin.ts with users/reviews namespaces and 6 fetch/mutation functions; built User Management page at /admin/users with DataTable, role/status filters, deactivate/reactivate mutations, and admin-role guard
+Phase: 29 of 29 (User Management and Review Moderation) — Complete
+Plan: 2 of 2 complete in current phase
+Status: Complete — v3.1 milestone finished
+Last activity: 2026-03-01 — Completed Plan 29-02: Built Review Moderation page at /admin/reviews with paginated DataTable, 6-filter bar, checkbox bulk selection, single-delete and bulk-delete via ConfirmDialogs
 
-Progress: [████████░░] 87% (v3.1 milestone, 7/8 plans complete)
+Progress: [██████████] 100% (v3.1 milestone, 8/8 plans complete)
 
 ## Performance Metrics
 
@@ -68,7 +68,7 @@ Progress: [████████░░] 87% (v3.1 milestone, 7/8 plans comple
 | 26. Admin Foundation | 2/2 | Complete |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete |
 | 28. Book Catalog CRUD | 2/2 | Complete |
-| 29. User Management and Review Moderation | 1/2 | In progress |
+| 29. User Management and Review Moderation | 2/2 | Complete |
 
 **Execution Metrics:**
 
@@ -81,6 +81,7 @@ Progress: [████████░░] 87% (v3.1 milestone, 7/8 plans comple
 | 28-book-catalog-crud | P01 | 4min | 2 | 5 |
 | 28-book-catalog-crud | P02 | 3min | 2 | 5 |
 | 29-user-management-and-review-moderation | P01 | 3min | 2 | 2 |
+| 29-user-management-and-review-moderation | P02 | 2min | 1 | 1 |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Progress: [████████░░] 87% (v3.1 milestone, 7/8 plans comple
 - ConfirmDialog description text is severity-differentiated: deactivate warns about immediate token revocation, reactivate is a lighter confirmation
 - adminKeys.users and adminKeys.reviews namespaces added to admin.ts in Phase 29-01 — reviews namespace ready for Phase 29-02 reviews page
 - UserListResponse and AdminReviewListResponse use total_count (not total) — AdminPagination receives total_count mapped to total prop
+- Review Moderation page uses Set<number> selectedIds with functional setState (new Set(prev)) — clears on ALL filter changes and page navigation to prevent stale checkbox state
+- Checkbox select-all uses allPageIds.every(id => selectedIds.has(id)) — current-page semantics only; both mutations invalidate adminKeys.reviews.all for cache consistency
+- Single-review delete uses /reviews/{id} endpoint (not /admin/reviews/{id}) — admin bypass via token role check on backend
 
 ### Pending Todos
 
@@ -125,5 +129,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 29-user-management-and-review-moderation-01-PLAN.md — Extended admin.ts with users/reviews data layer; built User Management page at /admin/users
+Stopped at: Completed 29-user-management-and-review-moderation-02-PLAN.md — Built Review Moderation page at /admin/reviews; v3.1 milestone complete
 Resume file: None
