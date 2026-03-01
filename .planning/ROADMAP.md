@@ -7,7 +7,7 @@
 - ✅ **v2.0 Reviews & Ratings** — Phases 13-15 (shipped 2026-02-27)
 - ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
 - ✅ **v3.0 Customer Storefront** — Phases 19-25 (shipped 2026-02-28)
-- 🚧 **v3.1 Admin Dashboard** — Phases 26-29 (in progress)
+- 🚧 **v3.1 Admin Dashboard** — Phases 26-30 (in progress)
 
 ## Phases
 
@@ -74,6 +74,7 @@
 - [x] **Phase 27: Sales Analytics and Inventory Alerts** - Revenue chart, top-sellers table, and low-stock inventory alerts with configurable threshold (completed 2026-02-28)
 - [x] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal (completed 2026-03-01)
 - [ ] **Phase 29: User Management and Review Moderation** - Paginated user table with deactivate/reactivate, and review moderation table with bulk delete
+- [ ] **Phase 30: Integration and Cache Fixes** - Wire proxy.ts as Next.js middleware for defense-in-depth, fix RSC storefront cache invalidation after admin mutations
 
 ## Phase Details
 
@@ -141,6 +142,19 @@ Plans:
 - [ ] 29-01: User Management page — paginated user table with role/status filter badges, deactivate/reactivate actions with confirmation dialogs, admin-role deactivate guard
 - [ ] 29-02: Review Moderation page — paginated review table with full filter bar (book, user, rating range, sort), single-review delete, bulk-delete with checkbox selection and confirmation modal, selection state reset on success
 
+### Phase 30: Integration and Cache Fixes
+**Goal**: Close defense-in-depth and cache propagation gaps identified by milestone audit — wire proxy.ts as Next.js middleware for Layer 1 edge redirect, and fix admin mutation cache invalidation so changes propagate to the customer RSC storefront
+**Depends on**: Phase 28 (admin mutations exist), Phase 26 (proxy.ts exists)
+**Requirements**: Hardens ADMF-02, ADMF-03 (defense-in-depth); fixes cache propagation for CATL-03, CATL-04, CATL-05, CATL-06
+**Gap Closure**: Closes integration gap (proxy.ts → middleware.ts) and flow gap (admin mutation → storefront cache) from v3.1 audit
+**Success Criteria** (what must be TRUE):
+  1. `frontend/src/middleware.ts` exists, re-exports proxy.ts as the default middleware export, and runs on `/admin` routes — non-admin requests are redirected at the edge before reaching the Server Component layer
+  2. Admin book mutations (add, edit, delete, stock update) trigger `revalidatePath` or `revalidateTag` so the customer storefront reflects changes without a full page reload or manual cache bust
+**Plans**: 1 plan (single wave — both fixes are independent small tasks)
+
+Plans:
+- [ ] 30-01: Create middleware.ts re-exporting proxy.ts, add revalidatePath/revalidateTag calls to admin mutation Server Actions or API route handlers
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -172,5 +186,6 @@ Plans:
 | 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
 | 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
-| 28. Book Catalog CRUD | v3.1 | 2/2 | Complete | 2026-03-01 |
+| 28. Book Catalog CRUD | v3.1 | Complete    | 2026-03-01 | 2026-03-01 |
 | 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |
+| 30. Integration and Cache Fixes | v3.1 | 0/1 | Not started | - |
