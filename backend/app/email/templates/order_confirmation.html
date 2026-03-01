@@ -32,8 +32,11 @@
   {% for item in items %}
   <tr>
     <td width="72" style="padding: 16px 0 16px 16px; vertical-align: top;">
-      {% if item.cover_image_url and item.cover_image_url.startswith('http') %}
+      {% if item.cover_image_url %}
       <img src="{{ item.cover_image_url }}" alt="{{ item.title }}" width="56" height="76"
+           style="display: block; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0;" />
+      {% elif item.isbn %}
+      <img src="https://covers.openlibrary.org/b/isbn/{{ item.isbn }}-M.jpg" alt="{{ item.title }}" width="56" height="76"
            style="display: block; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0;" />
       {% else %}
       <div style="width: 56px; height: 76px; border-radius: 6px; background-color: #edf2f7; border: 1px solid #e2e8f0; text-align: center; line-height: 76px;">

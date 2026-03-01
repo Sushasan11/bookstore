@@ -64,7 +64,15 @@ async def checkout(
                         "author": item.book.author if item.book else "",
                         "quantity": item.quantity,
                         "unit_price": f"{item.unit_price:.2f}",
-                        "cover_image_url": item.book.cover_image_url if item.book else None,
+                        "cover_image_url": (
+                            item.book.cover_image_url
+                            if item.book and item.book.cover_image_url
+                            and item.book.cover_image_url.startswith("http")
+                            and "localhost" not in item.book.cover_image_url
+                            and "127.0.0.1" not in item.book.cover_image_url
+                            else None
+                        ),
+                        "isbn": item.book.isbn if item.book else None,
                     }
                     for item in order.items
                 ],
