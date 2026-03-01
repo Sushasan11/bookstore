@@ -5,38 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Bookstore{% endblock %}</title>
 </head>
-<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #f0f4f8;">
     <tr>
-      <td align="center">
-        <table width="600" cellpadding="20" cellspacing="0"
-               style="background-color: #ffffff; margin: 30px auto;">
+      <td align="center" style="padding: 40px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0"
+               style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background-color: #1a202c; text-align: center; padding: 24px 32px;">
-              <span style="display: inline-flex; align-items: center; gap: 8px; color: #f7fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-                <!-- Inline SVG book icon — works in most modern email clients -->
-                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
-                  <path d="M16 26 C16 26 7 22 4 8 L4 8 C4 7 5 6 6 6 L15 6 C15.6 6 16 6.4 16 7 L16 26Z" fill="#f7fafc" fill-opacity="0.2" stroke="#f7fafc" stroke-width="1.5" stroke-linejoin="round"/>
-                  <path d="M16 26 C16 26 25 22 28 8 L28 8 C28 7 27 6 26 6 L17 6 C16.4 6 16 6.4 16 7 L16 26Z" fill="#f7fafc" fill-opacity="0.2" stroke="#f7fafc" stroke-width="1.5" stroke-linejoin="round"/>
-                  <line x1="16" y1="7" x2="16" y2="26" stroke="#f7fafc" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.025em; color: #f7fafc;">BookStore</span>
-              </span>
+            <td style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); text-align: center; padding: 32px 40px;">
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <span style="font-size: 24px;">&#128214;</span>
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: #ffffff;">BookStore</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 30px 20px;">
+            <td style="padding: 40px 40px 32px 40px;">
               {% block content %}{% endblock %}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f4f4f4; text-align: center; font-size: 12px; color: #718096; padding: 15px 20px;">
-              {% block footer %}
-              <p style="margin: 0;">You received this email because you have an account with Bookstore.</p>
-              {% endblock %}
+            <td style="padding: 0 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-top: 1px solid #e2e8f0; padding: 24px 0 32px 0; text-align: center;">
+                    {% block footer %}
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #a0aec0; line-height: 1.5;">
+                      You received this email because you have an account with Bookstore.
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #cbd5e0;">
+                      &copy; {{ current_year | default('2026') }} Bookstore. All rights reserved.
+                    </p>
+                    {% endblock %}
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>

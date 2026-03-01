@@ -1,7 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Back in Stock — {{ book_title }}{% endblock %}
 {% block content %}
-<h2 style="color: #1a202c;">Good news! Your pre-booked book is back.</h2>
-<p><strong>{{ book_title }}</strong> is now back in stock.</p>
-<p>Visit the bookstore to add it to your cart before it sells out again.</p>
+<!-- Bell icon -->
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding-bottom: 24px;">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background-color: #ebf8ff; border: 2px solid #bee3f8; line-height: 64px; text-align: center; font-size: 28px; color: #3182ce;">
+        &#128276;
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- Heading -->
+<h1 style="color: #1a202c; margin: 0 0 8px 0; font-size: 26px; font-weight: 700; text-align: center; letter-spacing: -0.02em;">
+  Good news!
+</h1>
+<p style="color: #718096; margin: 0 0 32px 0; font-size: 15px; text-align: center; line-height: 1.6;">
+  A book you pre-booked is back in stock.
+</p>
+
+<!-- Book card -->
+<table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 28px;">
+  <tr>
+    <td style="padding: 24px; text-align: center;">
+      <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+          <td style="background-color: #ebf8ff; border-radius: 6px; padding: 6px 14px; margin-bottom: 12px;">
+            <span style="font-size: 12px; font-weight: 600; color: #2b6cb0; text-transform: uppercase; letter-spacing: 0.05em;">Back in Stock</span>
+          </td>
+        </tr>
+      </table>
+      <h2 style="margin: 16px 0 8px 0; font-size: 22px; font-weight: 700; color: #1a202c;">{{ book_title }}</h2>
+      <p style="margin: 0; font-size: 14px; color: #a0aec0; line-height: 1.5;">
+        This book is available again &mdash; grab it before it sells out!
+      </p>
+    </td>
+  </tr>
+</table>
+
+<!-- CTA button -->
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center">
+      <table cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td style="background: linear-gradient(135deg, #2b6cb0 0%, #3182ce 100%); border-radius: 8px; padding: 14px 36px; text-align: center;">
+            <a href="{{ store_url | default('#') }}" style="font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; display: inline-block;">
+              Visit the Store
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 {% endblock %}
