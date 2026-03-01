@@ -1,6 +1,6 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/AppSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,9 +15,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-        </header>
         <div className="flex-1 overflow-y-auto p-4">
           {children}
         </div>
