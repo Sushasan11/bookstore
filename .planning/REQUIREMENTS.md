@@ -40,10 +40,10 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 ### User Management
 
-- [ ] **USER-01**: Admin can view a paginated user table showing email, role badge, active status badge, join date, and actions
-- [ ] **USER-02**: Admin can filter users by role (all/user/admin) and active status (all/active/inactive)
-- [ ] **USER-03**: Admin can deactivate a user with a confirmation dialog (disabled for admin accounts)
-- [ ] **USER-04**: Admin can reactivate an inactive user
+- [x] **USER-01**: Admin can view a paginated user table showing email, role badge, active status badge, join date, and actions
+- [x] **USER-02**: Admin can filter users by role (all/user/admin) and active status (all/active/inactive)
+- [x] **USER-03**: Admin can deactivate a user with a confirmation dialog (disabled for admin accounts)
+- [x] **USER-04**: Admin can reactivate an inactive user
 
 ### Review Moderation
 
@@ -113,10 +113,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CATL-04 | Phase 28 | Complete |
 | CATL-05 | Phase 28 | Complete |
 | CATL-06 | Phase 28 | Complete |
-| USER-01 | Phase 29 | Pending |
-| USER-02 | Phase 29 | Pending |
-| USER-03 | Phase 29 | Pending |
-| USER-04 | Phase 29 | Pending |
+| USER-01 | Phase 29 | Complete |
+| USER-02 | Phase 29 | Complete |
+| USER-03 | Phase 29 | Complete |
+| USER-04 | Phase 29 | Complete |
 | REVW-01 | Phase 29 | Pending |
 | REVW-02 | Phase 29 | Pending |
 | REVW-03 | Phase 29 | Pending |

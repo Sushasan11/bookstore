@@ -136,11 +136,11 @@ Plans:
   3. Admin can click Reactivate on an inactive user row, confirm, and restore the user's access
   4. Admin sees a paginated review table with book title, reviewer, rating, text snippet, and date; the table supports filtering by book, user, and rating range, and sorting by date or rating
   5. Admin can delete a single review with confirmation, or select multiple reviews via checkboxes and bulk-delete them with a single confirmation dialog that states the count; selection checkboxes clear after the bulk delete completes
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: user management + data layer, Wave 2: review moderation)
 
 Plans:
-- [ ] 29-01: User Management page — paginated user table with role/status filter badges, deactivate/reactivate actions with confirmation dialogs, admin-role deactivate guard
-- [ ] 29-02: Review Moderation page — paginated review table with full filter bar (book, user, rating range, sort), single-review delete, bulk-delete with checkbox selection and confirmation modal, selection state reset on success
+- [ ] 29-01-PLAN.md — Extend admin.ts with users+reviews namespaces and fetch/mutation functions, build User Management page with DataTable, role/status filters, deactivate/reactivate with ConfirmDialog
+- [ ] 29-02-PLAN.md — Build Review Moderation page with DataTable, filter bar (book ID, user ID, rating range, sort), single-delete, bulk-delete with checkbox selection and confirmation dialog
 
 ### Phase 30: Integration and Cache Fixes
 **Goal**: Close defense-in-depth and cache propagation gaps identified by milestone audit — wire proxy.ts as Next.js middleware for Layer 1 edge redirect, and fix admin mutation cache invalidation so changes propagate to the customer RSC storefront
@@ -187,5 +187,5 @@ Plans:
 | 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
 | 28. Book Catalog CRUD | v3.1 | Complete    | 2026-03-01 | 2026-03-01 |
-| 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |
+| 29. User Management and Review Moderation | v3.1 | 1/2 | In progress | - |
 | 30. Integration and Cache Fixes | v3.1 | 0/1 | Not started | - |
