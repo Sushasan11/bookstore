@@ -80,7 +80,7 @@
 
 ### v4.1 Clean House (Phases 31-32)
 
-- [ ] **Phase 31: Code Quality** - Extract shared admin components, fix return type, and make top-sellers period-aware
+- [x] **Phase 31: Code Quality** - Extract shared admin components, fix return type, and make top-sellers period-aware (completed 2026-03-01)
 - [ ] **Phase 32: Validation and Docs** - Verify email improvements end-to-end and correct SUMMARY frontmatter
 
 ## Phase Details
@@ -94,7 +94,7 @@
   2. Both the catalog table and inventory alert table use one StockBadge component that accepts a threshold parameter, with no duplicate badge implementations remaining
   3. Selecting "Today", "This Week", or "This Month" in the period selector updates the top-sellers table to show data for that period only
   4. The TypeScript compiler resolves `updateBookStock` to return `Promise<BookResponse>` without type errors or casts
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 31-01-PLAN.md — Extract DeltaBadge + StockBadge shared components, fix updateBookStock return type
 - [ ] 31-02-PLAN.md — Add period filtering to top-sellers (backend + frontend)
@@ -119,5 +119,5 @@ Plans:
 | 16-18 | v2.1 | 5/5 | Complete | 2026-02-27 |
 | 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
 | 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
-| 31 | 1/2 | In Progress|  | - |
+| 31 | 2/2 | Complete   | 2026-03-01 | - |
 | 32 | v4.1 | 0/TBD | Not started | - |

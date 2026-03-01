@@ -18,7 +18,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 
 ### Analytics
 
-- [ ] **ANLY-01**: Top-sellers table respects period selector (today/week/month) instead of showing all-time data
+- [x] **ANLY-01**: Top-sellers table respects period selector (today/week/month) instead of showing all-time data
 
 ### Documentation
 
@@ -65,7 +65,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 | COMP-01 | Phase 31 | Complete |
 | COMP-02 | Phase 31 | Complete |
 | TYPE-01 | Phase 31 | Complete |
-| ANLY-01 | Phase 31 | Pending |
+| ANLY-01 | Phase 31 | Complete |
 | DOCS-01 | Phase 32 | Pending |
 | MAIL-01 | Phase 32 | Pending |
 

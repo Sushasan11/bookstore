@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: "v4.1"
 milestone_name: "Clean House"
 status: in_progress
-last_updated: "2026-03-02T20:01:10Z"
+last_updated: "2026-03-02T20:03:26Z"
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -22,13 +22,13 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Phase: 31 (Code Quality) — In progress
-Plan: 01 complete, 02 pending
-Status: Plan 31-01 complete — shared DeltaBadge/StockBadge components extracted, updateBookStock type fixed
-Last activity: 2026-03-02 — Completed 31-01 (component extraction + type fix)
+Phase: 31 (Code Quality) — Complete
+Plan: 01 complete, 02 complete
+Status: Phase 31 complete — period-filtered top-sellers analytics, shared components, type fixes all done
+Last activity: 2026-03-02 — Completed 31-02 (period filtering for top-books analytics)
 
 ```
-v4.1 Progress: [█░░░░░░░░░] 0/2 phases complete (31-01 done, 31-02 pending)
+v4.1 Progress: [█████░░░░░] 1/2 phases complete (Phase 31 done)
 ```
 
 ## Accumulated Context
@@ -41,6 +41,11 @@ See PROJECT.md for full decision log (27 decisions across 6 milestones).
 - StockBadge requires explicit `threshold` parameter — no default, call sites must be explicit (catalog passes `threshold={10}`)
 - DeltaBadge/StockBadge are pure presentational with no `'use client'` — inherit client context from parent pages
 - `updateBookStock` typed as `Promise<BookResponse>` matching actual backend response
+
+**31-02 decisions:**
+- period param is optional on backend top-books endpoint — backward compatible (no period returns all-time data)
+- period included in React Query key for automatic cache separation per period
+- router imports `_period_bounds` directly from analytics_service (no new service method needed)
 
 ### Pending Todos
 
@@ -62,6 +67,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Last activity: 2026-03-02 - Completed 31-01 (DeltaBadge/StockBadge extraction + updateBookStock type fix)
-Stopped at: Completed 31-01-PLAN.md
+Last activity: 2026-03-02 - Completed 31-02 (period filtering for top-books analytics)
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None
