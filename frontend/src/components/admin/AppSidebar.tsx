@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent,
+  SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { LayoutDashboard, TrendingUp, BookOpen, Package, Users, Star } from 'lucide-react'
 import Link from 'next/link'
@@ -34,6 +35,7 @@ export function AppSidebar() {
             className="px-1"
           />
           <Badge variant="secondary" className="text-xs group-data-[collapsible=icon]:hidden">Admin</Badge>
+          <SidebarTrigger className="ml-auto size-7 group-data-[collapsible=icon]:ml-0" />
         </div>
       </SidebarHeader>
 
