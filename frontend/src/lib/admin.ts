@@ -1,4 +1,9 @@
 import { apiFetch } from '@/lib/api'
+import type { components } from '@/types/api.generated'
+
+type BookCreate = components['schemas']['BookCreate']
+type BookUpdate = components['schemas']['BookUpdate']
+type BookResponse = components['schemas']['BookResponse']
 
 // ---------------------------------------------------------------------------
 // TypeScript types — mirror backend analytics_schemas.py field names exactly
@@ -52,6 +57,12 @@ export const adminKeys = {
   inventory: {
     all: ['admin', 'inventory'] as const,
     lowStock: (threshold: number) => ['admin', 'inventory', 'low-stock', threshold] as const,
+  },
+  catalog: {
+    all: ['admin', 'catalog'] as const,
+    list: (params: { q?: string; genre_id?: number; page?: number }) =>
+      ['admin', 'catalog', 'list', params] as const,
+    genres: ['admin', 'catalog', 'genres'] as const,
   },
 } as const
 
@@ -120,4 +131,47 @@ export async function updateBookStock(
       headers: { Authorization: `Bearer ${accessToken}` },
     }
   )
+}
+
+/**
+ * Create a new book. Admin-only (POST /books requires admin role).
+ */
+export async function createBook(
+  accessToken: string,
+  data: BookCreate
+): Promise<BookResponse> {
+  return apiFetch<BookResponse>('/books', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Update an existing book. Admin-only (PUT /books/{id} requires admin role).
+ */
+export async function updateBook(
+  accessToken: string,
+  bookId: number,
+  data: BookUpdate
+): Promise<BookResponse> {
+  return apiFetch<BookResponse>(`/books/${bookId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Delete a book. Admin-only (DELETE /books/{id} returns 204 No Content).
+ * apiFetch handles 204 No Content by returning undefined as T.
+ */
+export async function deleteBook(
+  accessToken: string,
+  bookId: number
+): Promise<void> {
+  return apiFetch<void>(`/books/${bookId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
 }
