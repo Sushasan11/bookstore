@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { adminKeys, updateBookStock } from '@/lib/admin'
+import { triggerRevalidation } from '@/lib/revalidate'
 
 interface StockUpdateModalProps {
   open: boolean
@@ -45,6 +46,7 @@ export function StockUpdateModal({
       queryClient.invalidateQueries({ queryKey: adminKeys.inventory.all })
       queryClient.invalidateQueries({ queryKey: adminKeys.catalog.all })
       queryClient.invalidateQueries({ queryKey: ['books'] })
+      triggerRevalidation([`/books/${book?.book_id}`])
 
       if (book?.current_stock === 0 && newQuantity > 0) {
         toast.success('Stock updated — pre-booking notifications sent')

@@ -12,6 +12,7 @@ import {
   deleteSingleReview,
   bulkDeleteReviews,
 } from '@/lib/admin'
+import { triggerRevalidation } from '@/lib/revalidate'
 import { ApiError } from '@/lib/api'
 import { DataTable } from '@/components/admin/DataTable'
 import { AdminPagination } from '@/components/admin/AdminPagination'
@@ -82,6 +83,7 @@ export default function ReviewsPage() {
     mutationFn: () => deleteSingleReview(accessToken, deleteTarget!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.reviews.all })
+      triggerRevalidation([`/books/${deleteTarget!.book.book_id}`])
       toast.success('Review deleted')
       setDeleteTarget(null)
     },
@@ -96,6 +98,7 @@ export default function ReviewsPage() {
     mutationFn: () => bulkDeleteReviews(accessToken, Array.from(selectedIds)),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.reviews.all })
+      triggerRevalidation([{ path: '/books/[id]', type: 'page' }])
       toast.success(
         `${data.deleted_count} review${data.deleted_count === 1 ? '' : 's'} deleted`
       )

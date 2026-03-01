@@ -8,6 +8,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { MoreHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import { adminKeys, createBook, updateBook, deleteBook } from '@/lib/admin'
+import { triggerRevalidation } from '@/lib/revalidate'
 import { fetchBooks, fetchGenres, type BookResponse } from '@/lib/catalog'
 import { ApiError } from '@/lib/api'
 import { DataTable } from '@/components/admin/DataTable'
@@ -128,6 +129,7 @@ export default function AdminCatalogPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.catalog.all })
       queryClient.invalidateQueries({ queryKey: ['books'] })
+      triggerRevalidation(['/catalog'])
       toast.success('Book added successfully')
       setDrawerOpen(false)
     },
@@ -153,6 +155,7 @@ export default function AdminCatalogPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.catalog.all })
       queryClient.invalidateQueries({ queryKey: ['books'] })
+      triggerRevalidation(['/catalog', `/books/${editingBook!.id}`])
       toast.success('Book updated successfully')
       setDrawerOpen(false)
       setEditingBook(null)
@@ -171,6 +174,7 @@ export default function AdminCatalogPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.catalog.all })
       queryClient.invalidateQueries({ queryKey: ['books'] })
+      triggerRevalidation(['/catalog'])
       toast.success('Book deleted successfully')
       setDeleteTarget(null)
     },
