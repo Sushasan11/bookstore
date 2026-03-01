@@ -63,8 +63,8 @@ export default function SalesAnalyticsPage() {
   })
 
   const topBooksQuery = useQuery({
-    queryKey: adminKeys.sales.topBooks(limit, sortBy),
-    queryFn: () => fetchTopBooks(accessToken, limit, sortBy),
+    queryKey: adminKeys.sales.topBooks(limit, sortBy, period),
+    queryFn: () => fetchTopBooks(accessToken, limit, sortBy, period),
     enabled: !!accessToken,
     staleTime: 60_000,
   })

@@ -47,8 +47,8 @@ export default function AdminOverviewPage() {
   })
 
   const topBooksQuery = useQuery({
-    queryKey: adminKeys.sales.topBooks(5, 'revenue'),
-    queryFn: () => fetchTopBooks(accessToken, 5, 'revenue'),
+    queryKey: adminKeys.sales.topBooks(5, 'revenue', period),
+    queryFn: () => fetchTopBooks(accessToken, 5, 'revenue', period),
     enabled: !!accessToken,
     staleTime: 60_000,
   })

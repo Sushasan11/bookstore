@@ -57,8 +57,8 @@ export const adminKeys = {
   sales: {
     all: ['admin', 'sales'] as const,
     summary: (period: string) => ['admin', 'sales', 'summary', period] as const,
-    topBooks: (limit: number, sort_by: 'revenue' | 'volume' = 'revenue') =>
-      ['admin', 'sales', 'top-books', limit, sort_by] as const,
+    topBooks: (limit: number, sort_by: 'revenue' | 'volume' = 'revenue', period?: string) =>
+      ['admin', 'sales', 'top-books', limit, sort_by, period] as const,
   },
   inventory: {
     all: ['admin', 'inventory'] as const,
@@ -104,16 +104,19 @@ export async function fetchSalesSummary(
 }
 
 /**
- * Fetch top N books sorted by revenue or volume.
- * Default: top 5 by revenue.
+ * Fetch top N books sorted by revenue or volume, optionally filtered by period.
+ * Default: top 5 by revenue, all-time data.
  */
 export async function fetchTopBooks(
   accessToken: string,
   limit: number = 5,
-  sort_by: 'revenue' | 'volume' = 'revenue'
+  sort_by: 'revenue' | 'volume' = 'revenue',
+  period?: string
 ): Promise<TopBooksResponse> {
+  const params = new URLSearchParams({ sort_by, limit: String(limit) })
+  if (period) params.set('period', period)
   return apiFetch<TopBooksResponse>(
-    `/admin/analytics/sales/top-books?sort_by=${sort_by}&limit=${limit}`,
+    `/admin/analytics/sales/top-books?${params}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   )
 }
