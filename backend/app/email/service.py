@@ -8,6 +8,7 @@ means email is never sent if the DB transaction rolls back.
 import logging
 import re
 import smtplib
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import lru_cache
@@ -21,6 +22,7 @@ from jinja2 import Environment, FileSystemLoader
 from app.core.config import get_settings
 
 TEMPLATE_FOLDER = Path(__file__).parent / "templates"
+STATIC_FOLDER = Path(__file__).parent / "static"
 
 
 def get_email_config() -> ConnectionConfig:
@@ -119,13 +121,26 @@ class EmailService:
         html_body = self._render_html(template_name, context)
         plain_text = self._strip_html(html_body)
 
-        msg = MIMEMultipart("alternative")
+        # Build multipart/related wrapping multipart/alternative + inline images.
+        # This lets HTML reference embedded images via cid: URIs.
+        msg = MIMEMultipart("related")
         msg["Subject"] = subject
         msg["From"] = f"{self._config.MAIL_FROM_NAME} <{self._config.MAIL_FROM}>"
         msg["To"] = to
-        # RFC 2046: last part is preferred — attach plain first, HTML second
-        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(plain_text, "plain", "utf-8"))
+        alt.attach(MIMEText(html_body, "html", "utf-8"))
+        msg.attach(alt)
+
+        # Embed logo as CID attachment
+        logo_path = STATIC_FOLDER / "logo-white.png"
+        if logo_path.exists():
+            with open(logo_path, "rb") as f:
+                logo = MIMEImage(f.read(), _subtype="png")
+            logo.add_header("Content-ID", "<bookstore-logo>")
+            logo.add_header("Content-Disposition", "inline", filename="logo.png")
+            msg.attach(logo)
 
         background_tasks.add_task(self._send, msg, to)
 
