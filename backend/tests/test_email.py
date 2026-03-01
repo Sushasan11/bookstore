@@ -3,7 +3,7 @@
 Unit tests validate:
   - EmailService instantiation (EMAL-01)
   - Jinja2 template rendering and HTML stripping (EMAL-04)
-  - BackgroundTasks enqueue builds correct MessageSchema (EMAL-05)
+  - BackgroundTasks enqueue builds correct MIMEMultipart (EMAL-05)
 
 Integration tests validate:
   - BackgroundTasks sends email after HTTP response (EMAL-05)
@@ -15,13 +15,13 @@ All tests use SUPPRESS_SEND=1 — no real SMTP connections are made.
 
 import time
 import unittest.mock
+from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 
 import pytest
 import pytest_asyncio
 from fastapi import BackgroundTasks, FastAPI
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from fastapi_mail.schemas import MultipartSubtypeEnum
+from fastapi_mail import ConnectionConfig, FastMail
 from httpx import ASGITransport, AsyncClient
 
 from app.core.exceptions import AppError, app_error_handler
@@ -57,21 +57,12 @@ class TestEmailService:
 class TestEmailTemplates:
     """Unit tests proving templates render and plain-text fallback works (EMAL-04)."""
 
-    @pytest.mark.asyncio
-    async def test_base_template_renders(self, email_service):
-        """base.html renders via FastMail and outbox captures the message (EMAL-04)."""
-        message = MessageSchema(
-            subject="Test",
-            recipients=["user@test.com"],
-            template_body={"test_var": "hello"},
-            subtype=MessageType.html,
-        )
-        with email_service.fm.record_messages() as outbox:
-            await email_service.fm.send_message(message, template_name="base.html")
-
-        assert len(outbox) == 1
-        assert "user@test.com" in outbox[0]["To"]
-        assert outbox[0]["subject"] == "Test"
+    def test_render_html(self, email_service):
+        """_render_html() renders base.html to a full HTML string (EMAL-04)."""
+        result = email_service._render_html("base.html", {})
+        assert result
+        assert "<html" in result
+        assert "Bookstore" in result
 
     def test_strip_html(self):
         """_strip_html() removes HTML tags and returns clean text (EMAL-04)."""
@@ -104,37 +95,36 @@ class TestEmailTemplates:
         # base.html includes "Bookstore" in header
         assert "Bookstore" in result
 
-    def test_enqueue_includes_plain_text_alternative(self, email_service):
-        """enqueue() builds MessageSchema with non-empty alternative_body and
-        multipart_subtype=alternative, proving plain-text fallback is wired in (EMAL-04/05).
+    def test_enqueue_builds_multipart_alternative(self, email_service):
+        """enqueue() builds a MIMEMultipart('alternative') with both text/plain
+        and text/html parts, proving correct MIME structure (EMAL-04/05).
         """
         background_tasks = BackgroundTasks()
 
-        # Capture the message passed to _send via mock
-        captured = {}
+        email_service.enqueue(
+            background_tasks, "user@test.com", "base.html", "Test", {}
+        )
 
-        original_send = email_service._send
-
-        async def mock_send(message: MessageSchema, template_name: str) -> None:
-            captured["message"] = message
-            captured["template_name"] = template_name
-
-        with unittest.mock.patch.object(email_service, "_send", mock_send):
-            email_service.enqueue(
-                background_tasks, "user@test.com", "base.html", "Test", {}
-            )
-
-        # BackgroundTasks stores tasks in .tasks — each task is a BackgroundTask namedtuple/object
-        # The task was added via background_tasks.add_task(mock_send, message, template_name)
-        # We can find the MessageSchema in the tasks list
         assert len(background_tasks.tasks) == 1
         task = background_tasks.tasks[0]
-        # BackgroundTask has .func, .args, .kwargs
         message_arg = task.args[0]
 
-        assert isinstance(message_arg, MessageSchema)
-        assert message_arg.alternative_body  # non-empty plain-text fallback
-        assert message_arg.multipart_subtype == MultipartSubtypeEnum.alternative
+        assert isinstance(message_arg, MIMEMultipart)
+        assert message_arg.get_content_subtype() == "alternative"
+        assert message_arg["To"] == "user@test.com"
+        assert message_arg["Subject"] == "Test"
+
+        # Must have exactly 2 parts: text/plain and text/html
+        parts = message_arg.get_payload()
+        assert len(parts) == 2
+        assert parts[0].get_content_type() == "text/plain"
+        assert parts[1].get_content_type() == "text/html"
+
+        # Both parts must have content
+        plain_text = parts[0].get_payload(decode=True).decode()
+        html_text = parts[1].get_payload(decode=True).decode()
+        assert "Bookstore" in plain_text
+        assert "<html" in html_text
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +136,8 @@ class TestEmailTemplates:
 async def integration_app():
     """Minimal FastAPI app with email endpoints for integration testing.
 
-    Uses SUPPRESS_SEND=1 to capture outbox without real SMTP connections.
-    Returns (test_app, fm) tuple for use in tests.
+    Uses SUPPRESS_SEND=1 and mocks _send to capture outbox.
+    Returns (test_app, outbox_list) tuple for use in tests.
     """
     config = ConnectionConfig(
         MAIL_USERNAME="test",
@@ -165,6 +155,15 @@ async def integration_app():
     )
     email_service = EmailService(config=config)
     test_app = FastAPI()
+    outbox: list[MIMEMultipart] = []
+
+    # Patch _send to capture messages instead of sending
+    original_send = email_service._send
+
+    async def capture_send(message: MIMEMultipart, to: str) -> None:
+        outbox.append(message)
+
+    email_service._send = capture_send  # type: ignore[assignment]
 
     # Register AppError handler so the error endpoint returns 500 (not 500 unhandled)
     test_app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
@@ -189,7 +188,7 @@ async def integration_app():
             code="TEST_ERROR",
         )
 
-    return test_app, email_service.fm
+    return test_app, outbox
 
 
 class TestEmailIntegration:
@@ -198,27 +197,25 @@ class TestEmailIntegration:
     @pytest.mark.asyncio
     async def test_background_task_sends_email(self, integration_app):
         """Email is captured in outbox after BackgroundTasks execution (EMAL-05, EMAL-01)."""
-        test_app, fm = integration_app
-        with fm.record_messages() as outbox:
-            async with AsyncClient(
-                transport=ASGITransport(app=test_app), base_url="http://test"
-            ) as ac:
-                response = await ac.post("/test-send-email")
+        test_app, outbox = integration_app
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as ac:
+            response = await ac.post("/test-send-email")
 
         assert response.status_code == 200
         assert len(outbox) == 1
-        assert outbox[0]["subject"] == "Test Subject"
+        assert outbox[0]["Subject"] == "Test Subject"
         assert "user@test.com" in outbox[0]["To"]
 
     @pytest.mark.asyncio
     async def test_no_email_on_route_error(self, integration_app):
         """No email dispatched when route raises before enqueue() (EMAL-06)."""
-        test_app, fm = integration_app
-        with fm.record_messages() as outbox:
-            async with AsyncClient(
-                transport=ASGITransport(app=test_app), base_url="http://test"
-            ) as ac:
-                response = await ac.post("/test-send-email-error")
+        test_app, outbox = integration_app
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as ac:
+            response = await ac.post("/test-send-email-error")
 
         assert response.status_code == 500
         assert len(outbox) == 0  # No email sent — exception raised before enqueue
@@ -226,14 +223,13 @@ class TestEmailIntegration:
     @pytest.mark.asyncio
     async def test_response_not_delayed_by_email(self, integration_app):
         """HTTP response returns in under 1 second while email runs in background (EMAL-05)."""
-        test_app, fm = integration_app
-        with fm.record_messages() as outbox:
-            async with AsyncClient(
-                transport=ASGITransport(app=test_app), base_url="http://test"
-            ) as ac:
-                start = time.monotonic()
-                response = await ac.post("/test-send-email")
-                elapsed = time.monotonic() - start
+        test_app, outbox = integration_app
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as ac:
+            start = time.monotonic()
+            response = await ac.post("/test-send-email")
+            elapsed = time.monotonic() - start
 
         assert elapsed < 1.0  # Response returns quickly — email is non-blocking
         assert len(outbox) == 1  # Email was still sent

@@ -8,6 +8,7 @@ Create Date: 2026-02-26
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -16,11 +17,11 @@ down_revision: str | None = "e5f6a7b8c9d0"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-prebookstatus = sa.Enum("waiting", "notified", "cancelled", name="prebookstatus")
+prebookstatus = postgresql.ENUM("waiting", "notified", "cancelled", name="prebookstatus", create_type=False)
 
 
 def upgrade() -> None:
-    prebookstatus.create(op.get_bind())
+    op.execute(sa.text("CREATE TYPE prebookstatus AS ENUM ('waiting', 'notified', 'cancelled')"))
     op.create_table(
         "pre_bookings",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -28,7 +29,7 @@ def upgrade() -> None:
         sa.Column("book_id", sa.Integer(), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("waiting", "notified", "cancelled", name="prebookstatus"),
+            prebookstatus,
             nullable=False,
         ),
         sa.Column(
@@ -67,4 +68,4 @@ def downgrade() -> None:
     op.drop_index("ix_pre_bookings_book_id", table_name="pre_bookings")
     op.drop_index("ix_pre_bookings_user_id", table_name="pre_bookings")
     op.drop_table("pre_bookings")
-    prebookstatus.drop(op.get_bind())
+    op.execute(sa.text("DROP TYPE prebookstatus"))
