@@ -106,7 +106,8 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. A test order confirmation email arrives with the BookStore logo displayed inline (not as an attachment) and a book cover image visible
   2. A test restock alert email arrives with the book cover loaded from Open Library when no local image is present
-  3. The `requirements_completed` field in plans 26-02 and 27-01 SUMMARY frontmatter lists the correct requirement IDs that those plans delivered
+  3. The `requirements_completed` field in plans 26-02, 27-01, and 31-02 SUMMARY frontmatter lists the correct requirement IDs that those plans delivered
+  4. `api.generated.ts` is regenerated to include the `period` query param for the top-books endpoint
 **Plans**: TBD
 
 ## Progress
