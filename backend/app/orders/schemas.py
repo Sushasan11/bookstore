@@ -18,6 +18,8 @@ class OrderItemBookSummary(BaseModel):
     id: int
     title: str
     author: str
+    cover_image_url: str | None = None
+    price: Decimal | None = None
 
     model_config = {"from_attributes": True}
 

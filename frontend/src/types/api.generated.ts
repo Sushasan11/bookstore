@@ -1241,6 +1241,10 @@ export interface components {
             title: string;
             /** Author */
             author: string;
+            /** Cover Image Url */
+            cover_image_url: string | null;
+            /** Price */
+            price: string | null;
         };
         /**
          * OrderItemResponse

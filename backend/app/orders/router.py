@@ -56,12 +56,15 @@ async def checkout(
             template_name="order_confirmation.html",
             subject="Your Bookstore order is confirmed",
             context={
+                "customer_name": user.email.split("@")[0].title(),
                 "order_id": order.id,
                 "items": [
                     {
                         "title": item.book.title if item.book else "Unknown Book",
+                        "author": item.book.author if item.book else "",
                         "quantity": item.quantity,
                         "unit_price": f"{item.unit_price:.2f}",
+                        "cover_image_url": item.book.cover_image_url if item.book else None,
                     }
                     for item in order.items
                 ],
