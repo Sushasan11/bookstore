@@ -5,6 +5,7 @@ import { MobileNav } from '@/components/layout/MobileNav'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { UserMenu } from '@/components/layout/UserMenu'
 import { CartBadge } from '@/components/layout/CartBadge'
+import { BookStoreLogo } from '@/components/brand/BookStoreLogo'
 
 export function Header() {
   return (
@@ -17,7 +18,7 @@ export function Header() {
             href="/"
             className="font-bold text-xl tracking-tight hover:opacity-80 transition-opacity"
           >
-            Bookstore
+            <BookStoreLogo iconSize={24} textClassName="text-sm" />
           </Link>
         </div>
 

@@ -9,6 +9,7 @@ import { LayoutDashboard, TrendingUp, BookOpen, Package, Users, Star, ChevronLef
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { SidebarFooterUser } from './SidebarFooterUser'
+import { BookStoreLogo } from '@/components/brand/BookStoreLogo'
 
 const navItems = [
   { href: '/admin/overview', label: 'Overview', icon: LayoutDashboard },
@@ -26,7 +27,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">BookStore</span>
+          <BookStoreLogo
+            variant="full"
+            iconSize={22}
+            textClassName="text-sm font-semibold group-data-[collapsible=icon]:hidden"
+            className="px-1"
+          />
           <Badge variant="secondary" className="text-xs group-data-[collapsible=icon]:hidden">Admin</Badge>
         </div>
         <SidebarMenu>

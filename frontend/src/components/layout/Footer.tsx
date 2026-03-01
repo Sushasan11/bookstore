@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; 2026 Bookstore. All rights reserved.
+            &copy; 2026 BookStore. All rights reserved.
           </p>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <Link

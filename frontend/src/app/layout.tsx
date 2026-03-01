@@ -4,10 +4,18 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Bookstore',
-    template: '%s | Bookstore',
+    default: 'BookStore',
+    template: '%s | BookStore',
   },
   description: 'Discover and purchase books from our curated catalog',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({

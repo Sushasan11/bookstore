@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { BookStoreLogo } from '@/components/brand/BookStoreLogo'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -37,7 +38,7 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-3/4 sm:max-w-xs">
         <SheetHeader>
-          <SheetTitle>Bookstore</SheetTitle>
+          <SheetTitle><BookStoreLogo iconSize={22} textClassName="text-sm" /></SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col gap-1 p-4">
           {navLinks.map((link) => (
