@@ -8,6 +8,7 @@
 - ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
 - ✅ **v3.0 Customer Storefront** — Phases 19-25 (shipped 2026-02-28)
 - ✅ **v3.1 Admin Dashboard** — Phases 26-30 (shipped 2026-03-01)
+- 🔄 **v4.1 Clean House** — Phases 31-32 (in progress)
 
 ## Phases
 
@@ -66,126 +67,57 @@
 
 </details>
 
-### ✅ v3.1 Admin Dashboard (Complete — shipped 2026-03-01)
+<details>
+<summary>✅ v3.1 Admin Dashboard (Phases 26-30) — SHIPPED 2026-03-01</summary>
 
-**Milestone Goal:** A working admin dashboard at `/admin` where an authenticated admin can view KPI metrics, analyze sales, manage the book catalog, manage users, and moderate reviews — all surfacing existing backend endpoints through a clean, protected Next.js interface.
+- [x] Phase 26: Admin Foundation (2/2 plans) — completed 2026-02-28
+- [x] Phase 27: Sales Analytics and Inventory Alerts (2/2 plans) — completed 2026-02-28
+- [x] Phase 28: Book Catalog CRUD (2/2 plans) — completed 2026-03-01
+- [x] Phase 29: User Management and Review Moderation (2/2 plans) — completed 2026-03-01
+- [x] Phase 30: Integration and Cache Fixes (1/1 plan) — completed 2026-03-01
 
-- [x] **Phase 26: Admin Foundation** - Admin layout, route protection, and dashboard overview with KPI cards and period selector (completed 2026-02-28)
-- [x] **Phase 27: Sales Analytics and Inventory Alerts** - Revenue chart, top-sellers table, and low-stock inventory alerts with configurable threshold (completed 2026-02-28)
-- [x] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal (completed 2026-03-01)
-- [x] **Phase 29: User Management and Review Moderation** - Paginated user table with deactivate/reactivate, and review moderation table with bulk delete (completed 2026-03-01)
-- [x] **Phase 30: Integration and Cache Fixes** - Verified middleware defense-in-depth (Layer 1+2), added POST /api/revalidate Route Handler with admin guard, wired all 6 admin mutations with fire-and-forget triggerRevalidation (completed 2026-03-01)
+</details>
+
+### v4.1 Clean House (Phases 31-32)
+
+- [ ] **Phase 31: Code Quality** - Extract shared admin components, fix return type, and make top-sellers period-aware
+- [ ] **Phase 32: Validation and Docs** - Verify email improvements end-to-end and correct SUMMARY frontmatter
 
 ## Phase Details
 
-### Phase 26: Admin Foundation
-**Goal**: Admin can access a protected `/admin` section with its own layout and navigate to a dashboard overview showing current KPI metrics with period comparison
-**Depends on**: Phase 25 (v3.0 storefront complete — provides the base layout structure to restructure)
-**Requirements**: ADMF-01, ADMF-02, ADMF-03, ADMF-04, DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
+### Phase 31: Code Quality
+**Goal**: The admin frontend has no duplicated component implementations, correct TypeScript types, and analytics that respect the user's period selection
+**Depends on**: Nothing (first phase of v4.1)
+**Requirements**: COMP-01, COMP-02, TYPE-01, ANLY-01
 **Success Criteria** (what must be TRUE):
-  1. Admin visiting `/admin` sees a sidebar layout separate from the customer storefront; customer Header and Footer do not appear
-  2. Non-admin user navigating to any `/admin` route is redirected away — both proxy.ts and admin layout Server Component independently enforce the role check
-  3. The sidebar highlights the currently active section as the admin navigates between Overview, Sales, Catalog, Users, and Reviews
-  4. Admin can view KPI cards for revenue, order count, and AOV, and toggle between Today, This Week, and This Month — each card shows a colored delta badge comparing to the prior period
-  5. A low-stock count card on the overview links to the Inventory Alerts section, and a top-5 best-sellers mini-table is visible without leaving the overview
-**Plans**: 2 plans (Wave 1: infrastructure, Wave 2: data layer + dashboard)
-
+  1. DeltaBadge renders identically on the overview and sales pages, sourced from a single shared component file
+  2. Both the catalog table and inventory alert table use one StockBadge component that accepts a threshold parameter, with no duplicate badge implementations remaining
+  3. Selecting "Today", "This Week", or "This Month" in the period selector updates the top-sellers table to show data for that period only
+  4. The TypeScript compiler resolves `updateBookStock` to return `Promise<BookResponse>` without type errors or casts
+**Plans:** 2 plans
 Plans:
-- [ ] 26-01-PLAN.md — Route group restructure, admin layout shell with sidebar, CVE-2025-29927 defense-in-depth
-- [ ] 26-02-PLAN.md — Admin fetch layer, TanStack Query admin key namespace, dashboard overview page with KPI cards
+- [ ] 31-01-PLAN.md — Extract DeltaBadge + StockBadge shared components, fix updateBookStock return type
+- [ ] 31-02-PLAN.md — Add period filtering to top-sellers (backend + frontend)
 
-### Phase 27: Sales Analytics and Inventory Alerts
-**Goal**: Admin can analyze sales performance through a revenue comparison chart and top-sellers rankings, and identify low-stock books via a configurable threshold view
-**Depends on**: Phase 26 (admin layout, `src/lib/admin.ts`, TanStack Query admin key namespace, `next/dynamic` SSR-disable pattern established)
-**Requirements**: SALE-01, SALE-02, SALE-03, SALE-04, INVT-01, INVT-02, INVT-03
+### Phase 32: Validation and Docs
+**Goal**: Email improvements are confirmed working in a real environment and planning document history is accurate
+**Depends on**: Phase 31
+**Requirements**: DOCS-01, MAIL-01
 **Success Criteria** (what must be TRUE):
-  1. Admin on the Sales Analytics page sees a bar chart comparing current period revenue to the prior period — the chart renders without hydration errors in production
-  2. Admin can read summary stats (revenue, order count, AOV, delta percentage) on the analytics page, in addition to the chart
-  3. Admin can toggle the top-sellers table between revenue ranking and volume ranking, and select a row limit of 5, 10, or 25 entries
-  4. Admin on the Inventory Alerts page sees books sorted by stock ascending with red badges for out-of-stock and amber badges for low stock
-  5. Admin can change the stock threshold via an input field and the table updates to reflect the new threshold; clicking "Update Stock" on any row opens the stock update modal
-**Plans**: 2 plans (Wave 1: sales analytics, Wave 2: inventory alerts)
-
-Plans:
-- [ ] 27-01-PLAN.md — Install recharts via shadcn chart CLI, create RevenueChart.tsx with next/dynamic SSR-disable, fix adminKeys.sales.topBooks cache key, build Sales Analytics page with KPI cards, revenue comparison chart, and top-sellers table with revenue/volume toggle and 5/10/25 limit selector
-- [ ] 27-02-PLAN.md — Add updateBookStock function to admin.ts, enhance Inventory Alerts page with shadcn Badge stock status pills, free-form debounced threshold input alongside preset buttons, and Update Stock dialog modal with useMutation
-
-### Phase 28: Book Catalog CRUD
-**Goal**: Admin can manage the entire book catalog from a paginated, searchable table — adding, editing, deleting books and updating stock quantities — with changes reflected immediately in the customer storefront
-**Depends on**: Phase 26 (admin layout, admin fetch layer, query key namespace established)
-**Requirements**: CATL-01, CATL-02, CATL-03, CATL-04, CATL-05, CATL-06
-**Success Criteria** (what must be TRUE):
-  1. Admin sees a paginated catalog table showing title, author, price, genre, stock, and action buttons; table supports debounced text search and genre filter
-  2. Admin can open an add-book form, fill all required fields with validation feedback, submit, and see the new book appear in the table without a full page reload
-  3. Admin can click Edit on any row to open a pre-populated form, change any field, save, and see the updated values reflected in the table
-  4. Admin can click Delete on any row, confirm the action in a dialog, and have the book removed — the dialog warns that the action cannot be undone
-  5. Admin can open a stock update modal on any book, enter a new quantity, save, and receive a toast notification when restocking from zero (indicating pre-booking emails will be sent); mutations invalidate both the admin catalog cache and the customer-facing books cache
-**Plans**: 2 plans (Wave 1: table infrastructure + catalog page, Wave 2: forms + CRUD operations)
-
-Plans:
-- [ ] 28-01-PLAN.md — Install TanStack Table, create generic DataTable.tsx and AdminPagination.tsx, extend adminKeys.catalog, build paginated catalog table with debounced search and genre filter
-- [ ] 28-02-PLAN.md — BookForm.tsx (react-hook-form + zod) in Sheet side drawer, ConfirmDialog.tsx, shared StockUpdateModal.tsx, wire add/edit/delete/stock-update mutations with cross-cache invalidation
-
-### Phase 29: User Management and Review Moderation
-**Goal**: Admin can manage user accounts and moderate reviews from paginated, filterable tables — deactivating users, reactivating users, deleting single reviews, and bulk-deleting selected reviews
-**Depends on**: Phase 28 (`DataTable.tsx`, `ConfirmDialog.tsx`, `QUERY_KEYS`, mutation/invalidation pattern all established)
-**Requirements**: USER-01, USER-02, USER-03, USER-04, REVW-01, REVW-02, REVW-03, REVW-04
-**Success Criteria** (what must be TRUE):
-  1. Admin sees a paginated user table with email, role badge, active status badge, join date, and action buttons; the table can be filtered by role (all/user/admin) and active status (all/active/inactive)
-  2. Admin can click Deactivate on a non-admin user row, confirm in a dialog, and have the user locked out immediately; the Deactivate button is visibly disabled for admin-role users
-  3. Admin can click Reactivate on an inactive user row, confirm, and restore the user's access
-  4. Admin sees a paginated review table with book title, reviewer, rating, text snippet, and date; the table supports filtering by book, user, and rating range, and sorting by date or rating
-  5. Admin can delete a single review with confirmation, or select multiple reviews via checkboxes and bulk-delete them with a single confirmation dialog that states the count; selection checkboxes clear after the bulk delete completes
-**Plans**: 2 plans (Wave 1: user management + data layer, Wave 2: review moderation)
-
-Plans:
-- [ ] 29-01-PLAN.md — Extend admin.ts with users+reviews namespaces and fetch/mutation functions, build User Management page with DataTable, role/status filters, deactivate/reactivate with ConfirmDialog
-- [ ] 29-02-PLAN.md — Build Review Moderation page with DataTable, filter bar (book ID, user ID, rating range, sort), single-delete, bulk-delete with checkbox selection and confirmation dialog
-
-### Phase 30: Integration and Cache Fixes
-**Goal**: Close defense-in-depth and cache propagation gaps identified by milestone audit — verify existing middleware.ts satisfies Layer 1 admin protection, and fix admin mutation cache invalidation so changes propagate to the customer RSC storefront
-**Depends on**: Phase 28 (admin mutations exist), Phase 26 (middleware.ts exists)
-**Requirements**: Hardens ADMF-02, ADMF-03 (defense-in-depth); fixes cache propagation for CATL-03, CATL-04, CATL-05, CATL-06
-**Gap Closure**: Closes integration gap (middleware already correct — verification only) and flow gap (admin mutation → storefront cache) from v3.1 audit
-**Success Criteria** (what must be TRUE):
-  1. `frontend/src/middleware.ts` verified as Layer 1 defense-in-depth — already redirects non-admin/unauthenticated at the edge; `admin/layout.tsx` verified as Layer 2
-  2. Admin book mutations (add, edit, delete, stock update) and review delete mutations trigger `revalidatePath` via a `POST /api/revalidate` Route Handler so the customer storefront reflects changes without a full page reload or manual cache bust
-**Plans**: 1 plan (Wave 1)
-
-Plans:
-- [x] 30-01-PLAN.md — Verify middleware defense-in-depth, create admin-guarded POST /api/revalidate Route Handler, wire triggerRevalidation into all admin mutation onSuccess callbacks
+  1. A test order confirmation email arrives with the BookStore logo displayed inline (not as an attachment) and a book cover image visible
+  2. A test restock alert email arrives with the book cover loaded from Open Library when no local image is present
+  3. The `requirements_completed` field in plans 26-02 and 27-01 SUMMARY frontmatter lists the correct requirement IDs that those plans delivered
+**Plans**: TBD
 
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Infrastructure | v1.0 | 4/4 | Complete | 2026-02-25 |
-| 2. Core Auth | v1.0 | 5/5 | Complete | 2026-02-25 |
-| 3. OAuth | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 4. Catalog | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 5. Discovery | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 6. Cart | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 7. Orders | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 8. Wishlist | v1.0 | 2/2 | Complete | 2026-02-25 |
-| 9. Email Infrastructure | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 10. Admin User Management | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 11. Pre-booking | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 12. Email Notifications Wiring | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 13. Review Data Layer | v2.0 | 2/2 | Complete | 2026-02-26 |
-| 14. Review CRUD Endpoints | v2.0 | 2/2 | Complete | 2026-02-26 |
-| 15. Book Detail Aggregates | v2.0 | 1/1 | Complete | 2026-02-27 |
-| 16. Sales Analytics | v2.1 | 2/2 | Complete | 2026-02-27 |
-| 17. Inventory Analytics | v2.1 | 1/1 | Complete | 2026-02-27 |
-| 18. Review Moderation Dashboard | v2.1 | 2/2 | Complete | 2026-02-27 |
-| 19. Monorepo + Frontend Foundation | v3.0 | 3/3 | Complete | 2026-02-27 |
-| 20. Auth Integration | v3.0 | 3/3 | Complete | 2026-02-27 |
-| 21. Catalog and Search | v3.0 | 4/4 | Complete | 2026-02-27 |
-| 22. Cart and Checkout | v3.0 | 5/5 | Complete | 2026-02-27 |
-| 23. Orders and Account | v3.0 | 2/2 | Complete | 2026-02-27 |
-| 24. Wishlist and Pre-booking | v3.0 | 3/3 | Complete | 2026-02-28 |
-| 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
-| 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
-| 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
-| 28. Book Catalog CRUD | v3.1 | Complete    | 2026-03-01 | 2026-03-01 |
-| 29. User Management and Review Moderation | 2/2 | Complete    | 2026-03-01 | 2026-03-01 |
-| 30. Integration and Cache Fixes | v3.1 | 1/1 | Complete | 2026-03-01 |
+| 1-8 | v1.0 | 24/24 | Complete | 2026-02-25 |
+| 9-12 | v1.1 | 8/8 | Complete | 2026-02-26 |
+| 13-15 | v2.0 | 5/5 | Complete | 2026-02-27 |
+| 16-18 | v2.1 | 5/5 | Complete | 2026-02-27 |
+| 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
+| 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
+| 31 | v4.1 | 0/2 | Not started | - |
+| 32 | v4.1 | 0/TBD | Not started | - |
