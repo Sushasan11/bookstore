@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: 'localhost', port: '8000' },
     ],
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
   },
 };
 
