@@ -47,9 +47,10 @@ None.
 | 1 | Design SVG logo and favicon, place across entire app | 2026-03-01 | d38a4a3 | [1-design-svg-logo-and-favicon-place-across](./quick/1-design-svg-logo-and-favicon-place-across/) |
 | 2 | Add hero section and featured books grid to homepage | 2026-03-01 | 2426755 | [2-add-hero-section-and-featured-books-grid](./quick/2-add-hero-section-and-featured-books-grid/) |
 | 3 | Remove Back to Store from admin sidebar | 2026-03-01 | ed20d53 | [3-remove-back-to-store-from-admin-sidebar](./quick/3-remove-back-to-store-from-admin-sidebar/) |
+| 4 | Add sidebar toggle icon to admin sidebar header | 2026-03-01 | aad5fb2 | [4-add-sidebar-icon-to-the-sidebar](./quick/4-add-sidebar-icon-to-the-sidebar/) |
 
 ## Session Continuity
 
 Last session: 2026-03-01
-Last activity: 2026-03-01 - Completed quick task 3: Remove Back to Store from admin sidebar
+Last activity: 2026-03-01 - Completed quick task 4: Add sidebar toggle icon to admin sidebar header
 Resume file: None
