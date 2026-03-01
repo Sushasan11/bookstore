@@ -1,36 +1,81 @@
-import { auth } from '@/auth'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { use, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useQuery } from '@tanstack/react-query'
 import { fetchOrder } from '@/lib/cart'
 import { OrderDetail } from './_components/OrderDetail'
+import { Skeleton } from '@/components/ui/skeleton'
 
-export const metadata = {
-  title: 'Order Details',
+function OrderSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+      <Skeleton className="h-24 w-full rounded-xl" />
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-64" />
+      <Skeleton className="h-px w-full" />
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex gap-4 py-3">
+            <Skeleton className="h-20 w-14 rounded" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
-export default async function OrderDetailPage({
+export default function OrderDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>
   searchParams: Promise<{ confirmed?: string }>
 }) {
-  const session = await auth()
-  if (!session?.accessToken) redirect('/login')
+  const { id } = use(params)
+  const { confirmed } = use(searchParams)
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
-  const { id } = await params
-  const { confirmed } = await searchParams
+  const orderQuery = useQuery({
+    queryKey: ['order', id],
+    queryFn: () => fetchOrder(session!.accessToken, Number(id)),
+    enabled: !!session?.accessToken,
+    retry: 1,
+  })
 
-  let order
-  try {
-    order = await fetchOrder(session.accessToken, Number(id))
-  } catch {
-    // Order not found or forbidden — redirect to catalog
-    redirect('/catalog')
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login')
+    }
+  }, [status, router])
+
+  if (status === 'loading' || orderQuery.isLoading) {
+    return <OrderSkeleton />
   }
+
+  if (orderQuery.isError) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 text-center space-y-4">
+        <p className="text-muted-foreground">Unable to load order details.</p>
+        <button onClick={() => orderQuery.refetch()} className="text-sm underline">
+          Try again
+        </button>
+      </div>
+    )
+  }
+
+  if (!orderQuery.data) return <OrderSkeleton />
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <OrderDetail order={order} isConfirmed={confirmed === 'true'} />
+      <OrderDetail order={orderQuery.data} isConfirmed={confirmed === 'true'} />
     </div>
   )
 }

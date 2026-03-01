@@ -215,6 +215,8 @@ export function useCart() {
         total_items: 0,
         total_price: '0.00',
       } as CartResponse)
+      // Seed order data into cache so the order page doesn't need to re-fetch
+      queryClient.setQueryData(['order', String(order.id)], order)
       router.push(`/orders/${order.id}?confirmed=true`)
     },
     onError: (err) => {
