@@ -1,5 +1,18 @@
 ---
 gsd_state_version: 1.0
+milestone: v4.1
+milestone_name: Clean House
+status: unknown
+last_updated: "2026-03-01T20:09:50.275Z"
+progress:
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+---
+
+---
+gsd_state_version: 1.0
 milestone: "v4.1"
 milestone_name: "Clean House"
 status: in_progress

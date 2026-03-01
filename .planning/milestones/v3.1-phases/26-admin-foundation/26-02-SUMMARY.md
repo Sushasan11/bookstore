@@ -38,6 +38,8 @@ key-decisions:
   - "All three queries share the same accessToken from useSession — no per-query session fetching"
   - "Loading skeletons sized to match value + delta layout for minimal layout shift on data load"
 
+requirements-completed: [DASH-01, DASH-02, DASH-03, DASH-04, DASH-05]
+
 # Metrics
 duration: ~3min
 completed: 2026-02-28

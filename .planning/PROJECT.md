@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A full-stack online bookstore with a FastAPI backend and Next.js customer-facing storefront. Users can browse an SEO-optimized catalog, search and filter books, sign in with email or Google OAuth, manage a shopping cart with optimistic updates, checkout, review order history, maintain wishlists, pre-book out-of-stock titles, and leave verified-purchase reviews with star ratings. The backend provides a comprehensive API with admin capabilities including user management, review moderation, and operational analytics. Monorepo structure: `backend/` (Python/FastAPI) and `frontend/` (Next.js/TypeScript).
+A full-stack online bookstore with a FastAPI backend and Next.js storefront plus admin dashboard. Users can browse an SEO-optimized catalog, search and filter books, sign in with email or Google OAuth, manage a shopping cart with optimistic updates, checkout, review order history, maintain wishlists, pre-book out-of-stock titles, and leave verified-purchase reviews with star ratings. Admins access a protected dashboard at `/admin` with KPI analytics, sales charts, full book catalog CRUD, user management (deactivate/reactivate), and review moderation (single + bulk delete) — all with automatic storefront cache revalidation. Monorepo structure: `backend/` (Python/FastAPI) and `frontend/` (Next.js/TypeScript).
 
 ## Core Value
 
@@ -52,10 +52,25 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - ✓ Reviews CRUD on book detail page with verified-purchase gate and star ratings — v3.0
 - ✓ URL-persisted search and filter state (bookmarkable, shareable) — v3.0
 - ✓ Responsive mobile-first layout with header, navigation, footer, and dark mode — v3.0
+- ✓ Admin dashboard overview with KPI cards, period selector, delta badges, and top-5 best-sellers — v3.1
+- ✓ Sales analytics with Recharts revenue comparison chart, top-sellers table with revenue/volume toggle — v3.1
+- ✓ Book catalog CRUD with paginated table, search/filter, validated add/edit forms, delete confirmation, stock update modal — v3.1
+- ✓ User management with paginated table, role/status filters, deactivate/reactivate with confirmation — v3.1
+- ✓ Review moderation with paginated table, 6-control filter bar, single + bulk delete with checkbox selection — v3.1
+- ✓ Inventory low-stock alerts with configurable threshold, color-coded badges, shared stock update modal — v3.1
+- ✓ Defense-in-depth admin protection (middleware Layer 1 + Server Component Layer 2) — v3.1
+- ✓ Admin mutation → storefront cache revalidation via fire-and-forget triggerRevalidation + POST /api/revalidate — v3.1
 
 ### Active
 
-(No active requirements — start next milestone with `/gsd:new-milestone`)
+<!-- Current milestone: v4.1 Clean House -->
+
+- [ ] Extract duplicated DeltaBadge to shared admin component
+- [ ] Consolidate StockBadge into single configurable component
+- [ ] Fix updateBookStock return type (Promise<void> → Promise<BookResponse>)
+- [ ] Make top-sellers table period-aware (respect period selector)
+- [ ] Update SUMMARY frontmatter (26-02, 27-01 missing requirement IDs)
+- [ ] Validate email improvements end-to-end
 
 ## Out of Scope
 
@@ -63,23 +78,31 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - Mobile app — API-first, web/API only
 - Social features beyond reviews (commenting, following users) — not a social platform
 - Multiple storefronts or multi-tenant — single bookstore
-- Recommendation engine — needs transaction data first
+- Recommendation engine — ~~needs transaction data first~~ planned for v4.2
 - Real-time notifications (WebSocket) — email sufficient for restock alerts
 - Celery / Redis task queue — BackgroundTasks sufficient at current volume
 - Helpfulness voting on reviews — defer until review volume justifies it
 - Pre-moderation queue — reactive admin-delete is correct; pre-moderation suppresses authentic reviews
 - Rating sort in search results — deferred, keep focused on core review CRUD
-- Admin dashboard UI — deferred to future milestone
 - GitHub OAuth on frontend — email + Google sufficient
 
 ## Context
 
-Shipped v3.0 with 8,022 LOC TypeScript (frontend) + 14,728 LOC Python (backend), ~306 backend tests passing.
-Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail (backend); Next.js 15, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS, NextAuth.js v5 (frontend).
-25 phases delivered across 5 milestones (v1.0: 8 phases, v1.1: 4 phases, v2.0: 3 phases, v2.1: 3 phases, v3.0: 7 phases).
-Full customer storefront with catalog browsing, search/filter, auth, cart/checkout, orders, wishlist, pre-booking, and reviews.
-Admin analytics: sales summary with period comparison, top-sellers by revenue/volume, low-stock inventory alerts, review moderation with bulk delete.
-73 frontend commits, 253 files changed in v3.0.
+Shipped v3.1 with ~11,300 LOC TypeScript (frontend) + 14,728 LOC Python (backend), ~306 backend tests passing.
+Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail (backend); Next.js 15, TypeScript, TanStack Query, Recharts, TanStack Table, shadcn/ui, Tailwind CSS, NextAuth.js v5 (frontend).
+30 phases delivered across 6 milestones (v1.0: 8, v1.1: 4, v2.0: 3, v2.1: 3, v3.0: 7, v3.1: 5 phases).
+Full customer storefront + admin dashboard surfacing all backend admin endpoints.
+v3.1 added ~3,300 LOC across 70 files in 2 days (29 commits). 28 requirements satisfied, 0 gaps.
+
+## Quality Principles
+
+> **These principles are NON-NEGOTIABLE and apply to ALL milestones and phases.**
+
+### 1. Visual & E2E Testing Required
+Every phase must include launching the server and visually testing the UI flows — not just running unit/integration tests. Both backend and frontend must be confirmed working together as intended. This is especially critical for complex logic. Plans must account for this: think through test scenarios thoroughly, cover edge cases in actual browser interaction, and verify the full user journey end-to-end.
+
+### 2. Proactive UI/UX Excellence
+Always proactively think through and act on excellent UI/UX principles. This means: intuitive menu navigation, clean presentation, logical user flow, and thoughtful interaction design. Don't just implement features — consider how users will actually experience them. Every UI change should be evaluated for clarity, consistency, and ease of use before it ships.
 
 ## Constraints
 
@@ -125,7 +148,31 @@ Admin analytics: sales summary with period comparison, top-sellers by revenue/vo
 | proxy.ts over middleware | Next.js 16 named export pattern for route protection, cleaner than middleware matcher | ✓ Good |
 | Optimistic updates with rollback | Instant UI feedback for cart/wishlist, automatic rollback on server error via TanStack Query | ✓ Good |
 | React.cache() for SSR dedup | generateMetadata and page component share single cached fetch — avoids double data loading | ✓ Good |
+| (store)/ route group restructure | Customer routes in route group, admin in separate layout — no accidental Header/Footer leakage | ✓ Good |
+| CVE-2025-29927 defense-in-depth | middleware.ts (Layer 1 edge) + admin/layout.tsx Server Component (Layer 2) — independent role checks | ✓ Good |
+| Recharts via shadcn chart CLI | `npx shadcn@latest add chart` installs recharts + ChartContainer wrapper; `next/dynamic({ ssr: false })` prevents hydration errors | ✓ Good |
+| Generic DataTable + AdminPagination | Reusable across catalog, users, reviews — single implementation with TanStack Table v8 | ✓ Good |
+| Self-contained StockUpdateModal | Owns its own useMutation + queryClient — reusable in both catalog and inventory without prop drilling | ✓ Good |
+| adminKeys hierarchical query key factory | Single source of query keys in admin.ts — enables scoped cache invalidation per admin section | ✓ Good |
+| Fire-and-forget triggerRevalidation | Admin UX not blocked by cache revalidation latency; ISR revalidate=3600 as fallback safety net | ✓ Good |
+| Path-based revalidation over tag-based | No need to retrofit `next: { tags }` across existing fetch calls — revalidatePath sufficient | ✓ Good |
 | Claude Code MCP for development | AI-assisted development across all phases | Active |
 
+## Current Milestone: v4.1 Clean House
+
+**Goal:** Resolve all tech debt from v3.1 audit and establish a clean slate before feature work in v4.2.
+
+**Target features:**
+- Extract duplicated DeltaBadge to shared component
+- Consolidate StockBadge into single configurable component
+- Fix updateBookStock response type mismatch
+- Make top-sellers table period-aware
+- Update incomplete SUMMARY frontmatter
+- Validate email improvements end-to-end
+
+**Future milestones:**
+- v4.2 Customer Experience — Recommendation engine, customer dashboard, search improvements
+- v4.3 Quality & Hardening — Frontend tests, performance, accessibility, security
+
 ---
-*Last updated: 2026-02-28 after v3.0 milestone completion*
+*Last updated: 2026-03-02 after v4.1 milestone started*

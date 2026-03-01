@@ -36,6 +36,7 @@ decisions:
   - "Prior revenue derived via formula rather than separate API call: priorRevenue = currentRevenue / (1 + delta/100)"
   - "Top-sellers table uses dynamic column header (Revenue vs Units Sold) based on sortBy state rather than showing both columns"
   - "Period card (4th KPI) shows selected period label as informational context rather than a delta-bearing metric"
+requirements-completed: [SALE-01, SALE-02, SALE-03, SALE-04]
 metrics:
   duration: "~5 minutes"
   completed: "2026-02-28"

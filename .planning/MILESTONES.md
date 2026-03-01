@@ -1,5 +1,14 @@
 # Milestones
 
+## v3.1 Admin Dashboard (Shipped: 2026-03-01)
+
+**Phases completed:** 5 phases, 9 plans, 4 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v3.0 Customer Storefront (Shipped: 2026-02-28)
 
 **Phases completed:** 7 phases, 22 plans, 0 tasks

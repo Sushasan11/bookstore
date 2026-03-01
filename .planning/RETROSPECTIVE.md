@@ -173,6 +173,53 @@
 
 ---
 
+## Milestone: v3.1 — Admin Dashboard
+
+**Shipped:** 2026-03-01
+**Phases:** 5 | **Plans:** 9 | **Sessions:** ~3
+
+### What Was Built
+- Protected admin dashboard at `/admin` with collapsible sidebar, defense-in-depth role enforcement, isolated route groups
+- Dashboard overview with KPI cards (revenue, orders, AOV), period selector, delta badges, top-5 best-sellers mini-table
+- Sales analytics with Recharts revenue chart (SSR-safe via next/dynamic), configurable top-sellers table
+- Full book catalog CRUD — paginated DataTable, debounced search, genre filter, BookForm with Zod validation, ConfirmDialog, shared StockUpdateModal
+- User management — paginated table, role/status filters, deactivate/reactivate with ConfirmDialog (disabled for admin accounts)
+- Review moderation — 7-column DataTable with checkbox selection, 6-control filter bar, single + bulk delete
+- Fire-and-forget cache revalidation wiring — `POST /api/revalidate` Route Handler + `triggerRevalidation` helper across all 6 admin mutations
+
+### What Worked
+- adminKeys hierarchical query key factory in single admin.ts file — every phase imported from one place, scoped invalidation worked perfectly
+- Self-contained StockUpdateModal (owns its own useMutation) enabled direct reuse between catalog and inventory pages
+- Generic DataTable<TData> + AdminPagination from Phase 28 reused directly in Phase 29 — zero modifications needed
+- Phase 30 gap-closure pattern: prior audit identified middleware + cache propagation gaps → dedicated phase fixed both surgically
+- ConfirmDialog reusable component with severity-differentiated descriptions adapted to 4 different use cases
+
+### What Was Inefficient
+- DeltaBadge duplicated in overview/page.tsx and sales/page.tsx — should have been extracted to shared component in Phase 26
+- StockBadge duplicated between inventory (threshold-configurable) and catalog (hardcoded) — two slightly different implementations
+- SUMMARY frontmatter `requirements_completed` was empty/incomplete in 3 of 9 plans — audit caught it but it's recurring
+- Top-sellers table not period-aware (always all-time) — design gap not caught until integration check
+
+### Patterns Established
+- `next/dynamic({ ssr: false })` for all Recharts components — prevents hydration errors in production builds
+- Fire-and-forget `triggerRevalidation()` — admin UX not blocked, ISR revalidate=3600 as safety net
+- `{ path: '/books/[id]', type: 'page' }` object form for revalidatePath — pattern-based revalidation for bulk operations
+- adminKeys namespace hierarchy: `['admin', section, subsection, params]` — enables scoped cache invalidation per admin section
+- ConfirmDialog as reusable primitive: accepts title, description, confirmLabel, isPending — used across catalog, users, reviews
+
+### Key Lessons
+1. Shared components (DataTable, ConfirmDialog, StockUpdateModal) should be planned in the earliest consuming phase — they compound value in every subsequent phase
+2. Fire-and-forget with ISR fallback is the right pattern for admin → storefront cache propagation — admin UX stays fast, eventual consistency is acceptable
+3. Gap-closure phases (like Phase 30) are lightweight when the audit is specific — clear scope = fast execution
+4. adminKeys factory pattern is superior to ad-hoc query keys — refactoring would have been painful if each phase invented its own keys
+
+### Cost Observations
+- Model mix: ~15% opus (orchestrator), ~85% sonnet (executors, verifiers, integration checker)
+- Sessions: ~3 (plan + execute across 2 days)
+- Notable: 5 phases (9 plans) + audit completed in 2 days; ~3,300 LOC across 70 files
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -184,6 +231,7 @@
 | v2.0 | 1 | 3 | Interfaces block in PLANs, 3-source req cross-reference |
 | v2.1 | 1 | 3 | Direct repo pattern for simple aggregates, pre-built schemas across plans |
 | v3.0 | ~4 | 7 | Full frontend milestone, SSR+client patterns, TanStack Query cache architecture |
+| v3.1 | ~3 | 5 | Admin dashboard, reusable component library, cache revalidation wiring |
 
 ### Cumulative Quality
 
@@ -194,6 +242,7 @@
 | v2.0 | 240 | 12,010 | 62 |
 | v2.1 | ~306 | 13,743 | 66 |
 | v3.0 | ~306 | 22,750 (14,728 py + 8,022 ts) | 0 (frontend, no new backend tests) |
+| v3.1 | ~306 | ~26,050 (14,728 py + ~11,300 ts) | 0 (frontend admin, no new backend tests) |
 
 ### Top Lessons (Verified Across Milestones)
 
