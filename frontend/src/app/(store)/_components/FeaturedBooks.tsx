@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { BookCard } from '@/app/(store)/catalog/_components/BookCard'
@@ -18,10 +19,35 @@ export function FeaturedBooks({
   viewAllHref,
   viewAllLabel = 'View all',
 }: FeaturedBooksProps) {
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
   if (books.length === 0) return null
 
   return (
-    <section>
+    <section
+      ref={sectionRef}
+      className="translate-y-8 opacity-0 transition-all duration-700 ease-out [&.animate-in]:translate-y-0 [&.animate-in]:opacity-100"
+    >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
         <Link

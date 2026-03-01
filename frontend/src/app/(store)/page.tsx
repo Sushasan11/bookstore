@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { fetchBooks } from '@/lib/catalog'
-import { HeroSection } from './_components/HeroSection'
+import { ParallaxHero } from './_components/ParallaxHero'
 import { FeaturedBooks } from './_components/FeaturedBooks'
 
 export const metadata: Metadata = {
@@ -17,9 +17,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroSection />
+      <ParallaxHero />
 
-      <div className="mx-auto max-w-7xl px-4 py-12 space-y-16">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12 space-y-16">
         <FeaturedBooks
           title="Top Rated"
           books={topRated.items}
