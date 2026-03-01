@@ -8,9 +8,12 @@ Usage:
     uvicorn app.main:app --reload
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -36,6 +39,7 @@ from app.orders.router import admin_router as orders_admin_router
 from app.orders.router import router as orders_router
 from app.prebooks.router import router as prebooks_router
 from app.reviews.router import router as reviews_router
+from app.uploads.router import router as uploads_router
 from app.users.router import router as auth_router
 from app.wishlist.router import router as wishlist_router
 
@@ -99,6 +103,12 @@ def create_app() -> FastAPI:
     application.include_router(analytics_router)
     application.include_router(reviews_admin_router)
     application.include_router(reviews_router)
+    application.include_router(uploads_router)
+
+    # Serve uploaded images as static files
+    uploads_dir = Path(__file__).resolve().parent.parent / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    application.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
     return application
 

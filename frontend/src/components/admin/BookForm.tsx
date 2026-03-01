@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Upload } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { uploadImage } from '@/lib/admin'
 import type { components } from '@/types/api.generated'
 
 type BookResponse = components['schemas']['BookResponse']
@@ -55,9 +58,14 @@ interface BookFormProps {
   onSubmit: (data: BookFormValues) => void
   onCancel: () => void
   isPending?: boolean
+  accessToken: string
 }
 
-export function BookForm({ book, genres, onSubmit, onCancel, isPending }: BookFormProps) {
+export function BookForm({ book, genres, onSubmit, onCancel, isPending, accessToken }: BookFormProps) {
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookSchema),
     defaultValues: {
@@ -90,6 +98,21 @@ export function BookForm({ book, genres, onSubmit, onCancel, isPending }: BookFo
   }, [book, form])
 
   const isEditing = !!book
+  const coverUrl = form.watch('cover_image_url')
+  const genreId = form.watch('genre_id')
+
+  async function handleFileUpload(file: File) {
+    setUploading(true)
+    try {
+      const { url } = await uploadImage(accessToken, file)
+      form.setValue('cover_image_url', url, { shouldValidate: true })
+      toast.success('Image uploaded')
+    } catch {
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 px-4 pb-4">
@@ -135,13 +158,14 @@ export function BookForm({ book, genres, onSubmit, onCancel, isPending }: BookFo
         )}
       </div>
 
-      {/* Genre */}
+      {/* Genre — key forces re-mount when book or genres change so Radix Select picks up the new value */}
       <div className="space-y-1.5">
         <Label>Genre</Label>
         <Select
+          key={`genre-${book?.id ?? 'new'}-${genres.length}`}
           value={
-            form.watch('genre_id') !== undefined && form.watch('genre_id') !== ''
-              ? String(form.watch('genre_id'))
+            genreId !== undefined && genreId !== ''
+              ? String(genreId)
               : 'none'
           }
           onValueChange={(value) => {
@@ -174,17 +198,69 @@ export function BookForm({ book, genres, onSubmit, onCancel, isPending }: BookFo
         )}
       </div>
 
-      {/* Cover Image URL */}
+      {/* Cover Image — dual mode: URL or Upload */}
       <div className="space-y-1.5">
-        <Label htmlFor="cover_image_url">Cover Image URL</Label>
-        <Input
-          id="cover_image_url"
-          type="url"
-          placeholder="https://..."
-          {...form.register('cover_image_url')}
-        />
+        <Label>Cover Image</Label>
+        <div className="flex gap-1 mb-2">
+          <Button
+            type="button"
+            variant={imageMode === 'url' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setImageMode('url')}
+          >
+            URL
+          </Button>
+          <Button
+            type="button"
+            variant={imageMode === 'upload' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setImageMode('upload')}
+          >
+            <Upload className="h-4 w-4 mr-1" />
+            Upload
+          </Button>
+        </div>
+
+        {imageMode === 'url' ? (
+          <Input
+            id="cover_image_url"
+            type="url"
+            placeholder="https://..."
+            {...form.register('cover_image_url')}
+          />
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleFileUpload(file)
+              }}
+            />
+            {uploading && <p className="text-sm text-muted-foreground self-center">Uploading...</p>}
+          </div>
+        )}
+
         {form.formState.errors.cover_image_url && (
           <p className="text-sm text-red-500">{form.formState.errors.cover_image_url.message}</p>
+        )}
+
+        {/* Image preview */}
+        {coverUrl && coverUrl !== '' && (
+          <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverUrl}
+              alt="Cover preview"
+              className="h-32 w-auto rounded border object-contain"
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          </div>
         )}
       </div>
 
@@ -202,7 +278,7 @@ export function BookForm({ book, genres, onSubmit, onCancel, isPending }: BookFo
         <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || uploading}>
           {isPending ? (isEditing ? 'Saving...' : 'Adding...') : isEditing ? 'Save Changes' : 'Add Book'}
         </Button>
       </div>

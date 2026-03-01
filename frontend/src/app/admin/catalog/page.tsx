@@ -383,6 +383,7 @@ export default function AdminCatalogPage() {
               setEditingBook(null)
             }}
             isPending={createMutation.isPending || updateMutation.isPending}
+            accessToken={accessToken}
           />
         </SheetContent>
       </Sheet>

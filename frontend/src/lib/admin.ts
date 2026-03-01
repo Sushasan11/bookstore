@@ -1,5 +1,7 @@
-import { apiFetch } from '@/lib/api'
+import { apiFetch, ApiError } from '@/lib/api'
 import type { components } from '@/types/api.generated'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 type BookCreate = components['schemas']['BookCreate']
 type BookUpdate = components['schemas']['BookUpdate']
@@ -191,6 +193,36 @@ export async function deleteBook(
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
+}
+
+// ---------------------------------------------------------------------------
+// Image upload
+// ---------------------------------------------------------------------------
+
+/**
+ * Upload a cover image file. Uses raw fetch with FormData (not apiFetch)
+ * because the request is multipart, not JSON.
+ * Returns the full URL to the uploaded image.
+ */
+export async function uploadImage(
+  accessToken: string,
+  file: File
+): Promise<{ url: string }> {
+  const form = new FormData()
+  form.append('file', file)
+
+  const res = await fetch(`${API_BASE}/uploads/images`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new ApiError(body.detail ?? `Upload failed (${res.status})`, res.status, body.detail)
+  }
+
+  return res.json()
 }
 
 // ---------------------------------------------------------------------------
