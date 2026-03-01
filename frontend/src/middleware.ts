@@ -13,7 +13,7 @@ const storeOnlyPrefixes = ["/cart", "/checkout", "/orders", "/wishlist", "/prebo
 // Auth-only pages (redirect to / when already signed in)
 const authOnlyPaths = ["/login", "/register"]
 
-export const proxy = auth((req) => {
+export const middleware = auth((req) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
 
