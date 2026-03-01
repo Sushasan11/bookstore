@@ -133,13 +133,19 @@ async def _create_oos_book(ac, admin_headers, title="OOS Email Book"):
 
 
 def _get_email_html(msg):
-    """Extract HTML body from a MIMEMultipart('alternative') message.
+    """Extract HTML body from a MIMEMultipart message.
 
-    The message has two parts: text/plain and text/html. We return the HTML.
+    Handles both multipart/alternative and multipart/related (which nests
+    a multipart/alternative as its first child). Recursively walks parts
+    to find text/html.
     """
     if isinstance(msg, MIMEMultipart):
         for part in msg.get_payload():
-            if hasattr(part, 'get_content_type') and part.get_content_type() == "text/html":
+            if isinstance(part, MIMEMultipart):
+                result = _get_email_html(part)
+                if result:
+                    return result
+            elif hasattr(part, 'get_content_type') and part.get_content_type() == "text/html":
                 raw = part.get_payload(decode=True)
                 if raw:
                     return raw.decode()
