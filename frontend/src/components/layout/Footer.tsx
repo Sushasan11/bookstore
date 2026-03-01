@@ -10,7 +10,7 @@ export function Footer() {
           </p>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <Link
-              href="/books"
+              href="/catalog"
               className="hover:text-foreground transition-colors"
             >
               Browse Books
