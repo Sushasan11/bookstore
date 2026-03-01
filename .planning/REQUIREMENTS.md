@@ -1,132 +1,79 @@
-# Requirements: BookStore v3.1 — Admin Dashboard
+# Requirements: BookStore
 
-**Defined:** 2026-02-28
+**Defined:** 2026-03-02
 **Core Value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
 
-## v3.1 Requirements
+## v4.1 Requirements
 
-Requirements for the admin dashboard frontend. Each maps to roadmap phases.
+Requirements for v4.1 Clean House milestone. Tech debt resolution and validation.
 
-### Admin Foundation
+### Component Cleanup
 
-- [x] **ADMF-01**: Admin can access a dedicated admin section at `/admin` with a sidebar navigation layout separate from the customer storefront
-- [x] **ADMF-02**: Admin route is protected by role check in both proxy.ts and admin layout Server Component (defense-in-depth against CVE-2025-29927)
-- [x] **ADMF-03**: Non-admin users are redirected away from `/admin` routes
-- [x] **ADMF-04**: Admin sidebar highlights the currently active section
+- [x] **COMP-01**: Admin DeltaBadge extracted to shared component used by both overview and sales pages
+- [x] **COMP-02**: Admin StockBadge consolidated into single configurable component with threshold parameter
 
-### Dashboard Overview
+### Type Safety
 
-- [x] **DASH-01**: Admin can view KPI cards showing revenue, order count, and AOV for the selected period
-- [x] **DASH-02**: Admin can switch period between Today, This Week, and This Month
-- [x] **DASH-03**: Each KPI card shows a delta badge (green up / red down / grey dash) comparing to the previous period
-- [x] **DASH-04**: Admin can see a low-stock count card that links to the inventory alerts section
-- [x] **DASH-05**: Admin can view a top-5 best-selling books mini-table on the overview page
+- [x] **TYPE-01**: updateBookStock API function returns `Promise<BookResponse>` matching actual backend response
 
-### Sales Analytics
+### Analytics
 
-- [x] **SALE-01**: Admin can view a revenue comparison bar chart showing current vs previous period
-- [x] **SALE-02**: Admin can view summary stats (revenue, order count, AOV, delta) on the analytics page
-- [x] **SALE-03**: Admin can view a top-sellers table ranked by revenue or volume via a toggle
-- [x] **SALE-04**: Admin can configure the top-sellers table limit (5, 10, or 25 entries)
+- [ ] **ANLY-01**: Top-sellers table respects period selector (today/week/month) instead of showing all-time data
 
-### Book Catalog Management
+### Documentation
 
-- [x] **CATL-01**: Admin can view a paginated catalog table showing title, author, price, genre, stock, and actions
-- [x] **CATL-02**: Admin can search books with debounced text input and filter by genre
-- [x] **CATL-03**: Admin can add a new book via a form with full field validation (title, author, price, ISBN, genre, description, cover URL, publish date)
-- [x] **CATL-04**: Admin can edit an existing book via a pre-populated form
-- [x] **CATL-05**: Admin can delete a book with a confirmation dialog
-- [x] **CATL-06**: Admin can update a book's stock quantity via a modal, with a toast notification when restocking from zero triggers pre-booking emails
+- [ ] **DOCS-01**: SUMMARY frontmatter for plans 26-02 and 27-01 lists correct requirement IDs in `requirements_completed`
 
-### User Management
+### Email Validation
 
-- [x] **USER-01**: Admin can view a paginated user table showing email, role badge, active status badge, join date, and actions
-- [x] **USER-02**: Admin can filter users by role (all/user/admin) and active status (all/active/inactive)
-- [x] **USER-03**: Admin can deactivate a user with a confirmation dialog (disabled for admin accounts)
-- [x] **USER-04**: Admin can reactivate an inactive user
+- [ ] **MAIL-01**: Email improvements (logo CID embedding, Open Library cover fallback) verified working end-to-end
 
-### Review Moderation
+## Future Requirements
 
-- [x] **REVW-01**: Admin can view a paginated review table showing book title, reviewer, rating, text snippet, and date
-- [x] **REVW-02**: Admin can filter reviews by book, user, rating range, and sort by date or rating
-- [x] **REVW-03**: Admin can delete a single review with confirmation
-- [x] **REVW-04**: Admin can select multiple reviews via checkboxes and bulk-delete them with confirmation
+### v4.2 Customer Experience
 
-### Inventory Alerts
+- **RECO-01**: Recommendation engine ("readers also bought") based on purchase/review data
+- **DASH-01**: Customer dashboard with order tracking and purchase history
+- **SRCH-01**: Search autocomplete and suggestions
+- **SRCH-02**: Recent searches persistence
 
-- [x] **INVT-01**: Admin can view a low-stock books table sorted by stock ascending with color-coded status badges (red for out-of-stock, amber for low)
-- [x] **INVT-02**: Admin can configure the stock threshold via an input field
-- [x] **INVT-03**: Admin can click "Update Stock" on any row to open the stock update modal
+### v4.3 Quality & Hardening
 
-## Future Requirements (v3.2+)
+- **TEST-01**: Frontend test coverage (component + integration tests)
+- **TEST-02**: Visual E2E testing — launch server, test all UI flows in browser, confirm backend + frontend work together for every feature
+- **TEST-03**: Robust test planning for complex logic — think through edge cases, error states, and full user journeys before writing tests
+- **UIUX-01**: UI/UX audit — proactively evaluate menu navigation, presentation, and user flow across all pages for clarity and consistency
+- **PERF-01**: Performance profiling and optimization
+- **A11Y-01**: Accessibility audit and remediation
+- **SECR-01**: Security hardening audit
 
-### Sales Analytics Enhancements
-
-- **SALE-05**: Admin can view a day-by-day revenue timeseries chart (requires new backend endpoint)
-- **REVW-05**: Admin can expand/collapse review text inline in the moderation table
-- **INVT-04**: Admin can edit stock inline from the inventory alerts table without navigating to catalog
-
-### Admin Tooling (v4+)
-
-- **ADMIN-01**: Admin can export analytics data to CSV
-- **ADMIN-02**: Admin can bulk-import stock quantities via CSV upload
-- **ADMIN-03**: Admin can promote/demote user roles from the dashboard
+> **Note:** TEST-02, TEST-03, and UIUX-01 reflect core project principles (see PROJECT.md "Quality Principles"). These are not optional — they are the standard for how this project ships.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Day-by-day revenue timeseries chart | Backend provides period totals only, not daily data; requires new endpoint |
-| Real-time dashboard updates (WebSocket/polling) | WebSocket infrastructure deferred per PROJECT.md; manual refresh sufficient |
-| Admin user creation / role promotion | No backend endpoint for role changes; admin accounts created at DB level |
-| Bulk stock import via CSV | Requires new backend endpoint; per-book stock edit sufficient for current scale |
-| Review pre-moderation queue | PROJECT.md explicitly rejects pre-moderation; reactive admin delete is correct model |
-| Sales forecasting / trend prediction | Requires ML infrastructure; out of scope for this project |
-| Admin-to-user messaging | No messaging backend; admins use email addresses from user table |
-| CSV/PDF export | Data volume doesn't justify complexity; browser print/copy sufficient |
+| New backend features | v4.1 is cleanup only — no new API endpoints |
+| Payment integration | Deferred beyond v4.3 |
+| Mobile app | Web-only project |
+| Database schema changes | No model changes needed for tech debt items |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ADMF-01 | Phase 26 | Complete |
-| ADMF-02 | Phase 26 | Complete |
-| ADMF-03 | Phase 26 | Complete |
-| ADMF-04 | Phase 26 | Complete |
-| DASH-01 | Phase 26 | Complete |
-| DASH-02 | Phase 26 | Complete |
-| DASH-03 | Phase 26 | Complete |
-| DASH-04 | Phase 26 | Complete |
-| DASH-05 | Phase 26 | Complete |
-| SALE-01 | Phase 27 | Complete |
-| SALE-02 | Phase 27 | Complete |
-| SALE-03 | Phase 27 | Complete |
-| SALE-04 | Phase 27 | Complete |
-| INVT-01 | Phase 27 | Complete |
-| INVT-02 | Phase 27 | Complete |
-| INVT-03 | Phase 27 | Complete |
-| CATL-01 | Phase 28 | Complete |
-| CATL-02 | Phase 28 | Complete |
-| CATL-03 | Phase 28 | Complete |
-| CATL-04 | Phase 28 | Complete |
-| CATL-05 | Phase 28 | Complete |
-| CATL-06 | Phase 28 | Complete |
-| USER-01 | Phase 29 | Complete |
-| USER-02 | Phase 29 | Complete |
-| USER-03 | Phase 29 | Complete |
-| USER-04 | Phase 29 | Complete |
-| REVW-01 | Phase 29 | Complete |
-| REVW-02 | Phase 29 | Complete |
-| REVW-03 | Phase 29 | Complete |
-| REVW-04 | Phase 29 | Complete |
+| COMP-01 | Phase 31 | Complete |
+| COMP-02 | Phase 31 | Complete |
+| TYPE-01 | Phase 31 | Complete |
+| ANLY-01 | Phase 31 | Pending |
+| DOCS-01 | Phase 32 | Pending |
+| MAIL-01 | Phase 32 | Pending |
 
 **Coverage:**
-- v3.1 requirements: 28 total
-- Mapped to phases: 28
-- Unmapped: 0
+- v4.1 requirements: 6 total
+- Mapped to phases: 6
+- Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after roadmap creation — all 28 requirements mapped to phases 26-29*
+*Requirements defined: 2026-03-02*
+*Last updated: 2026-03-02 after roadmap creation — all 6 requirements mapped to phases 31-32*

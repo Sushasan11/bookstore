@@ -94,7 +94,7 @@
   2. Both the catalog table and inventory alert table use one StockBadge component that accepts a threshold parameter, with no duplicate badge implementations remaining
   3. Selecting "Today", "This Week", or "This Month" in the period selector updates the top-sellers table to show data for that period only
   4. The TypeScript compiler resolves `updateBookStock` to return `Promise<BookResponse>` without type errors or casts
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 31-01-PLAN.md — Extract DeltaBadge + StockBadge shared components, fix updateBookStock return type
 - [ ] 31-02-PLAN.md — Add period filtering to top-sellers (backend + frontend)
@@ -119,5 +119,5 @@ Plans:
 | 16-18 | v2.1 | 5/5 | Complete | 2026-02-27 |
 | 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
 | 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
-| 31 | v4.1 | 0/2 | Not started | - |
+| 31 | 1/2 | In Progress|  | - |
 | 32 | v4.1 | 0/TBD | Not started | - |
