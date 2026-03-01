@@ -7,7 +7,7 @@
 - ✅ **v2.0 Reviews & Ratings** — Phases 13-15 (shipped 2026-02-27)
 - ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
 - ✅ **v3.0 Customer Storefront** — Phases 19-25 (shipped 2026-02-28)
-- 🚧 **v3.1 Admin Dashboard** — Phases 26-30 (in progress)
+- ✅ **v3.1 Admin Dashboard** — Phases 26-30 (shipped 2026-03-01)
 
 ## Phases
 
@@ -66,7 +66,7 @@
 
 </details>
 
-### 🚧 v3.1 Admin Dashboard (In Progress)
+### ✅ v3.1 Admin Dashboard (Complete — shipped 2026-03-01)
 
 **Milestone Goal:** A working admin dashboard at `/admin` where an authenticated admin can view KPI metrics, analyze sales, manage the book catalog, manage users, and moderate reviews — all surfacing existing backend endpoints through a clean, protected Next.js interface.
 
@@ -74,7 +74,7 @@
 - [x] **Phase 27: Sales Analytics and Inventory Alerts** - Revenue chart, top-sellers table, and low-stock inventory alerts with configurable threshold (completed 2026-02-28)
 - [x] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal (completed 2026-03-01)
 - [x] **Phase 29: User Management and Review Moderation** - Paginated user table with deactivate/reactivate, and review moderation table with bulk delete (completed 2026-03-01)
-- [ ] **Phase 30: Integration and Cache Fixes** - Wire proxy.ts as Next.js middleware for defense-in-depth, fix RSC storefront cache invalidation after admin mutations
+- [x] **Phase 30: Integration and Cache Fixes** - Verified middleware defense-in-depth (Layer 1+2), added POST /api/revalidate Route Handler with admin guard, wired all 6 admin mutations with fire-and-forget triggerRevalidation (completed 2026-03-01)
 
 ## Phase Details
 
@@ -143,17 +143,17 @@ Plans:
 - [ ] 29-02-PLAN.md — Build Review Moderation page with DataTable, filter bar (book ID, user ID, rating range, sort), single-delete, bulk-delete with checkbox selection and confirmation dialog
 
 ### Phase 30: Integration and Cache Fixes
-**Goal**: Close defense-in-depth and cache propagation gaps identified by milestone audit — wire proxy.ts as Next.js middleware for Layer 1 edge redirect, and fix admin mutation cache invalidation so changes propagate to the customer RSC storefront
-**Depends on**: Phase 28 (admin mutations exist), Phase 26 (proxy.ts exists)
+**Goal**: Close defense-in-depth and cache propagation gaps identified by milestone audit — verify existing middleware.ts satisfies Layer 1 admin protection, and fix admin mutation cache invalidation so changes propagate to the customer RSC storefront
+**Depends on**: Phase 28 (admin mutations exist), Phase 26 (middleware.ts exists)
 **Requirements**: Hardens ADMF-02, ADMF-03 (defense-in-depth); fixes cache propagation for CATL-03, CATL-04, CATL-05, CATL-06
-**Gap Closure**: Closes integration gap (proxy.ts → middleware.ts) and flow gap (admin mutation → storefront cache) from v3.1 audit
+**Gap Closure**: Closes integration gap (middleware already correct — verification only) and flow gap (admin mutation → storefront cache) from v3.1 audit
 **Success Criteria** (what must be TRUE):
-  1. `frontend/src/middleware.ts` exists, re-exports proxy.ts as the default middleware export, and runs on `/admin` routes — non-admin requests are redirected at the edge before reaching the Server Component layer
-  2. Admin book mutations (add, edit, delete, stock update) trigger `revalidatePath` or `revalidateTag` so the customer storefront reflects changes without a full page reload or manual cache bust
-**Plans**: 1 plan (single wave — both fixes are independent small tasks)
+  1. `frontend/src/middleware.ts` verified as Layer 1 defense-in-depth — already redirects non-admin/unauthenticated at the edge; `admin/layout.tsx` verified as Layer 2
+  2. Admin book mutations (add, edit, delete, stock update) and review delete mutations trigger `revalidatePath` via a `POST /api/revalidate` Route Handler so the customer storefront reflects changes without a full page reload or manual cache bust
+**Plans**: 1 plan (Wave 1)
 
 Plans:
-- [ ] 30-01: Create middleware.ts re-exporting proxy.ts, add revalidatePath/revalidateTag calls to admin mutation Server Actions or API route handlers
+- [x] 30-01-PLAN.md — Verify middleware defense-in-depth, create admin-guarded POST /api/revalidate Route Handler, wire triggerRevalidation into all admin mutation onSuccess callbacks
 
 ## Progress
 
@@ -187,5 +187,5 @@ Plans:
 | 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
 | 28. Book Catalog CRUD | v3.1 | Complete    | 2026-03-01 | 2026-03-01 |
-| 29. User Management and Review Moderation | 2/2 | Complete   | 2026-03-01 | 2026-03-01 |
-| 30. Integration and Cache Fixes | v3.1 | 0/1 | Not started | - |
+| 29. User Management and Review Moderation | 2/2 | Complete    | 2026-03-01 | 2026-03-01 |
+| 30. Integration and Cache Fixes | v3.1 | 1/1 | Complete | 2026-03-01 |
