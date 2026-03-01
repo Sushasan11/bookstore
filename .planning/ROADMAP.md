@@ -119,11 +119,11 @@ Plans:
   3. Admin can click Edit on any row to open a pre-populated form, change any field, save, and see the updated values reflected in the table
   4. Admin can click Delete on any row, confirm the action in a dialog, and have the book removed — the dialog warns that the action cannot be undone
   5. Admin can open a stock update modal on any book, enter a new quantity, save, and receive a toast notification when restocking from zero (indicating pre-booking emails will be sent); mutations invalidate both the admin catalog cache and the customer-facing books cache
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1: table infrastructure + catalog page, Wave 2: forms + CRUD operations)
 
 Plans:
-- [ ] 28-01: `DataTable.tsx` (TanStack Table + shadcn Table), `QUERY_KEYS` constants module, `AdminPagination.tsx`, paginated catalog table with debounced search and genre filter
-- [ ] 28-02: `BookForm.tsx` (react-hook-form + zod), `ConfirmDialog.tsx` (shadcn AlertDialog), add/edit book flows, delete with confirmation, stock update modal with pre-booking toast, cross-cache invalidation
+- [ ] 28-01-PLAN.md — Install TanStack Table, create generic DataTable.tsx and AdminPagination.tsx, extend adminKeys.catalog, build paginated catalog table with debounced search and genre filter
+- [ ] 28-02-PLAN.md — BookForm.tsx (react-hook-form + zod) in Sheet side drawer, ConfirmDialog.tsx, shared StockUpdateModal.tsx, wire add/edit/delete/stock-update mutations with cross-cache invalidation
 
 ### Phase 29: User Management and Review Moderation
 **Goal**: Admin can manage user accounts and moderate reviews from paginated, filterable tables — deactivating users, reactivating users, deleting single reviews, and bulk-deleting selected reviews
@@ -171,6 +171,6 @@ Plans:
 | 24. Wishlist and Pre-booking | v3.0 | 3/3 | Complete | 2026-02-28 |
 | 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
 | 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
-| 27. Sales Analytics and Inventory Alerts | 2/2 | Complete   | 2026-02-28 | - |
-| 28. Book Catalog CRUD | v3.1 | 0/2 | Not started | - |
+| 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
+| 28. Book Catalog CRUD | 1/2 | In Progress|  | - |
 | 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |
