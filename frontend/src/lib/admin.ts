@@ -4,6 +4,10 @@ import type { components } from '@/types/api.generated'
 type BookCreate = components['schemas']['BookCreate']
 type BookUpdate = components['schemas']['BookUpdate']
 type BookResponse = components['schemas']['BookResponse']
+type AdminUserResponse = components['schemas']['AdminUserResponse']
+type UserListResponse = components['schemas']['UserListResponse']
+type AdminReviewListResponse = components['schemas']['AdminReviewListResponse']
+type BulkDeleteResponse = components['schemas']['BulkDeleteResponse']
 
 // ---------------------------------------------------------------------------
 // TypeScript types — mirror backend analytics_schemas.py field names exactly
@@ -63,6 +67,19 @@ export const adminKeys = {
     list: (params: { q?: string; genre_id?: number; page?: number }) =>
       ['admin', 'catalog', 'list', params] as const,
     genres: ['admin', 'catalog', 'genres'] as const,
+  },
+  users: {
+    all: ['admin', 'users'] as const,
+    list: (params: { role?: string | null; is_active?: boolean | null; page?: number }) =>
+      ['admin', 'users', 'list', params] as const,
+  },
+  reviews: {
+    all: ['admin', 'reviews'] as const,
+    list: (params: {
+      book_id?: number | null; user_id?: number | null;
+      rating_min?: number | null; rating_max?: number | null;
+      sort_by?: string; sort_dir?: string; page?: number;
+    }) => ['admin', 'reviews', 'list', params] as const,
   },
 } as const
 
@@ -172,6 +189,116 @@ export async function deleteBook(
 ): Promise<void> {
   return apiFetch<void>(`/books/${bookId}`, {
     method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// User management functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch paginated list of all users. Supports role and is_active filters.
+ * Uses total_count (not total) in UserListResponse.
+ */
+export async function fetchAdminUsers(
+  accessToken: string,
+  params: { page?: number; per_page?: number; role?: string | null; is_active?: boolean | null }
+): Promise<UserListResponse> {
+  const qs = new URLSearchParams()
+  if (params.page) qs.set('page', String(params.page))
+  if (params.per_page) qs.set('per_page', String(params.per_page))
+  if (params.role != null) qs.set('role', params.role)
+  if (params.is_active != null) qs.set('is_active', String(params.is_active))
+  return apiFetch<UserListResponse>(`/admin/users?${qs}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Deactivate a user account. Admin-only. Returns 403 if target is an admin.
+ * Immediately revokes session tokens and locks out the user.
+ */
+export async function deactivateUser(
+  accessToken: string,
+  userId: number
+): Promise<AdminUserResponse> {
+  return apiFetch<AdminUserResponse>(`/admin/users/${userId}/deactivate`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Reactivate a previously deactivated user account. Admin-only. Idempotent.
+ * User can log in again immediately after reactivation.
+ */
+export async function reactivateUser(
+  accessToken: string,
+  userId: number
+): Promise<AdminUserResponse> {
+  return apiFetch<AdminUserResponse>(`/admin/users/${userId}/reactivate`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Review moderation functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch paginated list of reviews with optional filters for book, user, rating range,
+ * and sort options. Uses total_count (not total) in AdminReviewListResponse.
+ */
+export async function fetchAdminReviews(
+  accessToken: string,
+  params: {
+    page?: number; per_page?: number;
+    book_id?: number | null; user_id?: number | null;
+    rating_min?: number | null; rating_max?: number | null;
+    sort_by?: string; sort_dir?: string;
+  }
+): Promise<AdminReviewListResponse> {
+  const qs = new URLSearchParams()
+  if (params.page) qs.set('page', String(params.page))
+  if (params.per_page) qs.set('per_page', String(params.per_page))
+  if (params.book_id != null) qs.set('book_id', String(params.book_id))
+  if (params.user_id != null) qs.set('user_id', String(params.user_id))
+  if (params.rating_min != null) qs.set('rating_min', String(params.rating_min))
+  if (params.rating_max != null) qs.set('rating_max', String(params.rating_max))
+  if (params.sort_by) qs.set('sort_by', params.sort_by)
+  if (params.sort_dir) qs.set('sort_dir', params.sort_dir)
+  return apiFetch<AdminReviewListResponse>(`/admin/reviews?${qs}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Delete a single review by ID. Uses /reviews/{review_id} — admin bypass is
+ * automatic via token role check. Returns 204 No Content.
+ */
+export async function deleteSingleReview(
+  accessToken: string,
+  reviewId: number
+): Promise<void> {
+  return apiFetch<void>(`/reviews/${reviewId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+}
+
+/**
+ * Bulk-delete multiple reviews in a single request. Max 50 review IDs per request.
+ * Returns deleted_count indicating how many reviews were removed.
+ */
+export async function bulkDeleteReviews(
+  accessToken: string,
+  reviewIds: number[]
+): Promise<BulkDeleteResponse> {
+  return apiFetch<BulkDeleteResponse>('/admin/reviews/bulk', {
+    method: 'DELETE',
+    body: JSON.stringify({ review_ids: reviewIds }),
     headers: { Authorization: `Bearer ${accessToken}` },
   })
 }
