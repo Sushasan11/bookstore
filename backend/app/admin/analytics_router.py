@@ -1,5 +1,7 @@
 """Admin analytics endpoints — GET /admin/analytics/sales/summary and /sales/top-books."""
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, Query
 
 from app.admin.analytics_repository import AnalyticsRepository
@@ -8,7 +10,7 @@ from app.admin.analytics_schemas import (
     SalesSummaryResponse,
     TopBooksResponse,
 )
-from app.admin.analytics_service import AdminAnalyticsService
+from app.admin.analytics_service import AdminAnalyticsService, _period_bounds
 from app.core.deps import AdminUser, DbSession, require_admin
 
 router = APIRouter(
@@ -51,18 +53,32 @@ async def get_top_books(
     _admin: AdminUser,
     sort_by: str = Query("revenue", pattern="^(revenue|volume)$"),
     limit: int = Query(10, ge=1, le=50),
+    period: str | None = Query(None, pattern="^(today|week|month)$"),
 ) -> TopBooksResponse:
     """Return top-selling books ranked by revenue or volume.
 
     Query parameters:
     - sort_by: "revenue" (default) or "volume" — determines ranking dimension.
     - limit: Number of books to return (1-50, default 10).
+    - period: Optional "today", "week", or "month" — filters to that time range.
+              When omitted, returns all-time data (backward compatible).
 
     Only CONFIRMED orders are counted. Deleted books are excluded.
-    Admin only. Invalid sort_by values return 422.
+    Admin only. Invalid sort_by or period values return 422.
     """
     repo = AnalyticsRepository(db)
-    books = await repo.top_books(sort_by=sort_by, limit=limit)
+
+    period_start = None
+    period_end = None
+    if period is not None:
+        period_start, period_end = _period_bounds(datetime.now(timezone.utc), period)
+
+    books = await repo.top_books(
+        sort_by=sort_by,
+        limit=limit,
+        period_start=period_start,
+        period_end=period_end,
+    )
     return TopBooksResponse(sort_by=sort_by, items=books)
 
 

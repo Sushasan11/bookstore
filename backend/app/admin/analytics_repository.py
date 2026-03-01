@@ -51,7 +51,14 @@ class AnalyticsRepository:
         row = (await self._db.execute(stmt)).one()
         return {"revenue": row.revenue, "order_count": row.order_count}
 
-    async def top_books(self, *, sort_by: str, limit: int = 10) -> list[dict]:
+    async def top_books(
+        self,
+        *,
+        sort_by: str,
+        limit: int = 10,
+        period_start: datetime | None = None,
+        period_end: datetime | None = None,
+    ) -> list[dict]:
         """Return top-selling books ranked by revenue or volume.
 
         Only CONFIRMED orders are included. Books that have been deleted
@@ -60,6 +67,8 @@ class AnalyticsRepository:
         Args:
             sort_by: "revenue" to rank by total_revenue, "volume" to rank by units_sold.
             limit: Maximum number of books to return (default 10, max 50).
+            period_start: Inclusive start of the period (UTC). When None, no lower bound.
+            period_end: Exclusive end of the period (UTC). When None, no upper bound.
 
         Returns:
             List of dicts with keys: book_id, title, author, total_revenue, units_sold.
@@ -88,6 +97,13 @@ class AnalyticsRepository:
             .order_by(desc(order_col))
             .limit(limit)
         )
+
+        if period_start is not None and period_end is not None:
+            stmt = stmt.where(
+                Order.created_at >= period_start,
+                Order.created_at < period_end,
+            )
+
         result = await self._db.execute(stmt)
         return [row._asdict() for row in result.all()]
 
