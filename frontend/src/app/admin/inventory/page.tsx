@@ -2,23 +2,15 @@
 
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from 'use-debounce'
-import { adminKeys, fetchLowStock, updateBookStock } from '@/lib/admin'
+import { adminKeys, fetchLowStock } from '@/lib/admin'
+import { StockUpdateModal } from '@/components/admin/StockUpdateModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { toast } from 'sonner'
 
 const PRESETS = [5, 10, 20] as const
 
@@ -48,31 +40,15 @@ export default function AdminInventoryPage() {
     title: string
     current_stock: number
   } | null>(null)
-  const [newQuantity, setNewQuantity] = useState<number>(0)
-  const modalOpen = selectedBook !== null
 
   const { data: session } = useSession()
   const accessToken = session?.accessToken ?? ''
-  const queryClient = useQueryClient()
 
   const lowStockQuery = useQuery({
     queryKey: adminKeys.inventory.lowStock(debouncedThreshold),
     queryFn: () => fetchLowStock(accessToken, debouncedThreshold),
     enabled: !!accessToken,
     staleTime: 60_000,
-  })
-
-  const stockMutation = useMutation({
-    mutationFn: ({ bookId, quantity }: { bookId: number; quantity: number }) =>
-      updateBookStock(accessToken, bookId, quantity),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.inventory.all })
-      toast.success('Stock updated successfully')
-      setSelectedBook(null)
-    },
-    onError: () => {
-      toast.error('Failed to update stock')
-    },
   })
 
   return (
@@ -220,7 +196,6 @@ export default function AdminInventoryPage() {
                           title: item.title,
                           current_stock: item.current_stock,
                         })
-                        setNewQuantity(item.current_stock)
                       }}
                     >
                       Update Stock
@@ -233,58 +208,15 @@ export default function AdminInventoryPage() {
         </table>
       </div>
 
-      {/* Stock Update Modal */}
-      <Dialog
-        open={modalOpen}
+      {/* Stock Update Modal (shared component) */}
+      <StockUpdateModal
+        open={selectedBook !== null}
         onOpenChange={(open) => {
-          if (!open) {
-            setSelectedBook(null)
-            setNewQuantity(0)
-          }
+          if (!open) setSelectedBook(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Stock</DialogTitle>
-            <DialogDescription>
-              Set a new stock quantity for {selectedBook?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              Current stock:{' '}
-              <span className="font-medium text-foreground">{selectedBook?.current_stock}</span>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="stock-input" className="text-sm font-medium">
-                New quantity
-              </label>
-              <Input
-                id="stock-input"
-                type="number"
-                min={0}
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedBook(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedBook) {
-                  stockMutation.mutate({ bookId: selectedBook.book_id, quantity: newQuantity })
-                }
-              }}
-              disabled={stockMutation.isPending}
-            >
-              {stockMutation.isPending ? 'Updating...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        book={selectedBook}
+        accessToken={accessToken}
+      />
     </div>
   )
 }
