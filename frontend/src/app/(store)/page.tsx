@@ -1,49 +1,39 @@
-'use client'
+import type { Metadata } from 'next'
+import { fetchBooks } from '@/lib/catalog'
+import { HeroSection } from './_components/HeroSection'
+import { FeaturedBooks } from './_components/FeaturedBooks'
 
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/api'
-
-interface HealthResponse {
-  status: string
-  version: string
+export const metadata: Metadata = {
+  title: 'BookStore — Discover Your Next Great Read',
+  description:
+    'Browse our curated collection of books across every genre. From bestsellers to hidden gems.',
 }
 
-export default function HomePage() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['health'],
-    queryFn: () => apiFetch<HealthResponse>('/health'),
-  })
+export default async function HomePage() {
+  const [topRated, newest] = await Promise.all([
+    fetchBooks({ sort: 'avg_rating', sort_dir: 'desc', size: 4 }),
+    fetchBooks({ sort: 'created_at', sort_dir: 'desc', size: 4 }),
+  ])
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
-          Welcome to Bookstore
-        </h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Discover and purchase books from our curated catalog.
-        </p>
+    <>
+      <HeroSection />
 
-        {/* Health check status — proves full stack integration */}
-        <div className="mt-8 rounded-lg border p-6">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">
-            Backend Status
-          </h2>
-          {isLoading && (
-            <p className="text-muted-foreground">Checking backend...</p>
-          )}
-          {error && (
-            <p className="text-destructive">
-              Backend unreachable: {error.message}
-            </p>
-          )}
-          {data && (
-            <p className="text-green-600 dark:text-green-400">
-              Connected &#8212; v{data.version}
-            </p>
-          )}
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-12 space-y-16">
+        <FeaturedBooks
+          title="Top Rated"
+          books={topRated.items}
+          viewAllHref="/catalog?sort=avg_rating&sort_dir=desc"
+          viewAllLabel="View all top rated"
+        />
+
+        <FeaturedBooks
+          title="New Arrivals"
+          books={newest.items}
+          viewAllHref="/catalog?sort=created_at&sort_dir=desc"
+          viewAllLabel="View all new arrivals"
+        />
       </div>
-    </div>
+    </>
   )
 }
