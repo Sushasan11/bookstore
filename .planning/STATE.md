@@ -31,16 +31,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Users can discover and purchase books from a well-managed catalog with a smooth cart-to-checkout experience.
-**Current focus:** Phase 28 — Book Catalog CRUD (Plan 02 next)
+**Current focus:** Phase 29 — User Management and Review Moderation (next)
 
 ## Current Position
 
-Phase: 28 of 29 (Book Catalog CRUD) — In progress
-Plan: 1 of 2 complete in current phase
+Phase: 28 of 29 (Book Catalog CRUD) — Complete
+Plan: 2 of 2 complete in current phase
 Status: In progress
-Last activity: 2026-03-01 — Completed Plan 28-01: Catalog table infrastructure with DataTable, AdminPagination, DropdownMenu, and full /admin/catalog page
+Last activity: 2026-03-01 — Completed Plan 28-02: BookForm, ConfirmDialog, StockUpdateModal, full CRUD wiring in catalog page, inventory page refactored to use shared StockUpdateModal
 
-Progress: [█████░░░░░] 62% (v3.1 milestone, 5/8 plans complete)
+Progress: [███████░░░] 75% (v3.1 milestone, 6/8 plans complete)
 
 ## Performance Metrics
 
@@ -54,7 +54,7 @@ Progress: [█████░░░░░] 62% (v3.1 milestone, 5/8 plans comple
 |-------|-------|--------|
 | 26. Admin Foundation | 2/2 | Complete |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete |
-| 28. Book Catalog CRUD | 1/2 | In progress |
+| 28. Book Catalog CRUD | 2/2 | Complete |
 | 29. User Management and Review Moderation | 0/2 | Not started |
 
 **Execution Metrics:**
@@ -66,6 +66,7 @@ Progress: [█████░░░░░] 62% (v3.1 milestone, 5/8 plans comple
 | 27-sales-analytics-and-inventory-alerts | P01 | 5min | 2 | 7 |
 | 27-sales-analytics-and-inventory-alerts | P02 | 2min | 2 | 2 |
 | 28-book-catalog-crud | P01 | 4min | 2 | 5 |
+| 28-book-catalog-crud | P02 | 3min | 2 | 5 |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Progress: [█████░░░░░] 62% (v3.1 milestone, 5/8 plans comple
 - adminKeys.catalog namespace added to admin.ts with list(params), all, genres keys
 - Genre names displayed in catalog table via genreMap (Map<number, string>) from separate genres query
 - Row action handlers are console.log placeholders in Plan 01 — Plan 02 wires BookForm, ConfirmDialog, StockModal
+- StockUpdateModal is self-contained (owns its own useMutation + queryClient) — enables direct reuse in both catalog and inventory pages without prop drilling mutations
+- BookFormValues type exported from BookForm.tsx — enables catalog page mutations to consume form output with correct typing
+- All catalog mutations invalidate both adminKeys.catalog.all AND ['books'] — ensures customer-facing book list cache stays fresh after admin changes
 
 ### Pending Todos
 
@@ -102,5 +106,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 28-book-catalog-crud-01-PLAN.md — DataTable, AdminPagination, catalog page with search/filter/pagination
+Stopped at: Completed 28-book-catalog-crud-02-PLAN.md — BookForm, ConfirmDialog, StockUpdateModal, full CRUD catalog page, inventory refactor
 Resume file: None

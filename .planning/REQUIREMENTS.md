@@ -33,10 +33,10 @@ Requirements for the admin dashboard frontend. Each maps to roadmap phases.
 
 - [x] **CATL-01**: Admin can view a paginated catalog table showing title, author, price, genre, stock, and actions
 - [x] **CATL-02**: Admin can search books with debounced text input and filter by genre
-- [ ] **CATL-03**: Admin can add a new book via a form with full field validation (title, author, price, ISBN, genre, description, cover URL, publish date)
-- [ ] **CATL-04**: Admin can edit an existing book via a pre-populated form
-- [ ] **CATL-05**: Admin can delete a book with a confirmation dialog
-- [ ] **CATL-06**: Admin can update a book's stock quantity via a modal, with a toast notification when restocking from zero triggers pre-booking emails
+- [x] **CATL-03**: Admin can add a new book via a form with full field validation (title, author, price, ISBN, genre, description, cover URL, publish date)
+- [x] **CATL-04**: Admin can edit an existing book via a pre-populated form
+- [x] **CATL-05**: Admin can delete a book with a confirmation dialog
+- [x] **CATL-06**: Admin can update a book's stock quantity via a modal, with a toast notification when restocking from zero triggers pre-booking emails
 
 ### User Management
 
@@ -109,10 +109,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INVT-03 | Phase 27 | Complete |
 | CATL-01 | Phase 28 | Complete |
 | CATL-02 | Phase 28 | Complete |
-| CATL-03 | Phase 28 | Pending |
-| CATL-04 | Phase 28 | Pending |
-| CATL-05 | Phase 28 | Pending |
-| CATL-06 | Phase 28 | Pending |
+| CATL-03 | Phase 28 | Complete |
+| CATL-04 | Phase 28 | Complete |
+| CATL-05 | Phase 28 | Complete |
+| CATL-06 | Phase 28 | Complete |
 | USER-01 | Phase 29 | Pending |
 | USER-02 | Phase 29 | Pending |
 | USER-03 | Phase 29 | Pending |

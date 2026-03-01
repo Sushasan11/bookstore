@@ -72,7 +72,7 @@
 
 - [x] **Phase 26: Admin Foundation** - Admin layout, route protection, and dashboard overview with KPI cards and period selector (completed 2026-02-28)
 - [x] **Phase 27: Sales Analytics and Inventory Alerts** - Revenue chart, top-sellers table, and low-stock inventory alerts with configurable threshold (completed 2026-02-28)
-- [ ] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal
+- [x] **Phase 28: Book Catalog CRUD** - Paginated catalog table with search/filter, add/edit/delete book forms, and stock update modal (completed 2026-03-01)
 - [ ] **Phase 29: User Management and Review Moderation** - Paginated user table with deactivate/reactivate, and review moderation table with bulk delete
 
 ## Phase Details
@@ -172,5 +172,5 @@ Plans:
 | 25. Reviews | v3.0 | 2/2 | Complete | 2026-02-28 |
 | 26. Admin Foundation | 2/2 | Complete    | 2026-02-28 | - |
 | 27. Sales Analytics and Inventory Alerts | 2/2 | Complete    | 2026-02-28 | - |
-| 28. Book Catalog CRUD | 1/2 | In Progress|  | - |
+| 28. Book Catalog CRUD | v3.1 | 2/2 | Complete | 2026-03-01 |
 | 29. User Management and Review Moderation | v3.1 | 0/2 | Not started | - |
