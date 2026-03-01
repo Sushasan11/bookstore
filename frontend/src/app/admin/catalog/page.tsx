@@ -16,9 +16,9 @@ import { AdminPagination } from '@/components/admin/AdminPagination'
 import { BookForm, type BookFormValues } from '@/components/admin/BookForm'
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog'
 import { StockUpdateModal } from '@/components/admin/StockUpdateModal'
+import { StockBadge } from '@/components/admin/StockBadge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -45,24 +45,6 @@ type BookCreate = components['schemas']['BookCreate']
 type BookUpdate = components['schemas']['BookUpdate']
 
 const PAGE_SIZE = 20
-
-function StockBadge({ stock }: { stock: number }) {
-  if (stock === 0) {
-    return (
-      <Badge className="bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400">
-        Out of Stock
-      </Badge>
-    )
-  }
-  if (stock <= 10) {
-    return (
-      <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400">
-        Low Stock ({stock})
-      </Badge>
-    )
-  }
-  return <span className="font-medium">{stock}</span>
-}
 
 export default function AdminCatalogPage() {
   const [searchInput, setSearchInput] = useState('')
@@ -233,7 +215,7 @@ export default function AdminCatalogPage() {
     {
       id: 'stock',
       header: 'Stock',
-      cell: ({ row }) => <StockBadge stock={row.original.stock_quantity} />,
+      cell: ({ row }) => <StockBadge stock={row.original.stock_quantity} threshold={10} />,
     },
     {
       id: 'actions',

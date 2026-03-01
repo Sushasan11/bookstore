@@ -141,8 +141,8 @@ export async function updateBookStock(
   accessToken: string,
   bookId: number,
   quantity: number
-): Promise<void> {
-  return apiFetch<void>(
+): Promise<BookResponse> {
+  return apiFetch<BookResponse>(
     `/books/${bookId}/stock`,
     {
       method: 'PATCH',

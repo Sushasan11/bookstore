@@ -5,32 +5,14 @@ import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from 'use-debounce'
 import { adminKeys, fetchLowStock } from '@/lib/admin'
+import { StockBadge } from '@/components/admin/StockBadge'
 import { StockUpdateModal } from '@/components/admin/StockUpdateModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 
 const PRESETS = [5, 10, 20] as const
-
-function StockBadge({ stock, threshold }: { stock: number; threshold: number }) {
-  if (stock === 0) {
-    return (
-      <Badge className="bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400">
-        Out of Stock
-      </Badge>
-    )
-  }
-  if (stock <= threshold) {
-    return (
-      <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400">
-        Low Stock ({stock})
-      </Badge>
-    )
-  }
-  return <span className="font-medium">{stock}</span>
-}
 
 export default function AdminInventoryPage() {
   const [thresholdInput, setThresholdInput] = useState<number>(10)
