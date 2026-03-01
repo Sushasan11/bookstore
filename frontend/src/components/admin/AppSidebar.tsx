@@ -5,7 +5,7 @@ import {
   Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent,
 } from '@/components/ui/sidebar'
-import { LayoutDashboard, TrendingUp, BookOpen, Package, Users, Star, ChevronLeft } from 'lucide-react'
+import { LayoutDashboard, TrendingUp, BookOpen, Package, Users, Star } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { SidebarFooterUser } from './SidebarFooterUser'
@@ -35,16 +35,6 @@ export function AppSidebar() {
           />
           <Badge variant="secondary" className="text-xs group-data-[collapsible=icon]:hidden">Admin</Badge>
         </div>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Back to Store">
-              <Link href="/">
-                <ChevronLeft className="h-4 w-4" />
-                <span>Back to Store</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
