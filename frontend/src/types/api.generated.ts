@@ -682,9 +682,11 @@ export interface paths {
          *     Query parameters:
          *     - sort_by: "revenue" (default) or "volume" — determines ranking dimension.
          *     - limit: Number of books to return (1-50, default 10).
+         *     - period: Optional "today", "week", or "month" — filters to that time range.
+         *               When omitted, returns all-time data (backward compatible).
          *
          *     Only CONFIRMED orders are counted. Deleted books are excluded.
-         *     Admin only. Invalid sort_by values return 422.
+         *     Admin only. Invalid sort_by or period values return 422.
          */
         get: operations["get_top_books_admin_analytics_sales_top_books_get"];
         put?: never;
@@ -856,6 +858,29 @@ export interface paths {
         patch: operations["update_review_reviews__review_id__patch"];
         trace?: never;
     };
+    "/uploads/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Image
+         * @description Upload a book cover image. Admin-only.
+         *
+         *     Accepts JPEG, PNG, or WebP. Max 5 MB.
+         *     Returns ``{"url": "http://host/uploads/<filename>"}``
+         */
+        post: operations["upload_image_uploads_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -943,6 +968,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** Body_upload_image_uploads_images_post */
+        Body_upload_image_uploads_images_post: {
+            /** File */
+            file: string;
         };
         /**
          * BookCreate
@@ -1242,9 +1272,9 @@ export interface components {
             /** Author */
             author: string;
             /** Cover Image Url */
-            cover_image_url: string | null;
+            cover_image_url?: string | null;
             /** Price */
-            price: string | null;
+            price?: string | null;
         };
         /**
          * OrderItemResponse
@@ -2640,6 +2670,7 @@ export interface operations {
             query?: {
                 sort_by?: string;
                 limit?: number;
+                period?: string | null;
             };
             header?: never;
             path?: never;
@@ -2920,6 +2951,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_uploads_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_uploads_images_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
