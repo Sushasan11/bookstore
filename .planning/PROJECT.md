@@ -60,17 +60,20 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 - ✓ Inventory low-stock alerts with configurable threshold, color-coded badges, shared stock update modal — v3.1
 - ✓ Defense-in-depth admin protection (middleware Layer 1 + Server Component Layer 2) — v3.1
 - ✓ Admin mutation → storefront cache revalidation via fire-and-forget triggerRevalidation + POST /api/revalidate — v3.1
+- ✓ DeltaBadge and StockBadge extracted to shared admin components — v4.1
+- ✓ updateBookStock return type corrected to Promise<BookResponse> — v4.1
+- ✓ Top-sellers table respects period selector (today/week/month) — v4.1
+- ✓ Restock alert email cover image with 3-step fallback chain verified E2E — v4.1
+- ✓ SUMMARY frontmatter accuracy and api.generated.ts regenerated — v4.1
 
 ### Active
 
-<!-- Current milestone: v4.1 Clean House -->
+<!-- Next milestone: v4.2 Customer Experience -->
 
-- [ ] Extract duplicated DeltaBadge to shared admin component
-- [ ] Consolidate StockBadge into single configurable component
-- [ ] Fix updateBookStock return type (Promise<void> → Promise<BookResponse>)
-- [ ] Make top-sellers table period-aware (respect period selector)
-- [ ] Update SUMMARY frontmatter (26-02, 27-01 missing requirement IDs)
-- [ ] Validate email improvements end-to-end
+- [ ] Recommendation engine ("readers also bought") based on purchase/review data
+- [ ] Customer dashboard with order tracking and purchase history
+- [ ] Search autocomplete and suggestions
+- [ ] Recent searches persistence
 
 ## Out of Scope
 
@@ -88,11 +91,11 @@ Users can discover and purchase books from a well-managed catalog with a smooth 
 
 ## Context
 
-Shipped v3.1 with ~11,300 LOC TypeScript (frontend) + 14,728 LOC Python (backend), ~306 backend tests passing.
+Shipped v4.1 with ~11,300 LOC TypeScript (frontend) + 14,728 LOC Python (backend), ~306 backend tests passing.
 Tech stack: FastAPI, PostgreSQL, SQLAlchemy 2.0, Alembic, Poetry, fastapi-mail (backend); Next.js 15, TypeScript, TanStack Query, Recharts, TanStack Table, shadcn/ui, Tailwind CSS, NextAuth.js v5 (frontend).
-30 phases delivered across 6 milestones (v1.0: 8, v1.1: 4, v2.0: 3, v2.1: 3, v3.0: 7, v3.1: 5 phases).
-Full customer storefront + admin dashboard surfacing all backend admin endpoints.
-v3.1 added ~3,300 LOC across 70 files in 2 days (29 commits). 28 requirements satisfied, 0 gaps.
+32 phases delivered across 7 milestones (v1.0: 8, v1.1: 4, v2.0: 3, v2.1: 3, v3.0: 7, v3.1: 5, v4.1: 2 phases).
+Full customer storefront + admin dashboard with clean shared components and period-aware analytics.
+v4.1 was a tech debt cleanup milestone: 21 commits, 20 files changed (+680/-604), 6 requirements, 0 gaps.
 
 ## Quality Principles
 
@@ -158,21 +161,13 @@ Always proactively think through and act on excellent UI/UX principles. This mea
 | Path-based revalidation over tag-based | No need to retrofit `next: { tags }` across existing fetch calls — revalidatePath sufficient | ✓ Good |
 | Claude Code MCP for development | AI-assisted development across all phases | Active |
 
-## Current Milestone: v4.1 Clean House
+## Current State
 
-**Goal:** Resolve all tech debt from v3.1 audit and establish a clean slate before feature work in v4.2.
+Shipped v4.1 Clean House. All tech debt from v3.1 audit resolved. Clean slate for feature work.
 
-**Target features:**
-- Extract duplicated DeltaBadge to shared component
-- Consolidate StockBadge into single configurable component
-- Fix updateBookStock response type mismatch
-- Make top-sellers table period-aware
-- Update incomplete SUMMARY frontmatter
-- Validate email improvements end-to-end
-
-**Future milestones:**
+**Next milestones:**
 - v4.2 Customer Experience — Recommendation engine, customer dashboard, search improvements
 - v4.3 Quality & Hardening — Frontend tests, performance, accessibility, security
 
 ---
-*Last updated: 2026-03-02 after v4.1 milestone started*
+*Last updated: 2026-03-02 after v4.1 milestone*

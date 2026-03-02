@@ -8,7 +8,7 @@
 - ✅ **v2.1 Admin Dashboard & Analytics** — Phases 16-18 (shipped 2026-02-27)
 - ✅ **v3.0 Customer Storefront** — Phases 19-25 (shipped 2026-02-28)
 - ✅ **v3.1 Admin Dashboard** — Phases 26-30 (shipped 2026-03-01)
-- 🔄 **v4.1 Clean House** — Phases 31-32 (in progress)
+- ✅ **v4.1 Clean House** — Phases 31-32 (shipped 2026-03-02)
 
 ## Phases
 
@@ -78,40 +78,13 @@
 
 </details>
 
-### v4.1 Clean House (Phases 31-32)
+<details>
+<summary>✅ v4.1 Clean House (Phases 31-32) — SHIPPED 2026-03-02</summary>
 
-- [x] **Phase 31: Code Quality** - Extract shared admin components, fix return type, and make top-sellers period-aware (completed 2026-03-01)
-- [x] **Phase 32: Validation and Docs** - Verify email improvements end-to-end and correct SUMMARY frontmatter (completed 2026-03-02)
+- [x] Phase 31: Code Quality (2/2 plans) — completed 2026-03-01
+- [x] Phase 32: Validation and Docs (2/2 plans) — completed 2026-03-02
 
-## Phase Details
-
-### Phase 31: Code Quality
-**Goal**: The admin frontend has no duplicated component implementations, correct TypeScript types, and analytics that respect the user's period selection
-**Depends on**: Nothing (first phase of v4.1)
-**Requirements**: COMP-01, COMP-02, TYPE-01, ANLY-01
-**Success Criteria** (what must be TRUE):
-  1. DeltaBadge renders identically on the overview and sales pages, sourced from a single shared component file
-  2. Both the catalog table and inventory alert table use one StockBadge component that accepts a threshold parameter, with no duplicate badge implementations remaining
-  3. Selecting "Today", "This Week", or "This Month" in the period selector updates the top-sellers table to show data for that period only
-  4. The TypeScript compiler resolves `updateBookStock` to return `Promise<BookResponse>` without type errors or casts
-**Plans:** 2/2 plans complete
-Plans:
-- [ ] 31-01-PLAN.md — Extract DeltaBadge + StockBadge shared components, fix updateBookStock return type
-- [ ] 31-02-PLAN.md — Add period filtering to top-sellers (backend + frontend)
-
-### Phase 32: Validation and Docs
-**Goal**: Email improvements are confirmed working in a real environment and planning document history is accurate
-**Depends on**: Phase 31
-**Requirements**: DOCS-01, MAIL-01
-**Success Criteria** (what must be TRUE):
-  1. A test order confirmation email arrives with the BookStore logo displayed inline (not as an attachment) and a book cover image visible
-  2. A test restock alert email arrives with the book cover loaded from Open Library when no local image is present
-  3. The `requirements_completed` field in plans 26-02, 27-01, and 31-02 SUMMARY frontmatter lists the correct requirement IDs that those plans delivered
-  4. `api.generated.ts` is regenerated to include the `period` query param for the top-books endpoint
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 32-01-PLAN.md — Email validation: restock alert cover image, backend context update, test script
-- [x] 32-02-PLAN.md — SUMMARY frontmatter corrections and api.generated.ts regeneration
+</details>
 
 ## Progress
 
@@ -123,5 +96,4 @@ Plans:
 | 16-18 | v2.1 | 5/5 | Complete | 2026-02-27 |
 | 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
 | 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
-| 31 | 2/2 | Complete    | 2026-03-01 | - |
-| 32 | 2/2 | Complete    | 2026-03-02 | 2026-03-02 |
+| 31-32 | v4.1 | 4/4 | Complete | 2026-03-02 |

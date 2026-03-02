@@ -1,5 +1,21 @@
 # Milestones
 
+## v4.1 Clean House (Shipped: 2026-03-02)
+
+**Phases completed:** 2 phases, 4 plans, 9 tasks
+**Stats:** 21 commits, 20 files changed (+680/-604)
+**Audit:** 6/6 requirements satisfied, 6/6 integrations wired, 5/5 E2E flows complete
+
+**Key accomplishments:**
+- Extracted DeltaBadge and StockBadge into shared admin components, eliminating 4 inline duplicates across 4 page files
+- Top-sellers table now period-aware — threads period from UI through React Query key to backend SQL date range filter
+- Restock alert email shows book cover with 3-step fallback chain (cover URL, Open Library ISBN, emoji placeholder)
+- Created test_email.py standalone developer tool for SMTP trap email verification
+- Fixed SUMMARY frontmatter accuracy and regenerated api.generated.ts with period param
+- Fixed updateBookStock return type from Promise<void> to Promise<BookResponse>
+
+---
+
 ## v3.1 Admin Dashboard (Shipped: 2026-03-01)
 
 **Phases completed:** 5 phases, 9 plans, 4 tasks

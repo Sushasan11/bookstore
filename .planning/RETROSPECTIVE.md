@@ -220,6 +220,46 @@
 
 ---
 
+## Milestone: v4.1 — Clean House
+
+**Shipped:** 2026-03-02
+**Phases:** 2 | **Plans:** 4 | **Sessions:** 1
+
+### What Was Built
+- Extracted DeltaBadge and StockBadge into shared admin components, eliminating 4 inline duplicates
+- Period-filtered top-sellers: UI period selector threads through React Query key to backend SQL date range filter
+- Restock alert email cover image with 3-step fallback chain (cover URL, Open Library ISBN, emoji placeholder)
+- test_email.py standalone developer tool for SMTP trap email verification
+- Fixed SUMMARY frontmatter accuracy and regenerated api.generated.ts with period param
+
+### What Worked
+- Audit-driven scope: v3.1 audit precisely identified 6 tech debt items → 6 requirements → 2 phases, zero ambiguity
+- Milestone was surgically focused — no scope creep, every requirement directly addressed a known issue
+- Visual email verification via MailHog SMTP trap confirmed CID embedding and cover fallback chain worked end-to-end
+- Pre-audit before completion caught 0 additional gaps — clean closure
+
+### What Was Inefficient
+- v4.1 skipped v4.0 numbering — minor confusion, but harmless since it was intentionally a cleanup milestone
+- 32-02-SUMMARY.md cited wrong commit hash (eb6ad51 vs b990a38) — documentation-only issue caught by audit
+- store_url omitted from restock alert email context (CTA links to '#') — pre-existing issue carried forward as known tech debt
+
+### Patterns Established
+- Audit → requirements → targeted cleanup phases is an effective tech debt resolution pattern
+- Cover fallback chains in email templates: check URL (with localhost filter), fall back to API (Open Library), final fallback is placeholder
+- Developer test scripts in backend/scripts/ accept CLI args for host/port/recipient — reusable across environments
+
+### Key Lessons
+1. Cleanup milestones work best when audit-driven — precise scope prevents gold-plating
+2. Shared component extraction should happen during the phase that introduces duplication, not deferred to a cleanup milestone
+3. Email template testing requires visual verification (SMTP trap) — unit tests alone can't confirm CID rendering or image fallback chain behavior
+
+### Cost Observations
+- Model mix: ~15% opus (orchestrator), ~85% sonnet (executors, verifiers)
+- Sessions: 1 (entire milestone in single context)
+- Notable: Smallest milestone (2 phases, 4 plans) — completed in ~1 hour total execution time
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -232,6 +272,7 @@
 | v2.1 | 1 | 3 | Direct repo pattern for simple aggregates, pre-built schemas across plans |
 | v3.0 | ~4 | 7 | Full frontend milestone, SSR+client patterns, TanStack Query cache architecture |
 | v3.1 | ~3 | 5 | Admin dashboard, reusable component library, cache revalidation wiring |
+| v4.1 | 1 | 2 | Audit-driven cleanup, shared component extraction, email verification |
 
 ### Cumulative Quality
 
@@ -243,6 +284,7 @@
 | v2.1 | ~306 | 13,743 | 66 |
 | v3.0 | ~306 | 22,750 (14,728 py + 8,022 ts) | 0 (frontend, no new backend tests) |
 | v3.1 | ~306 | ~26,050 (14,728 py + ~11,300 ts) | 0 (frontend admin, no new backend tests) |
+| v4.1 | ~306 | ~26,050 (unchanged — refactor only) | 0 (cleanup milestone, no new tests) |
 
 ### Top Lessons (Verified Across Milestones)
 
