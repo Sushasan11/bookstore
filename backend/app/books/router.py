@@ -183,7 +183,19 @@ async def update_stock(
                 to=email_addr,
                 template_name="restock_alert.html",
                 subject=f"'{book.title}' is back in stock",
-                context={"book_title": book.title, "book_id": book.id},
+                context={
+                    "book_title": book.title,
+                    "book_id": book.id,
+                    "isbn": book.isbn,
+                    "cover_image_url": (
+                        book.cover_image_url
+                        if book.cover_image_url
+                        and book.cover_image_url.startswith("http")
+                        and "localhost" not in book.cover_image_url
+                        and "127.0.0.1" not in book.cover_image_url
+                        else None
+                    ),
+                },
             )
 
     return BookResponse.model_validate(book)
