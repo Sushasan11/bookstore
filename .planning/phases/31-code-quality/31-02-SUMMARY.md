@@ -22,6 +22,7 @@ decisions:
   - period param is optional on backend endpoint — backward compatible, no period returns all-time data
   - period included in React Query key for automatic cache separation per period
   - router imports _period_bounds directly from analytics_service (no new service method needed)
+requirements-completed: [ANLY-01]
 metrics:
   duration: "~2 minutes"
   completed_date: "2026-03-02"
