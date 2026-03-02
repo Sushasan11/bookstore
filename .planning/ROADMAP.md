@@ -108,7 +108,10 @@ Plans:
   2. A test restock alert email arrives with the book cover loaded from Open Library when no local image is present
   3. The `requirements_completed` field in plans 26-02, 27-01, and 31-02 SUMMARY frontmatter lists the correct requirement IDs that those plans delivered
   4. `api.generated.ts` is regenerated to include the `period` query param for the top-books endpoint
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 32-01-PLAN.md — Email validation: restock alert cover image, backend context update, test script
+- [ ] 32-02-PLAN.md — SUMMARY frontmatter corrections and api.generated.ts regeneration
 
 ## Progress
 
@@ -121,4 +124,4 @@ Plans:
 | 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
 | 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
 | 31 | 2/2 | Complete    | 2026-03-01 | - |
-| 32 | v4.1 | 0/TBD | Not started | - |
+| 32 | v4.1 | 0/2 | Not started | - |
