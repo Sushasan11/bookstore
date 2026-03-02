@@ -26,7 +26,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 
 ### Email Validation
 
-- [ ] **MAIL-01**: Email improvements (logo CID embedding, Open Library cover fallback) verified working end-to-end
+- [x] **MAIL-01**: Email improvements (logo CID embedding, Open Library cover fallback) verified working end-to-end
 
 ## Future Requirements
 
@@ -67,7 +67,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 | TYPE-01 | Phase 31 | Complete |
 | ANLY-01 | Phase 31 | Complete |
 | DOCS-01 | Phase 32 | Complete |
-| MAIL-01 | Phase 32 | Pending |
+| MAIL-01 | Phase 32 | Complete |
 
 **Coverage:**
 - v4.1 requirements: 6 total

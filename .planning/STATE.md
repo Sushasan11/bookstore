@@ -1,27 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.1
-milestone_name: Clean House
-status: unknown
-last_updated: "2026-03-01T20:09:50.275Z"
-progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
----
-
----
-gsd_state_version: 1.0
 milestone: "v4.1"
 milestone_name: "Clean House"
 status: in_progress
-last_updated: "2026-03-02T07:15:00Z"
+last_updated: "2026-03-02T09:00:00Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -37,11 +24,11 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 Phase: 32 (Validation and Docs) — In Progress
 Plan: 01 complete, 02 complete
-Status: 32-02 complete — SUMMARY frontmatter corrections and api.generated.ts regenerated
-Last activity: 2026-03-02 — Completed 32-02 (SUMMARY frontmatter fix + type regeneration)
+Status: 32-01 complete — restock alert cover image, router context update, SMTP test script, visual verification approved
+Last activity: 2026-03-02 — Completed 32-01 (email cover image + SMTP test tool + visual verification)
 
 ```
-v4.1 Progress: [█████░░░░░] 1/2 phases complete (Phase 31 done, Phase 32 in progress — 2/2 plans complete)
+v4.1 Progress: [█████░░░░░] 1/2 phases complete (Phase 31 done, Phase 32 in progress — all 4 plans complete across both phases)
 ```
 
 ## Accumulated Context
@@ -59,6 +46,11 @@ See PROJECT.md for full decision log (27 decisions across 6 milestones).
 - period param is optional on backend top-books endpoint — backward compatible (no period returns all-time data)
 - period included in React Query key for automatic cache separation per period
 - router imports `_period_bounds` directly from analytics_service (no new service method needed)
+
+**32-01 decisions:**
+- Cover image in restock_alert uses 120x170px sizing (hero-style, larger than order_confirmation thumbnails) — single-book spotlight email warrants it
+- localhost/127.0.0.1 safety filter applied to cover_image_url in router context to prevent embedding local dev images in outgoing emails
+- test_email.py kept in repo as a permanent developer tool — standalone, accepts --smtp-host/--smtp-port/--to CLI args
 
 **32-02 decisions:**
 - 26-02 and 27-01 SUMMARY files already had correct requirements-completed IDs — no change needed
@@ -85,6 +77,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Last activity: 2026-03-02 - Completed 32-02 (SUMMARY frontmatter corrections and api.generated.ts regeneration)
-Stopped at: Completed 32-02-PLAN.md
+Last activity: 2026-03-02 - Completed 32-01 (restock alert cover image, router context, SMTP test script, visual verification approved)
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None

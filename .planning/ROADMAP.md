@@ -81,7 +81,7 @@
 ### v4.1 Clean House (Phases 31-32)
 
 - [x] **Phase 31: Code Quality** - Extract shared admin components, fix return type, and make top-sellers period-aware (completed 2026-03-01)
-- [ ] **Phase 32: Validation and Docs** - Verify email improvements end-to-end and correct SUMMARY frontmatter
+- [x] **Phase 32: Validation and Docs** - Verify email improvements end-to-end and correct SUMMARY frontmatter (completed 2026-03-02)
 
 ## Phase Details
 
@@ -124,4 +124,4 @@ Plans:
 | 19-25 | v3.0 | 22/22 | Complete | 2026-02-28 |
 | 26-30 | v3.1 | 9/9 | Complete | 2026-03-01 |
 | 31 | 2/2 | Complete    | 2026-03-01 | - |
-| 32 | v4.1 | 2/2 | Complete | 2026-03-02 |
+| 32 | 2/2 | Complete   | 2026-03-02 | 2026-03-02 |
