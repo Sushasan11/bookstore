@@ -22,7 +22,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 
 ### Documentation
 
-- [ ] **DOCS-01**: SUMMARY frontmatter for plans 26-02 and 27-01 lists correct requirement IDs in `requirements_completed`
+- [x] **DOCS-01**: SUMMARY frontmatter for plans 26-02, 27-01, and 31-02 lists correct requirement IDs in `requirements-completed`; api.generated.ts regenerated with period param
 
 ### Email Validation
 
@@ -66,7 +66,7 @@ Requirements for v4.1 Clean House milestone. Tech debt resolution and validation
 | COMP-02 | Phase 31 | Complete |
 | TYPE-01 | Phase 31 | Complete |
 | ANLY-01 | Phase 31 | Complete |
-| DOCS-01 | Phase 32 | Pending |
+| DOCS-01 | Phase 32 | Complete |
 | MAIL-01 | Phase 32 | Pending |
 
 **Coverage:**

@@ -16,12 +16,12 @@ gsd_state_version: 1.0
 milestone: "v4.1"
 milestone_name: "Clean House"
 status: in_progress
-last_updated: "2026-03-02T20:03:26Z"
+last_updated: "2026-03-02T07:15:00Z"
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -35,13 +35,13 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Phase: 31 (Code Quality) — Complete
+Phase: 32 (Validation and Docs) — In Progress
 Plan: 01 complete, 02 complete
-Status: Phase 31 complete — period-filtered top-sellers analytics, shared components, type fixes all done
-Last activity: 2026-03-02 — Completed 31-02 (period filtering for top-books analytics)
+Status: 32-02 complete — SUMMARY frontmatter corrections and api.generated.ts regenerated
+Last activity: 2026-03-02 — Completed 32-02 (SUMMARY frontmatter fix + type regeneration)
 
 ```
-v4.1 Progress: [█████░░░░░] 1/2 phases complete (Phase 31 done)
+v4.1 Progress: [█████░░░░░] 1/2 phases complete (Phase 31 done, Phase 32 in progress — 2/2 plans complete)
 ```
 
 ## Accumulated Context
@@ -59,6 +59,11 @@ See PROJECT.md for full decision log (27 decisions across 6 milestones).
 - period param is optional on backend top-books endpoint — backward compatible (no period returns all-time data)
 - period included in React Query key for automatic cache separation per period
 - router imports `_period_bounds` directly from analytics_service (no new service method needed)
+
+**32-02 decisions:**
+- 26-02 and 27-01 SUMMARY files already had correct requirements-completed IDs — no change needed
+- 31-02 SUMMARY was missing requirements-completed entirely — added [ANLY-01] matching the plan's requirements field
+- api.generated.ts regenerated from live backend (not manually edited) — machine-generated header preserved
 
 ### Pending Todos
 
@@ -80,6 +85,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Last activity: 2026-03-02 - Completed 31-02 (period filtering for top-books analytics)
-Stopped at: Completed 31-02-PLAN.md
+Last activity: 2026-03-02 - Completed 32-02 (SUMMARY frontmatter corrections and api.generated.ts regeneration)
+Stopped at: Completed 32-02-PLAN.md
 Resume file: None
